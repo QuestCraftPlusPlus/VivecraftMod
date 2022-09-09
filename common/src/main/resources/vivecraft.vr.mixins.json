@@ -8,6 +8,8 @@
     "server.packs.repository.PackRepositoryVRMixin"
   ],
   "client": [
+    "blaze3d.pipeline.RenderTargetVRMixin",
+    "blaze3d.pipeline.MainTargetVRMixin",
     "blaze3d.audio.LibraryVRMixin",
     "blaze3d.platform.InputConstantsVRMixin",
     "blaze3d.platform.WindowVRMixin",

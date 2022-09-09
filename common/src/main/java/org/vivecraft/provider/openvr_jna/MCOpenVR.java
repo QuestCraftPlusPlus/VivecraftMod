@@ -265,7 +265,7 @@ public class MCOpenVR extends MCVR
                     this.initOpenVRChaperone();
                     this.initOpenVRApplications();
                     this.initOpenVRInput();
-                    this.initOpenComposite();
+                    // this.initOpenComposite();
                 }
                 catch (Exception exception2)
                 {

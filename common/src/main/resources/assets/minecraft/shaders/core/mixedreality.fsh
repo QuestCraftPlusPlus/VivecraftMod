@@ -1,4 +1,4 @@
-#version 330 core
+#version 150 core
 
 uniform vec2 resolution;
 uniform vec2 position;
