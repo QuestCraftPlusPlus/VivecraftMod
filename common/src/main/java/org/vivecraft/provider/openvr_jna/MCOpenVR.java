@@ -1491,9 +1491,6 @@ public class MCOpenVR extends MCVR
             else if (this.dbg)
             {
                 this.dbg = false;
-                this.debugOut(0);
-                this.debugOut(this.controllerDeviceIndex[0]);
-                this.debugOut(this.controllerDeviceIndex[1]);
             }
 
             HmdMatrix34_t hmdmatrix34_t = this.vrsystem.GetEyeToHeadTransform.apply(0);
