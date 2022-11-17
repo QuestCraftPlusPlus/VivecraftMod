@@ -142,19 +142,16 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/left/input/application_menu"
+               "path" : "/user/hand/left/input/y"
             },
             {
                "inputs" : {
-                  "north" : {
+                  "click" : {
                      "output" : "/actions/global/in/key.inventory"
                   }
                },
-               "mode" : "dpad",
-               "parameters" : {
-                  "sub_mode" : "click"
-               },
-               "path" : "/user/hand/right/input/trackpad"
+               "mode" : "button",
+               "path" : "/user/hand/left/input/x"
             }
          ]
       },
@@ -194,7 +191,7 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/right/input/trackpad"
+               "path" : "/user/hand/right/input/a"
             },
             {
                "inputs" : {
@@ -202,11 +199,11 @@
                      "output" : "/actions/gui/in/vivecraft.key.guiscrollaxis"
                   }
                },
-               "parameters": {
-                  "discrete_scroll_trackpad_slideandhold_enabled": "false"
-               },
                "mode" : "scroll",
-               "path" : "/user/hand/right/input/trackpad"
+               "parameters" : {
+                  "scroll_mode" : "discrete"
+               },
+               "path" : "/user/hand/right/input/joystick"
             }
          ]
       },
@@ -223,45 +220,12 @@
             },
             {
                "inputs" : {
-                  "pull" : {
-                     "output" : "/actions/ingame/in/vivecraft.key.teleportfallback"
-                  }
-               },
-               "mode" : "trigger",
-               "path" : "/user/hand/left/input/trigger"
-            },
-            {
-               "inputs" : {
-                  "north" : {
-                     "output" : "/actions/ingame/in/key.jump"
-                  },
-                  "south" : {
-                     "output" : "/actions/ingame/in/key.sneak"
-                  }
-               },
-               "mode" : "dpad",
-               "parameters" : {
-                  "sub_mode" : "click"
-               },
-               "path" : "/user/hand/left/input/trackpad"
-            },
-            {
-               "inputs" : {
                   "click" : {
                      "output" : "/actions/ingame/in/vivecraft.key.hotbarnext"
                   }
                },
                "mode" : "button",
                "path" : "/user/hand/right/input/grip"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/ingame/in/vivecraft.key.radialmenu"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/right/input/application_menu"
             },
             {
                "inputs" : {
@@ -274,23 +238,68 @@
             },
             {
                "inputs" : {
-                  "south" : {
-                     "output" : "/actions/ingame/in/key.use"
-                  }
-               },
-               "mode" : "dpad",
-               "parameters" : {
-                  "sub_mode" : "click"
-               },
-               "path" : "/user/hand/right/input/trackpad"
-            },
-            {
-               "inputs" : {
                   "click" : {
                      "output" : "/actions/ingame/in/vivecraft.key.teleport"
                   }
                },
                "mode" : "button",
+               "path" : "/user/hand/left/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/ingame/in/vivecraft.key.radialmenu"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/ingame/in/key.use"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/ingame/in/key.jump"
+                  },
+                  "position" : {
+                     "output" : "/actions/ingame/in/vivecraft.key.freemovestrafe"
+                  }
+               },
+               "mode" : "joystick",
+               "path" : "/user/hand/left/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "position" : {
+                     "output" : "/actions/ingame/in/vivecraft.key.rotateaxis"
+                  }
+               },
+               "mode" : "joystick",
+               "path" : "/user/hand/right/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/ingame/in/key.sneak"
+                  }
+               },
+               "mode" : "toggle_button",
+               "path" : "/user/hand/right/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "pull" : {
+                     "output" : "/actions/ingame/in/vivecraft.key.teleportfallback"
+                  }
+               },
+               "mode" : "trigger",
                "path" : "/user/hand/left/input/trigger"
             }
          ]
@@ -334,34 +343,12 @@
                "path" : "/user/hand/right/input/trigger"
             }
          ]
-      },
-      "/actions/technical" : {
-         "sources" : [
-            {
-               "inputs" : {
-                  "touch" : {
-                     "output" : "/actions/technical/in/vivecraft.key.trackpadtouch"
-                  }
-               },
-               "mode" : "trackpad",
-               "path" : "/user/hand/left/input/trackpad"
-            },
-            {
-               "inputs" : {
-                  "touch" : {
-                     "output" : "/actions/technical/in/vivecraft.key.trackpadtouch"
-                  }
-               },
-               "mode" : "trackpad",
-               "path" : "/user/hand/right/input/trackpad"
-            }
-         ]
       }
    },
    "category" : "steamvr_input",
-   "controller_type" : "vive_controller",
+   "controller_type" : "oculus_touch",
    "description" : "",
-   "name" : "Vive Controller Defaults",
+   "name" : "Oculus Touch Defaults",
    "options" : {},
    "simulated_actions" : []
 }
