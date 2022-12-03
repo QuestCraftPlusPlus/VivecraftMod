@@ -9,9 +9,9 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ "YVR" ]
+    branches: [ "YVR-1.19" ]
   pull_request:
-    branches: [ "YVR" ]
+    branches: [ "YVR-1.19" ]
 
 permissions:
   contents: read
