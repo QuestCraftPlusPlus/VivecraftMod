@@ -5,5 +5,5 @@ public class VLoader {
         System.loadLibrary("openvr_api");
     }
 
-    public static native void setEGL();
+    public static native void setEGLGlobal();
 }
