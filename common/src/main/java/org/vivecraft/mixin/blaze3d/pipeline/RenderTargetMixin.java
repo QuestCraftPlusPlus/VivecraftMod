@@ -1,14 +1,13 @@
 package org.vivecraft.mixin.blaze3d.pipeline;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlConst;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.spongepowered.asm.mixin.Debug;
@@ -16,16 +15,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.*;
 import org.vivecraft.extensions.RenderTargetExtension;
 import org.vivecraft.mixin.blaze3d.systems.RenderSystemAccessor;
-
-import java.nio.IntBuffer;
 
 @Debug(export = true)
 @Mixin(RenderTarget.class)
@@ -37,6 +29,8 @@ public abstract class RenderTargetMixin implements RenderTargetExtension {
 	public String name = "Default";
 	@Unique
 	private boolean linearFilter;
+	@Unique
+	private boolean useStencil = false;
 	@Shadow
 	public int frameBufferId;
 	@Shadow
@@ -88,6 +82,16 @@ public abstract class RenderTargetMixin implements RenderTargetExtension {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public void setUseStencil(boolean useStencil){
+		this.useStencil = useStencil;
+	}
+
+	@Override
+	public boolean getUseStencil(){
+		return useStencil;
 	}
 
 	@Override
@@ -199,9 +203,17 @@ public abstract class RenderTargetMixin implements RenderTargetExtension {
 		}
 	}
 
-	@Redirect(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_texImage2D(IIIIIIIILjava/nio/IntBuffer;)V", ordinal = 0), method = "createBuffers")
-	public void newTexImage2D(int i, int j, int k, int l, int m, int n, int o, int p, IntBuffer intBuffer) {
-		GlStateManager._texImage2D(3553, 0, 36013, this.width, this.height, 0, 34041, 36269, null);
+	@ModifyArg(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_texImage2D(IIIIIIIILjava/nio/IntBuffer;)V", ordinal = 0), method = "createBuffers", index = 2)
+	public int modifyTexImage2DInternalformat(int internalformat) {
+		return useStencil ? GL30.GL_DEPTH32F_STENCIL8 : internalformat;
+	}
+	@ModifyArg(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_texImage2D(IIIIIIIILjava/nio/IntBuffer;)V", ordinal = 0), method = "createBuffers", index = 6)
+	public int modifyTexImage2DFormat(int format) {
+		return useStencil ? GL30.GL_DEPTH_STENCIL : format;
+	}
+	@ModifyArg(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_texImage2D(IIIIIIIILjava/nio/IntBuffer;)V", ordinal = 0), method = "createBuffers", index = 7)
+	public int modifyTexImage2DType(int type) {
+		return useStencil ? GL30.GL_FLOAT_32_UNSIGNED_INT_24_8_REV : type;
 	}
 
 	@ModifyConstant(method = "createBuffers", constant = @Constant(intValue = 9728))
@@ -209,11 +221,10 @@ public abstract class RenderTargetMixin implements RenderTargetExtension {
 		return linearFilter ? GL11.GL_LINEAR : i;
 	}
 
-	/**
-	 * @author
-	 * @reason
-	 */
-
+	@ModifyArg(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_glFramebufferTexture2D(IIIII)V", ordinal = 1), method = "createBuffers", index = 1)
+	public int modifyGlFramebufferTexture2DAttachment(int attachment) {
+		return useStencil ? GL30.GL_DEPTH_STENCIL_ATTACHMENT : attachment;
+	}
 
 	/**
 	 * @author
@@ -261,10 +272,10 @@ public abstract class RenderTargetMixin implements RenderTargetExtension {
 				instance.setSampler("Sampler" + k, l);
 			}
 		}
-		Matrix4f matrix4f = Matrix4f.orthographic(width, -height, 1000.0f, 3000.0f);
+		Matrix4f matrix4f = new Matrix4f().setOrtho(0, width, height, 0,1000.0f, 3000.0f);
 		RenderSystem.setProjectionMatrix(matrix4f);
 		if (instance.MODEL_VIEW_MATRIX != null) {
-			instance.MODEL_VIEW_MATRIX.set(Matrix4f.createTranslateMatrix(0.0f, 0.0f, -2000.0f));
+			instance.MODEL_VIEW_MATRIX.set(new Matrix4f().translation(0.0f, 0.0f, -2000.0f));
 		}
 		if (instance.PROJECTION_MATRIX != null) {
 			instance.PROJECTION_MATRIX.set(matrix4f);
@@ -346,11 +357,11 @@ public abstract class RenderTargetMixin implements RenderTargetExtension {
 					instance.setSampler("Sampler" + k, l);
 				}
 			}
-			Matrix4f matrix4f = Matrix4f.orthographic((float) width, (float) (-height), 1000.0F, 3000.0F);
+			Matrix4f matrix4f = new Matrix4f().setOrtho(0, (float) width, (float) (height), 0, 1000.0F, 3000.0F);
 			RenderSystem.setProjectionMatrix(matrix4f);
 
 			if (instance.MODEL_VIEW_MATRIX != null) {
-				instance.MODEL_VIEW_MATRIX.set(Matrix4f.createTranslateMatrix(0.0F, 0.0F, -2000.0F));
+				instance.MODEL_VIEW_MATRIX.set(new Matrix4f().translation(0.0F, 0.0F, -2000.0F));
 			}
 
 			if (instance.PROJECTION_MATRIX != null) {

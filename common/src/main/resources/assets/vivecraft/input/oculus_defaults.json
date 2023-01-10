@@ -301,12 +301,12 @@
             },
             {
                "inputs" : {
-                  "pull" : {
+                  "click" : {
                      "output" : "/actions/ingame/in/vivecraft.key.teleportfallback"
                   }
                },
-               "mode" : "trigger",
-               "path" : "/user/hand/left/input/trigger"
+               "mode" : "button",
+               "path" : "/user/hand/left/input/x"
             }
          ]
       },
