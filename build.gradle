@@ -41,10 +41,14 @@ allprojects {
 
         //maven {url = 'https://mvnrepository.com/'}
         maven { url 'https://jitpack.io' }
-        maven {
-            name = "Modrinth"
-            url = "https://api.modrinth.com/maven"
-            content {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "Modrinth"
+                    url = "https://api.modrinth.com/maven"
+                }
+            }
+            filter {
                 includeGroup "maven.modrinth"
             }
         }
