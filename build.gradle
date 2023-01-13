@@ -74,14 +74,14 @@ allprojects {
                 includeGroup("com.jamieswhiteshirt")
             }
         }
-        ivy {
-            // to add mods from discord
-            url 'https://cdn.discordapp.com/attachments/'
-            patternLayout {
-                artifact '/[organisation]/[module]/[revision].[ext]'
-            }
-            metadataSources { artifact() }
-        }
+//        ivy {
+//            // to add mods from discord
+//            url 'https://cdn.discordapp.com/attachments/'
+//            patternLayout {
+//                artifact '/[organisation]/[module]/[revision].[ext]'
+//            }
+//            metadataSources { artifact() }
+//        }
     }
 
     tasks.withType(JavaCompile) {
