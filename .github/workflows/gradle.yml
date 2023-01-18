@@ -11,8 +11,8 @@ on:
   push:
     branches: [ "YVR-1.19" ]
   pull_request:
+  workflow_dispatch:
     branches: [ "YVR-1.19" ]
-
 permissions:
   contents: read
 
