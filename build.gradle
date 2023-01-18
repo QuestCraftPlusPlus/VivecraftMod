@@ -38,9 +38,6 @@ allprojects {
         // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
         // See https://docs.gradle.org/current/userguide/declaring_repositories.html
         // for more information about repositories.
-
-        maven {url = 'https://mvnrepository.com/'}
-        maven { url 'https://jitpack.io' }
         maven {
             name = "Modrinth"
             url = "https://api.modrinth.com/maven"
@@ -64,7 +61,6 @@ allprojects {
         maven { url = "https://mvn.devos.one/snapshots/" }
         maven { url = "https://maven.terraformersmc.com/" }
         maven { url = "https://maven.cafeteria.dev/releases/" }
-        maven { url = "https://jitpack.io/" }
         maven { url = "https://maven.gegy.dev" }
         maven { url = "https://dvs1.progwml6.com/files/maven/" }
         maven { url = "https://modmaven.dev" }
