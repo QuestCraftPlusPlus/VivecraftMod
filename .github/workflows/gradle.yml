@@ -9,10 +9,10 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ "YVR-1.19" ]
+    branches: [ "Multiloader-1.19.3" ]
   pull_request:
+    branches: [ "Multiloader-1.19.3" ]
   workflow_dispatch:
-    branches: [ "YVR-1.19" ]
 permissions:
   contents: read
 
@@ -34,8 +34,3 @@ jobs:
       uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
       with:
         arguments: build
-    - name: Upload JAR
-      uses: actions/upload-artifact@v2
-      with:
-        name: vivecraft
-        path: fabric/build/libs/vivecraft-1.19.2-0.0.13-fabric.jar
