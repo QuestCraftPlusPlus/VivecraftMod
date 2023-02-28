@@ -145,13 +145,13 @@ public class OpenVRStereoRenderer extends VRRenderer
         if (this.openvr.vrCompositor.Submit != null)
         {
             GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo1);
-            ByteBuffer leftBuf = BufferUtils.createByteBuffer(width * height * 4);
-            GL15.glGetBufferSubData(GL21.GL_PIXEL_PACK_BUFFER, 0, leftBuf);
+            ByteBuffer leftBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
             VLoader.writeImage(leftNativeImage, width, height, MemoryUtil.memAddress(leftBuf));
+            GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
             GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo2);
-            ByteBuffer rightBuf = BufferUtils.createByteBuffer(width * height * 4);
-            GL15.glGetBufferSubData(GL21.GL_PIXEL_PACK_BUFFER, 0, rightBuf);
+            ByteBuffer rightBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
             VLoader.writeImage(rightNativeImage, width, height, MemoryUtil.memAddress(rightBuf));
+            GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
 
             int i = this.openvr.vrCompositor.Submit.apply(0, this.openvr.texType0, (VRTextureBounds_t)null, 0);
             int j = this.openvr.vrCompositor.Submit.apply(1, this.openvr.texType1, (VRTextureBounds_t)null, 0);
