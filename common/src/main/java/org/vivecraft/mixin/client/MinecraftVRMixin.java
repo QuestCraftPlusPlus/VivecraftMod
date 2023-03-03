@@ -659,15 +659,6 @@ public abstract class MinecraftVRMixin extends ReentrantBlockableEventLoop<Runna
 				this.renderSingleView(renderpass, f, bl);
 				this.profiler.pop();
 
-				if(renderpass == RenderPass.LEFT) {
-					GL11.glBindTexture(GL11.GL_TEXTURE_2D, ClientDataHolder.getInstance().vrRenderer.LeftEyeTextureId);
-					GL20.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, ClientDataHolder.getInstance().vrRenderer.pbo1);
-					GL20.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, 0);
-				} else if(renderpass == RenderPass.RIGHT) {
-					GL11.glBindTexture(GL11.GL_TEXTURE_2D, ClientDataHolder.getInstance().vrRenderer.RightEyeTextureId);
-					GL20.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, ClientDataHolder.getInstance().vrRenderer.pbo2);
-					GL20.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, 0);
-				}
 				if (ClientDataHolder.getInstance().grabScreenShot) {
 					boolean flag;
 
@@ -724,16 +715,16 @@ public abstract class MinecraftVRMixin extends ReentrantBlockableEventLoop<Runna
 		}
 
 		//
-		
+
 //		this.profiler.popPush("yield");
 //		Thread.yield();
 //		this.profiler.pop();
 		this.window.setErrorSection("Post render");
-		
+
 		//v
 		this.window.updateDisplay();
 		//
-		
+
 		++this.frames;
 		boolean bl2 = this.hasSingleplayerServer()
 				&& (this.screen != null && this.screen.isPauseScreen()
