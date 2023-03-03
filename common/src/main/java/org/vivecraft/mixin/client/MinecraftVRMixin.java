@@ -764,16 +764,16 @@ public abstract class MinecraftVRMixin extends ReentrantBlockableEventLoop<Runna
 		}
 
 		//
-		
+
 //		this.profiler.popPush("yield");
 //		Thread.yield();
 //		this.profiler.pop();
 		this.window.setErrorSection("Post render");
-		
+
 		//v
 		this.window.updateDisplay();
 		//
-		
+
 		++this.frames;
 		boolean bl2 = this.hasSingleplayerServer()
 				&& (this.screen != null && this.screen.isPauseScreen()
