@@ -4,22 +4,23 @@ import com.mojang.math.Matrix4f;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
-
-import jopenvr.*;
+import jopenvr.HiddenAreaMesh_t;
+import jopenvr.HmdMatrix44_t;
+import jopenvr.VRTextureBounds_t;
 import net.minecraft.util.Tuple;
-import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.*;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL21;
 import org.lwjgl.system.MemoryUtil;
-import org.vivecraft.provider.VRRenderer;
 import org.vivecraft.provider.MCVR;
+import org.vivecraft.provider.VRRenderer;
 import org.vivecraft.render.RenderConfigException;
 import org.vivecraft.render.RenderPass;
 import org.vivecraft.utils.Utils;
 import org.vivecraft.utils.VLoader;
+
+import java.nio.ByteBuffer;
 
 public class OpenVRStereoRenderer extends VRRenderer
 {

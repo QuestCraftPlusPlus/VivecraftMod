@@ -81,8 +81,8 @@ public abstract class VRRenderer
     public int lastRenderDistanceChunks = -1;
     public long lastWindow = 0L;
     public float lastWorldScale = 0.0F;
-    protected int LeftEyeTextureId = -1;
-    protected int RightEyeTextureId = -1;
+    public int LeftEyeTextureId = -1;
+    public int RightEyeTextureId = -1;
     public int mirrorFBHeight;
     public int mirrorFBWidth;
     protected boolean reinitFramebuffers = true;
