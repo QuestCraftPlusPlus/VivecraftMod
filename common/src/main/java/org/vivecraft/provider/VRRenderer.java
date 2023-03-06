@@ -50,6 +50,9 @@ import java.util.Map;
 
 public abstract class VRRenderer
 {
+    public int pbo1, pbo2;
+    public int leftNativeImage;
+    public int rightNativeImage;
     public int width, height;
     public static final String RENDER_SETUP_FAILURE_MESSAGE = "Failed to initialise stereo rendering plugin: ";
     public Map<String, PostChain> alphaShaders = new HashMap<>();
