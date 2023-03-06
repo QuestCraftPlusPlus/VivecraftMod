@@ -30,7 +30,7 @@ public class OpenVRStereoRenderer extends VRRenderer
     {
         super(vr);
         this.openvr = (MCOpenVR)vr;
-        zink = System.getenv("POJLIB_RENDERER").equals("zink");
+        zink = System.getenv("POJAV_RENDERER").equals("zink");
     }
 
     public Tuple<Integer, Integer> getRenderTextureSizes()
