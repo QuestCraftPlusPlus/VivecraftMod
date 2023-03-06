@@ -25,12 +25,14 @@ import org.vivecraft.utils.VLoader;
 public class OpenVRStereoRenderer extends VRRenderer
 {
     private HiddenAreaMesh_t[] hiddenMeshes = new HiddenAreaMesh_t[2];
+    private final boolean zink;
     private MCOpenVR openvr;
 
     public OpenVRStereoRenderer(MCVR vr)
     {
         super(vr);
         this.openvr = (MCOpenVR)vr;
+        zink = System.getenv("POJLIB_RENDERER").equals("zink");
     }
 
     public Tuple<Integer, Integer> getRenderTextureSizes()
@@ -109,8 +111,11 @@ public class OpenVRStereoRenderer extends VRRenderer
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, 9729.0F);
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, 9729.0F);
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
-        leftNativeImage = VLoader.createGLImage(lwidth, lheight);
-        this.openvr.texType0.handle = Pointer.createConstant(leftNativeImage);
+        this.openvr.texType0.handle = Pointer.createConstant(LeftEyeTextureId);
+        if(zink) {
+            leftNativeImage = VLoader.createGLImage(lwidth, lheight);
+            this.openvr.texType0.handle = Pointer.createConstant(leftNativeImage);
+        }
         this.openvr.texType0.eColorSpace = 1;
         this.openvr.texType0.eType = 1;
         this.openvr.texType0.write();
@@ -120,17 +125,23 @@ public class OpenVRStereoRenderer extends VRRenderer
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, 9729.0F);
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, i);
-        rightNativeImage = VLoader.createGLImage(lwidth, lheight);
-        this.openvr.texType1.handle = Pointer.createConstant(rightNativeImage);
+        this.openvr.texType1.handle = Pointer.createConstant(RightEyeTextureId);
+        if(zink) {
+            rightNativeImage = VLoader.createGLImage(lwidth, lheight);
+            this.openvr.texType1.handle = Pointer.createConstant(rightNativeImage);
+        }
         this.openvr.texType1.eColorSpace = 1;
         this.openvr.texType1.eType = 1;
         this.openvr.texType1.write();
-        pbo1 = GL20.glGenBuffers();
-        GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo1);
-        GL21.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, (long) width * height * 4, GL21.GL_DYNAMIC_READ);
-        pbo2 = GL20.glGenBuffers();
-        GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo2);
-        GL21.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, (long) width * height * 4, GL21.GL_DYNAMIC_READ);
+
+        if(zink) {
+            pbo1 = GL20.glGenBuffers();
+            GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo1);
+            GL21.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, (long) width * height * 4, GL21.GL_DYNAMIC_READ);
+            pbo2 = GL20.glGenBuffers();
+            GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo2);
+            GL21.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, (long) width * height * 4, GL21.GL_DYNAMIC_READ);
+        }
     }
 
     public boolean endFrame(RenderPass eye)
@@ -142,14 +153,16 @@ public class OpenVRStereoRenderer extends VRRenderer
     {
         if (this.openvr.vrCompositor.Submit != null)
         {
-            GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo1);
-            ByteBuffer leftBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
-            VLoader.writeImage(leftNativeImage, width, height, MemoryUtil.memAddress(leftBuf));
-            GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
-            GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo2);
-            ByteBuffer rightBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
-            VLoader.writeImage(rightNativeImage, width, height, MemoryUtil.memAddress(rightBuf));
-            GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
+            if(zink) {
+                GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo1);
+                ByteBuffer leftBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
+                VLoader.writeImage(leftNativeImage, width, height, MemoryUtil.memAddress(leftBuf));
+                GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
+                GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo2);
+                ByteBuffer rightBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
+                VLoader.writeImage(rightNativeImage, width, height, MemoryUtil.memAddress(rightBuf));
+                GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
+            }
 
             int i = this.openvr.vrCompositor.Submit.apply(0, this.openvr.texType0, (VRTextureBounds_t)null, 0);
             int j = this.openvr.vrCompositor.Submit.apply(1, this.openvr.texType1, (VRTextureBounds_t)null, 0);
