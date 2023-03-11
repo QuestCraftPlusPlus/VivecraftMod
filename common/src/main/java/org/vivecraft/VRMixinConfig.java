@@ -65,9 +65,10 @@ public class VRMixinConfig implements IMixinConfigPlugin {
                 VRState.isVR = false;
                 properties.setProperty("vrStatus", String.valueOf(VRState.isVR)); //set dedicated server to nonVR
             } else if (!asked) {
-                properties.setProperty("vrStatus", "true");
+                VRMixinConfigPopup.askVR(properties, file);
             }
             if (!unpackedNatives && VRState.isVR) {
+                unpackPlatformNatives();
                 // disable VR if natives failed
                 VRState.isVR = !JOpenVRLibrary.isErrored();
                 unpackedNatives = true;
