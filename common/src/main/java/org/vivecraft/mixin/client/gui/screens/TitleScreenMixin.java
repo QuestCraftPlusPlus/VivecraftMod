@@ -31,7 +31,6 @@ public abstract class TitleScreenMixin extends Screen {
     private boolean showRestart = false;
     private boolean showError = false;
     private AbstractWidget firstButton;
-    private Button vrModeButton;
 
     @Inject(at =  @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/TitleScreen;addRenderableWidget(Lnet/minecraft/client/gui/components/events/GuiEventListener;)Lnet/minecraft/client/gui/components/events/GuiEventListener;", shift = At.Shift.AFTER, ordinal = 1), method = "createNormalMenuOptions")
     public void initFullGame(CallbackInfo ci) {
@@ -41,50 +40,9 @@ public abstract class TitleScreenMixin extends Screen {
     public void initDemo(CallbackInfo ci) {
         addVRModeButton();
     }
+
     private void addVRModeButton() {
-
-        // get first button, to position warnings
-        for (Renderable widget : renderables) {
-            if (widget instanceof AbstractWidget) {
-                firstButton = (AbstractWidget) widget;
-                break;
-            }
-        }
-
-        try {
-            if (!Files.exists(vrConfigPath)) {
-                Files.createFile(vrConfigPath);
-            }
-            vrConfig.load(Files.newInputStream(vrConfigPath));
-            if (!vrConfig.containsKey("vrStatus")) {
-                vrConfig.setProperty("vrStatus", String.valueOf(VRState.isVR));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        String vrMode = Boolean.parseBoolean(vrConfig.getProperty("vrStatus")) ? "VR" : "NONVR";
-        vrModeButton = new Button.Builder( Component.literal(getIcon() + vrMode),  (button) -> {
-                showError = false;
-                String newMode;
-                if (button.getMessage().getString().endsWith("NONVR")) {
-                    vrConfig.setProperty("vrStatus", String.valueOf(true));
-                    newMode = "VR";
-                } else {
-                    vrConfig.setProperty("vrStatus", String.valueOf(false));
-                    newMode = "NONVR";
-                }
-                try {
-                    vrConfig.store(Files.newOutputStream(vrConfigPath), "This file stores if VR should be enabled.");
-                } catch (IOException e) {
-                    showError = true;
-                }
-
-                button.setMessage(Component.translatable(getIcon() + newMode));
-            })
-            .size( 56,  20)
-            .pos(this.width / 2 + 104,  this.height / 4 + 72)
-            .build();
-        this.addRenderableWidget(vrModeButton);
+        firstButton = (AbstractWidget)renderables.get(0);
     }
 
     private String getIcon() {
@@ -95,16 +53,12 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(at =  @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;render(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V", shift = At.Shift.BEFORE, ordinal = 0), method = "render")
     public void renderText(PoseStack poseStack, int i, int j, float f, CallbackInfo ci) {
-        int l = vrModeButton.getY() - 23;
+        int l = this.height / 4 - 23;
         drawString(poseStack, this.font, "Vivecraft", this.width / 2 + 106, l, 16777215);
         drawString(poseStack, this.font, Component.translatable("vivecraft.messages.mode"), this.width / 2 + 106, l + 10, 16777215);
     }
     @Inject(at =  @At("TAIL"), method = "render")
     public void renderWarning(PoseStack poseStack, int i, int j, float f, CallbackInfo ci) {
-
-        if (vrModeButton.isMouseOver(i, j)) {
-            renderTooltip(poseStack, font.split(Component.translatable("vivecraft.options.VR_MODE.tooltip"), Math.max(width / 2 - 43, 170)), i, j);
-        }
 
         int warningHeight = firstButton.getY() - 10;
         Component warning = null;

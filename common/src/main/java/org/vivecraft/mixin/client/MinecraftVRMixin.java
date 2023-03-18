@@ -49,6 +49,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.*;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -86,6 +87,7 @@ import org.vivecraft.utils.math.Vector3;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -706,6 +708,15 @@ public abstract class MinecraftVRMixin extends ReentrantBlockableEventLoop<Runna
 				this.renderSingleView(renderpass, f, bl);
 				this.profiler.pop();
 
+				if(renderpass == RenderPass.LEFT) {
+					GL11.glBindTexture(GL11.GL_TEXTURE_2D, ClientDataHolder.getInstance().vrRenderer.LeftEyeTextureId);
+					GL20.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, ClientDataHolder.getInstance().vrRenderer.pbo1);
+					GL20.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, 0);
+				} else if(renderpass == RenderPass.RIGHT) {
+					GL11.glBindTexture(GL11.GL_TEXTURE_2D, ClientDataHolder.getInstance().vrRenderer.RightEyeTextureId);
+					GL20.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, ClientDataHolder.getInstance().vrRenderer.pbo2);
+					GL20.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, 0);
+				}
 				if (ClientDataHolder.getInstance().grabScreenShot) {
 					boolean flag;
 

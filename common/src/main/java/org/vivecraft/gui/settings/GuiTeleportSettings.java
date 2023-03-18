@@ -9,7 +9,7 @@ import org.vivecraft.settings.VRSettings;
 public class GuiTeleportSettings extends GuiVROptionsBase
 {
     private static VRSettings.VrOptions[] teleportSettings = new VRSettings.VrOptions[] {
-            VRSettings.VrOptions.SIMULATE_FALLING,
+//            VRSettings.VrOptions.SIMULATE_FALLING,
             VRSettings.VrOptions.LIMIT_TELEPORT
     };
     private static VRSettings.VrOptions[] limitedTeleportSettings = new VRSettings.VrOptions[] {

@@ -51,6 +51,10 @@ import java.util.Map;
 
 public abstract class VRRenderer
 {
+    public int pbo1, pbo2;
+    public int leftNativeImage;
+    public int rightNativeImage;
+    public int width, height;
     public static final String RENDER_SETUP_FAILURE_MESSAGE = "Failed to initialise stereo rendering plugin: ";
     public Map<String, PostChain> alphaShaders = new HashMap<>();
     public RenderTarget cameraFramebuffer;
@@ -78,8 +82,8 @@ public abstract class VRRenderer
     public int lastRenderDistanceChunks = -1;
     public long lastWindow = 0L;
     public float lastWorldScale = 0.0F;
-    protected int LeftEyeTextureId = -1;
-    protected int RightEyeTextureId = -1;
+    public int LeftEyeTextureId = -1;
+    public int RightEyeTextureId = -1;
     public int mirrorFBHeight;
     public int mirrorFBWidth;
     protected boolean reinitFramebuffers = true;
