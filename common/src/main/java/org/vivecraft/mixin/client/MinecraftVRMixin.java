@@ -57,7 +57,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import org.vivecraft.*;
 import org.vivecraft.extensions.*;
 import org.vivecraft.api.ClientNetworkHelper;
@@ -874,17 +873,14 @@ public abstract class MinecraftVRMixin extends ReentrantBlockableEventLoop<Runna
 			this.rightClickDelay = 10;
 	}
 
-	@ModifyVariable(at = @At(value = "STORE", ordinal = 0), method = "startUseItem")
-	public ItemStack handItemStore(ItemStack itemInHand) {
-		this.itemInHand = itemInHand;
-		return itemInHand;
-	}
-
-	@Inject(at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;hitResult:Lnet/minecraft/world/phys/HitResult;", ordinal = 1), method = "startUseItem", locals = LocalCapture.CAPTURE_FAILHARD)
-	public void activeHandSend(CallbackInfo ci, InteractionHand[] var1, int var2, int var3, InteractionHand interactionHand) {
+	@Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getItemInHand(Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/item/ItemStack;"), method = "startUseItem")
+	public ItemStack activeHand2(LocalPlayer instance, InteractionHand interactionHand) {
+		ItemStack itemInHand = instance.getItemInHand(interactionHand);
 		if (ClientDataHolder.getInstance().vrSettings.seated || !TelescopeTracker.isTelescope(itemInHand)) {
 			ClientNetworkHelper.sendActiveHand((byte) interactionHand.ordinal());
 		}
+		this.itemInHand = itemInHand;
+		return itemInHand;
 	}
 
 	@Redirect(at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;hitResult:Lnet/minecraft/world/phys/HitResult;", ordinal = 1), method = "startUseItem")
