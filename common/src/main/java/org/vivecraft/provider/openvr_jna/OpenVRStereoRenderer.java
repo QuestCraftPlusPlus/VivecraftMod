@@ -1,9 +1,13 @@
 package org.vivecraft.provider.openvr_jna;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
