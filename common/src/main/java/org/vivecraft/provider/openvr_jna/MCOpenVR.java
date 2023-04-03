@@ -623,12 +623,10 @@ public class MCOpenVR extends MCVR
         }
 
         String s1 = this.dh.vrSettings.reverseHands ? "_reversed" : "";
-        if(System.getenv("POJLIB_LEFT_HANDED").equals("wack")) {
-            Utils.loadAssetToFile("input/vive_defaults_left" + s1 + ".json", new File("openvr/input/vive_defaults.json"), false);
-            Utils.loadAssetToFile("input/oculus_defaults_left" + s1 + ".json", new File("openvr/input/oculus_defaults.json"), false);
-        }
-        Utils.loadAssetToFile("input/vive_defaults" + s1 + ".json", new File("openvr/input/vive_defaults.json"), false);
         Utils.loadAssetToFile("input/oculus_defaults" + s1 + ".json", new File("openvr/input/oculus_defaults.json"), false);
+        if(System.getenv("POJLIB_LEFT_HANDED").equals("wack")) {
+            Utils.loadAssetToFile("input/oculus_defaults_reversed" + s1 + ".json", new File("openvr/input/oculus_defaults.json"), false);
+        }
     }
 
     private long getActionHandle(String name)
