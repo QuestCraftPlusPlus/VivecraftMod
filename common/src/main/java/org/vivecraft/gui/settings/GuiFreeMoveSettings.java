@@ -11,16 +11,13 @@ public class GuiFreeMoveSettings extends GuiVROptionsBase
     private static VRSettings.VrOptions[] standingSettings = new VRSettings.VrOptions[] {
     		VRSettings.VrOptions.FREEMOVE_MODE,
 			VRSettings.VrOptions.FOV_REDUCTION,
-			VRSettings.VrOptions.INERTIA_FACTOR,
-			VRSettings.VrOptions.MOVEMENT_MULTIPLIER,
 			VRSettings.VrOptions.AUTO_SPRINT,
 			VRSettings.VrOptions.AUTO_SPRINT_THRESHOLD,
 			VRSettings.VrOptions.ANALOG_MOVEMENT
     };
     private static VRSettings.VrOptions[] seatedSettings = new VRSettings.VrOptions[] {
     		VRSettings.VrOptions.SEATED_HMD,
-			VRSettings.VrOptions.FOV_REDUCTION,
-			VRSettings.VrOptions.INERTIA_FACTOR
+			VRSettings.VrOptions.FOV_REDUCTION
     };
     private static VRSettings.VrOptions[] fovRed = new VRSettings.VrOptions[] {
     		VRSettings.VrOptions.FOV_REDUCTION_MIN,
