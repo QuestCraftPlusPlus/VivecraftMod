@@ -18,6 +18,7 @@ public class GuiVRControls extends GuiVROptionsBase
             new VROptionEntry(VRSettings.VrOptions.DUMMY, true),
             new VROptionEntry(VRSettings.VrOptions.DUMMY, true),
             new VROptionEntry(VRSettings.VrOptions.DUMMY, true),
+            new VROptionEntry(VRSettings.VrOptions.REVERSE_HANDS),
             new VROptionEntry(VRSettings.VrOptions.THIRDPERSON_ITEMTRANSFORMS)
     };
 
