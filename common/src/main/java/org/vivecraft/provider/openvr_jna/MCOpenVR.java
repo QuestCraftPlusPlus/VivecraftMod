@@ -624,9 +624,6 @@ public class MCOpenVR extends MCVR
 
         String s1 = this.dh.vrSettings.reverseHands ? "_reversed" : "";
         Utils.loadAssetToFile("input/oculus_defaults" + s1 + ".json", new File("openvr/input/oculus_defaults.json"), false);
-        if(System.getenv("POJLIB_LEFT_HANDED").equals("wack")) {
-            Utils.loadAssetToFile("input/oculus_defaults_reversed" + s1 + ".json", new File("openvr/input/oculus_defaults.json"), false);
-        }
     }
 
     private long getActionHandle(String name)
