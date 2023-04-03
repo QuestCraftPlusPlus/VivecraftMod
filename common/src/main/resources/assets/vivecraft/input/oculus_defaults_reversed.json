@@ -142,7 +142,7 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/right/input/b"
+               "path" : "/user/hand/left/input/application_menu"
             },
             {
                "inputs" : {
@@ -151,7 +151,7 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/right/input/a"
+               "path" : "/user/hand/right/input/b"
             }
          ]
       },
@@ -191,7 +191,7 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/left/input/a"
+               "path" : "/user/hand/left/input/x"
             },
             {
                "inputs" : {
@@ -243,7 +243,7 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/right/input/trigger"
+               "path" : "/user/hand/right/input/a"
             },
             {
                "inputs" : {
@@ -261,13 +261,19 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/left/input/x"
+               "path" : "/user/hand/right/input/trigger"
             },
             {
                "inputs" : {
                   "click" : {
                      "output" : "/actions/ingame/in/key.jump"
-                  },
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
+            },
+            {
+               "inputs" : {
                   "position" : {
                      "output" : "/actions/ingame/in/vivecraft.key.freemovestrafe"
                   }
@@ -295,12 +301,12 @@
             },
             {
                "inputs" : {
-                  "pull" : {
+                  "click" : {
                      "output" : "/actions/ingame/in/vivecraft.key.teleportfallback"
                   }
                },
-               "mode" : "trigger",
-               "path" : "/user/hand/right/input/trigger"
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
             }
          ]
       },
