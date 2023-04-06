@@ -129,6 +129,7 @@ public class VRMixinConfig implements IMixinConfigPlugin {
         if (mixinClassName.contains("NoSodium") && (Xplat.isModLoaded("sodium") || Xplat.isModLoaded("rubidium"))) {
             return false;
         }
+
         return VRState.isVR;
     }
 }

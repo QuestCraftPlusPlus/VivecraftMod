@@ -1,7 +1,7 @@
 package org.vivecraft.modCompatMixin.irisMixin;
 
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.compat.sodium.impl.shader_overrides.IrisChunkProgramOverrides;
 import net.coderbot.iris.compat.sodium.impl.shader_overrides.IrisChunkShaderInterface;
@@ -18,6 +18,7 @@ import org.vivecraft.ClientDataHolder;
 import org.vivecraft.extensions.iris.PipelineManagerExtension;
 import org.vivecraft.render.RenderPass;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.EnumMap;
 
 @Mixin(IrisChunkProgramOverrides.class)
@@ -29,7 +30,7 @@ public class IrisChunkProgramOverridesMixin {
         return null;
     }
 
-    @Inject(method = "createShaders", at = @At("HEAD"), remap = false)
+    @Inject(method = "createShaders(Lnet/coderbot/iris/pipeline/SodiumTerrainPipeline;Lme/jellysquid/mods/sodium/client/render/chunk/vertex/format/ChunkVertexType;)V", at = @At("HEAD"), remap = false)
     public void createAllPipelinesShaders(SodiumTerrainPipeline pipeline, ChunkVertexType vertexType, CallbackInfo ci){
         for (RenderPass renderPass : RenderPass.values()) {
             WorldRenderingPipeline worldPipeline = ((PipelineManagerExtension)Iris.getPipelineManager()).getVRPipeline(renderPass);
@@ -39,7 +40,12 @@ public class IrisChunkProgramOverridesMixin {
                 EnumMap<IrisTerrainPass, GlProgram<IrisChunkShaderInterface>> renderPassShaders = new EnumMap<>(IrisTerrainPass.class);
                 pipelinePrograms.put(renderPass, renderPassShaders);
                 if (sodiumPipeline != null) {
-                    sodiumPipeline.patchShaders(vertexType);
+                    try {
+                        sodiumPipeline.getClass().getMethod("patchShaders", ChunkVertexType.class).invoke(sodiumPipeline, vertexType);
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                        // this shouldn't happen if everything worked correctly
+                        throw new RuntimeException("couldn't find 'patchShaders'");
+                    }
                     for (IrisTerrainPass pass : IrisTerrainPass.values()) {
                         if (pass.isShadow() && !sodiumPipeline.hasShadowPass()) {
                             renderPassShaders.put(pass, null);
