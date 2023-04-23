@@ -110,7 +110,7 @@ public class OpenVRStereoRenderer extends VRRenderer
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.LeftEyeTextureId);
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, 9729.0F);
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, 9729.0F);
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL21.GL_SRGB8_ALPHA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
         this.openvr.texType0.handle = Pointer.createConstant(LeftEyeTextureId);
         leftNativeImage = VLoader.createGLImage(lwidth, lheight);
         this.openvr.texType0.handle = Pointer.createConstant(leftNativeImage);
@@ -121,7 +121,7 @@ public class OpenVRStereoRenderer extends VRRenderer
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.RightEyeTextureId);
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, 9729.0F);
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, 9729.0F);
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL21.GL_SRGB8_ALPHA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, i);
         this.openvr.texType1.handle = Pointer.createConstant(RightEyeTextureId);
         rightNativeImage = VLoader.createGLImage(lwidth, lheight);
