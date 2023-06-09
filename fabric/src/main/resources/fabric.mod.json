@@ -18,18 +18,16 @@
 
   "environment": "*",
   "mixins": [
-    "vivecraft.vr.mixins.json",
-    "vivecraft.nonvr.mixins.json",
+    "vivecraft.mixins.json",
     "vivecraft.sodium.mixins.json",
     "vivecraft.fabric.sodium.mixins.json",
     "vivecraft.iris.mixins.json",
     "vivecraft.rei.mixins.json",
-    "vivecraft.nonvr.fabric.mixins.json",
-    "vivecraft.vr.fabric.mixins.json"
+    "vivecraft.fabric.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.14.14",
-    "minecraft": "1.19.4",
+    "minecraft": "1.20",
     "java": ">=17"
   },
   "suggests": {
