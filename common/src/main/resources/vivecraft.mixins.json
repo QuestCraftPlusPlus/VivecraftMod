@@ -67,6 +67,7 @@
   ],
   "minVersion": "0.8.4",
   "mixins": [
+    "client_vr.OpenVRMixin",
     "server.ChunkMapAccessor",
     "server.MinecraftServerMixin",
     "server.ServerGamePacketListenerImplMixin",

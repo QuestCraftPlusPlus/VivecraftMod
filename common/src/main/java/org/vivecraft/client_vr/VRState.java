@@ -16,7 +16,7 @@ import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
 public class VRState {
 
     public static boolean vrRunning = false;
-    public static boolean vrEnabled = false;
+    public static boolean vrEnabled = true;
     public static boolean vrInitialized = false;
 
     public static void initializeVR() {
