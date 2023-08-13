@@ -16,7 +16,6 @@ public class GuiMainVRSettings extends GuiVROptionsBase
             new VROptionLayout(GuiOtherHUDSettings.class, VROptionLayout.Position.POS_RIGHT, 2.0F, true, "vivecraft.options.screen.guiother.button"),
             new VROptionLayout(VRSettings.VrOptions.WORLD_SCALE, VROptionLayout.Position.POS_LEFT, 6.0F, true, (String)null),
             new VROptionLayout(VRSettings.VrOptions.WORLD_ROTATION, VROptionLayout.Position.POS_RIGHT, 6.0F, true, (String)null),
-            new VROptionLayout(VRSettings.VrOptions.VR_HOTSWITCH, VROptionLayout.Position.POS_RIGHT, 0.0F, true, (String)null),
             new VROptionLayout(VRSettings.VrOptions.LOW_HEALTH_INDICATOR, VROptionLayout.Position.POS_RIGHT, 7.0F, true, (String)null)
     };
     private VROptionLayout[] vrStandingOptions = new VROptionLayout[] {
