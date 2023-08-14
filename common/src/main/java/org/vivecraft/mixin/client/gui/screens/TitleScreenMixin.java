@@ -1,23 +1,18 @@
 package org.vivecraft.mixin.client.gui.screens;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.screens.*;
+import net.minecraft.client.renderer.PanoramaRenderer;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
-import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.vivecraft.VRState;
-import org.vivecraft.Xplat;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Properties;
+import org.vivecraft.client.utils.UpdateChecker;
+import org.vivecraft.client_vr.ClientDataHolderVR;
+import org.vivecraft.client_vr.VRState;
+import org.vivecraft.client.gui.screens.UpdateScreen;
 
 @Mixin(TitleScreen.class)
 public abstract class TitleScreenMixin extends Screen {
@@ -26,62 +21,72 @@ public abstract class TitleScreenMixin extends Screen {
         super(component);
     }
 
-    private final Properties vrConfig = new Properties();
-    private final Path vrConfigPath = Xplat.getConfigPath("vivecraft-config.properties");
-    private boolean showRestart = false;
+    //TODO Add config file
+//    private final Properties vrConfig = new Properties();
+//    private final Path vrConfigPath = Xplat.getConfigPath("vivecraft-config.properties");
     private boolean showError = false;
-    private AbstractWidget firstButton;
+    private Button vrModeButton;
 
-    @Inject(at =  @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/TitleScreen;addRenderableWidget(Lnet/minecraft/client/gui/components/events/GuiEventListener;)Lnet/minecraft/client/gui/components/events/GuiEventListener;", shift = At.Shift.AFTER, ordinal = 1), method = "createNormalMenuOptions")
+    private Button updateButton;
+
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/TitleScreen;addRenderableWidget(Lnet/minecraft/client/gui/components/events/GuiEventListener;)Lnet/minecraft/client/gui/components/events/GuiEventListener;", shift = At.Shift.AFTER, ordinal = 1), method = "createNormalMenuOptions")
     public void initFullGame(CallbackInfo ci) {
         addVRModeButton();
     }
-    @Inject(at =  @At("TAIL"), method = "createDemoMenuOptions")
+
+    @Inject(at = @At("TAIL"), method = "createDemoMenuOptions")
     public void initDemo(CallbackInfo ci) {
         addVRModeButton();
     }
 
     private void addVRModeButton() {
-        firstButton = (AbstractWidget)renderables.get(0);
+
+        vrModeButton = new Button.Builder(Component.translatable("vivecraft.gui.vr", getIcon() , VRState.vrEnabled ? CommonComponents.OPTION_ON : CommonComponents.OPTION_OFF), (button) -> {
+            showError = false;
+            VRState.vrEnabled = !VRState.vrEnabled;
+            ClientDataHolderVR.getInstance().vrSettings.vrEnabled = VRState.vrEnabled;
+            ClientDataHolderVR.getInstance().vrSettings.saveOptions();
+
+            button.setMessage(Component.translatable("vivecraft.gui.vr", getIcon(), VRState.vrEnabled ? CommonComponents.OPTION_ON : CommonComponents.OPTION_OFF));
+        })
+                .size(56, 20)
+                .pos(this.width / 2 + 104, this.height / 4 + 72)
+                .build();
+
+        this.addRenderableWidget(vrModeButton);
+
+        updateButton = new Button.Builder(Component.translatable("vivecraft.gui.update"), (button) -> minecraft.setScreen(new UpdateScreen()))
+                .size(56, 20)
+                .pos(this.width / 2 + 104, this.height / 4 + 96)
+                .build();
+
+        updateButton.visible = UpdateChecker.hasUpdate;
+
+        this.addRenderableWidget(updateButton);
     }
 
     private String getIcon() {
-        showRestart = Boolean.parseBoolean(vrConfig.getProperty("vrStatus")) != VRState.isVR;
-
-        return (showError ? "§c\u26A0§r " : (showRestart ? "§6\u24D8§r ": ""));
+        return (showError ? "§c\u26A0§r " : "");
     }
 
-    @Inject(at =  @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;render(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V", shift = At.Shift.BEFORE, ordinal = 0), method = "render")
-    public void renderText(PoseStack poseStack, int i, int j, float f, CallbackInfo ci) {
-        int l = this.height / 4 - 23;
-        drawString(poseStack, this.font, "Vivecraft", this.width / 2 + 106, l, 16777215);
-        drawString(poseStack, this.font, Component.translatable("vivecraft.messages.mode"), this.width / 2 + 106, l + 10, 16777215);
-    }
-    @Inject(at =  @At("TAIL"), method = "render")
-    public void renderWarning(PoseStack poseStack, int i, int j, float f, CallbackInfo ci) {
+    @Inject(at = @At("TAIL"), method = "render")
+    public void renderToolTip(PoseStack poseStack, int i, int j, float f, CallbackInfo ci) {
+        updateButton.visible = UpdateChecker.hasUpdate;
 
-        int warningHeight = firstButton.getY() - 10;
-        Component warning = null;
-        if (showError) {
-            warning = Component.translatable("vivecraft.messages.configWriteError");
-        } else if (showRestart) {
-            warning = Component.translatable("vivecraft.messages.configChangeRestart");
-            warningHeight = this.height / 2;
+        if (vrModeButton.isMouseOver(i, j)) {
+            renderTooltip(poseStack, font.split(Component.translatable("vivecraft.options.VR_MODE.tooltip"), Math.max(width / 2 - 43, 170)), i, j);
         }
-        if (warning != null) {
-            int length = 0;
-            List<FormattedCharSequence> splitString = font.split(FormattedText.of(warning.getString()), 360);
-            for(FormattedCharSequence string : splitString) {
-                length = Math.max(length, this.font.width(string));
-            }
-            // move in front of button tooltips
-            poseStack.pushPose();
-            poseStack.translate(0,0,500);
-            GuiComponent.fill(poseStack, this.width / 2 - length / 2 - 4, warningHeight - 4, this.width / 2 + length / 2 + 4, warningHeight + (font.lineHeight + 3)  * splitString.size(), -536870912);
-            for (int line = 0; line < splitString.size(); line++) {
-                drawCenteredString(poseStack, this.font, splitString.get(line), this.width / 2, warningHeight + (font.lineHeight + 2) * line, 16777215);
-            }
-            poseStack.popPose();
+        if (VRState.vrInitialized && !VRState.vrRunning) {
+            Component hotswitchMessage = Component.translatable("vivecraft.messages.vrhotswitchinginfo");
+            renderTooltip(poseStack, font.split(hotswitchMessage, 280), width / 2 - 140 - 12, 17);
         }
+    }
+
+    @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PanoramaRenderer;render(FF)V"), method = "render")
+    public void maybeNoPanorama(PanoramaRenderer instance, float f, float g){
+        if (VRState.vrRunning && ClientDataHolderVR.getInstance().menuWorldRenderer.isReady()){
+            return;
+        }
+        instance.render(f, g);
     }
 }

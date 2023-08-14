@@ -3,6 +3,10 @@ package org.vivecraft.mixin.client.renderer.entity;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
-import org.vivecraft.extensions.EntityRenderDispatcherExtension;
-import org.vivecraft.render.PlayerModelController;
-import org.vivecraft.render.VRPlayerRenderer;
+import org.vivecraft.client.extensions.EntityRenderDispatcherExtension;
+import org.vivecraft.client.VRPlayersClient;
+import org.vivecraft.client.render.VRPlayerRenderer;
 
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -22,6 +26,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Entity;
+import org.vivecraft.common.utils.Utils;
 
 @Mixin(EntityRenderDispatcher.class)
 public abstract class EntityRenderDispatcherMixin implements ResourceManagerReloadListener, EntityRenderDispatcherExtension {
@@ -45,11 +50,24 @@ public abstract class EntityRenderDispatcherMixin implements ResourceManagerRelo
 	private VRPlayerRenderer playerRendererVRSeated;
 
 
+	@Inject(at = @At("HEAD"), method = "renderHitbox")
+	private static void headHitbox(PoseStack poseStack, VertexConsumer vertexConsumer, Entity entity, float f, CallbackInfo ci) {
+		AABB headBox;
+		if ((headBox = Utils.getEntityHeadHitbox(entity, 0.0)) != null) {
+			// raw head box
+			LevelRenderer.renderLineBox(poseStack, vertexConsumer, headBox.move(-entity.getX(), -entity.getY(), -entity.getZ()), 1.0f, 1.0f, 0.0f, 1.0f);
+			// inflated head box for arrows
+			AABB headBoxArrow = Utils.getEntityHeadHitbox(entity, 0.3);
+			LevelRenderer.renderLineBox(poseStack, vertexConsumer, headBoxArrow.move(-entity.getX(), -entity.getY(), -entity.getZ()), 1.0f, 0.0f, 0.0f, 1.0f);
+		}
+
+	}
+
 	@Inject(at = @At("HEAD"), method = "getRenderer(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/client/renderer/entity/EntityRenderer;", cancellable = true)
 	public void renderer(Entity pEntity, CallbackInfoReturnable<EntityRenderer<AbstractClientPlayer>> info) {
 		if (pEntity instanceof AbstractClientPlayer) {
 			String s = ((AbstractClientPlayer) pEntity).getModelName();
-			PlayerModelController.RotInfo playermodelcontroller$rotinfo = PlayerModelController.getInstance().getRotationsForPlayer(pEntity.getUUID());
+			VRPlayersClient.RotInfo playermodelcontroller$rotinfo = VRPlayersClient.getInstance().getRotationsForPlayer(pEntity.getUUID());
 			if (playermodelcontroller$rotinfo != null) {
 				VRPlayerRenderer vrplayerrenderer;
 				if (playermodelcontroller$rotinfo.seated) {
