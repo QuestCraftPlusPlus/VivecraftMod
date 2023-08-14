@@ -84,20 +84,6 @@ allprojects {
         exclusiveContent {
             forRepository {
                 maven {
-                    name = "Ladysnake Mods"
-                    url = "https://maven.ladysnake.org/releases"
-                }
-            }
-            filter {
-                includeGroup 'io.github.ladysnake'
-                includeGroup 'org.ladysnake'
-                includeGroupByRegex 'dev\\.onyxstudios.*'
-            }
-        }
-
-        exclusiveContent {
-            forRepository {
-                maven {
                     name = "fabricmc"
                     url = "https://maven.fabricmc.net/"
                 }
