@@ -7,6 +7,9 @@ import com.mojang.math.Matrix4f;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Tuple;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL21;
 import org.lwjgl.openvr.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -15,6 +18,9 @@ import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.provider.VRRenderer;
 import org.vivecraft.client_vr.render.RenderConfigException;
 import org.vivecraft.client_vr.render.RenderPass;
+import org.vivecraft.utils.VLoader;
+
+import java.nio.ByteBuffer;
 
 import static org.lwjgl.openvr.VRCompositor.*;
 import static org.lwjgl.openvr.VRSystem.*;
@@ -87,9 +93,10 @@ public class OpenVRStereoRenderer extends VRRenderer {
         RenderSystem.bindTexture(this.LeftEyeTextureId);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_INT, null);
+        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL21.GL_SRGB8_ALPHA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, null);
         RenderSystem.bindTexture(i);
-        this.openvr.texType0.handle(this.LeftEyeTextureId);
+        nativeImageL = VLoader.createGLImage(lwidth, lheight);
+        this.openvr.texType0.handle(nativeImageL);
         this.openvr.texType0.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
         this.openvr.texType0.eType(VR.ETextureType_TextureType_OpenGL);
 
@@ -98,11 +105,19 @@ public class OpenVRStereoRenderer extends VRRenderer {
         RenderSystem.bindTexture(this.RightEyeTextureId);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_INT, null);
+        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL21.GL_SRGB8_ALPHA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, null);
         RenderSystem.bindTexture(i);
-        this.openvr.texType1.handle(this.RightEyeTextureId);
+        nativeImageR = VLoader.createGLImage(lwidth, lheight);
+        this.openvr.texType1.handle(nativeImageR);
         this.openvr.texType1.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
         this.openvr.texType1.eType(VR.ETextureType_TextureType_OpenGL);
+
+        pbo1 = GL20.glGenBuffers();
+        GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo1);
+        GL21.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, (long) width * height * 4, GL21.GL_DYNAMIC_COPY);
+        pbo2 = GL20.glGenBuffers();
+        GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo2);
+        GL21.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, (long) width * height * 4, GL21.GL_DYNAMIC_COPY);
     }
 
     public boolean endFrame(RenderPass eye) {
@@ -111,6 +126,15 @@ public class OpenVRStereoRenderer extends VRRenderer {
 
     public void endFrame() throws RenderConfigException {
         if (OpenVR.VRCompositor.Submit != 0) {
+            GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo1);
+            ByteBuffer leftBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
+            VLoader.writeImage(nativeImageL, width, height, MemoryUtil.memAddress(leftBuf));
+            GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
+            GL21.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, pbo2);
+            ByteBuffer rightBuf = GL15.glMapBuffer(GL21.GL_PIXEL_PACK_BUFFER, GL15.GL_READ_ONLY);
+            VLoader.writeImage(nativeImageR, width, height, MemoryUtil.memAddress(rightBuf));
+            GL21.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
+
             int i = VRCompositor_Submit(0, this.openvr.texType0, null, 0);
             int j = VRCompositor_Submit(1, this.openvr.texType1, null, 0);
             VRCompositor_PostPresentHandoff();
