@@ -362,7 +362,7 @@ public abstract class MinecraftVRMixin extends ReentrantBlockableEventLoop<Runna
         if (VRState.vrEnabled) {
             VRState.initializeVR();
         } else if (VRState.vrInitialized) {
-                VRState.destroyVR(true);
+                VRState.destroyVR(false);
                 resizeDisplay();
         }
         if (!VRState.vrInitialized) {
@@ -695,7 +695,7 @@ public abstract class MinecraftVRMixin extends ReentrantBlockableEventLoop<Runna
             } catch (RenderConfigException renderConfigException) {
                 // TODO: could disabling VR here cause issues?
                 Minecraft.getInstance().setScreen(new ErrorScreen("VR Render Error", Component.translatable("vivecraft.messages.rendersetupfailed", renderConfigException.error + "\nVR provider: " + ClientDataHolderVR.getInstance().vr.getName())));
-                VRState.destroyVR(true);
+                VRState.destroyVR(false);
                 return;
             } catch (Exception exception2) {
                 exception2.printStackTrace();

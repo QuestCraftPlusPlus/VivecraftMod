@@ -75,7 +75,7 @@ public class VRState {
             dh.menuWorldRenderer.init();
         } catch (RenderConfigException renderConfigException) {
             vrEnabled = false;
-            destroyVR(true);
+            destroyVR(false);
             Minecraft.getInstance().setScreen(new ErrorScreen(renderConfigException.title, renderConfigException.error));
         }
     }

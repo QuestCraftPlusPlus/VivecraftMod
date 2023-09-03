@@ -415,9 +415,9 @@ public class VRSettings
     @SettingField(VrOptions.SHOW_PLUGIN_MISSING)
     public boolean showServerPluginMissingMessageAlways = true;
     @SettingField
-    public boolean vrEnabled = false;
+    public boolean vrEnabled = true;
     @SettingField(VrOptions.VR_HOTSWITCH)
-    public boolean vrHotswitchingEnabled = true;
+    public boolean vrHotswitchingEnabled = false;
 
     /**
      * This isn't actually used, it's only a dummy field to save the value from vanilla Options.
