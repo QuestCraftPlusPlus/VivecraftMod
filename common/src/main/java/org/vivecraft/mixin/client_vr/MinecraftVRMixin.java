@@ -99,7 +99,7 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     private boolean vivecraft$lastClick;
 
     @Unique
-    private ItemStack vivecraft$itemInHand; //Captured item
+    private int vivecraft$currentHand = 0;
 
     @Unique
     private long vivecraft$mirroNotifyStart;
@@ -253,8 +253,8 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
 
     // on first resource load finished
     @Inject(at = @At("HEAD"), method = {
-        "method_24040", // fabric
-        "lambda$new$4"} // forge
+        "method_53522", // fabric
+        "lambda$new$6"} // forge
         , remap = false)
     public void vivecraft$initVROnLaunch(CallbackInfo ci) {
         // init vr after resource loading
@@ -273,7 +273,7 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
         if (OptifineHelper.isOptifineLoaded() && ClientDataHolderVR.getInstance().menuWorldRenderer != null && ClientDataHolderVR.getInstance().menuWorldRenderer.isReady()) {
             // with optifine this texture somehow fails to load, so manually reload it
             try {
-                textureManager.getTexture(Gui.GUI_ICONS_LOCATION).load(resourceManager);
+                textureManager.getTexture(Gui.CROSSHAIR_SPRITE).load(resourceManager);
             } catch (IOException e) {
                 // if there was an error, just reload everything
                 reloadResourcePacks();
@@ -576,22 +576,23 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
         }
     }
 
-    @ModifyVariable(at = @At(value = "STORE", ordinal = 0), method = "startUseItem")
-    public ItemStack vivecraft$handItemStore(ItemStack itemInHand) {
-        this.vivecraft$itemInHand = itemInHand;
-        return itemInHand;
-    }
-
-    @Inject(at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;hitResult:Lnet/minecraft/world/phys/HitResult;", ordinal = 1), method = "startUseItem", locals = LocalCapture.CAPTURE_FAILHARD)
-    public void vivecraft$activeHandSend(CallbackInfo ci, InteractionHand[] var1, int var2, int var3, InteractionHand interactionHand) {
-        if (VRState.vrRunning && (ClientDataHolderVR.getInstance().vrSettings.seated || !TelescopeTracker.isTelescope(vivecraft$itemInHand))) {
-            ClientNetworking.sendActiveHand((byte) interactionHand.ordinal());
-        }
+    @Inject(at = @At("HEAD"), method = "startUseItem")
+    private void vivecraft$resetHand(CallbackInfo ci) {
+        vivecraft$currentHand = 0;
     }
 
     @Redirect(at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;hitResult:Lnet/minecraft/world/phys/HitResult;", ordinal = 1), method = "startUseItem")
-    public HitResult vivecraft$activeHand2(Minecraft instance) {
-        if (!VRState.vrRunning || ClientDataHolderVR.getInstance().vrSettings.seated || !TelescopeTracker.isTelescope(vivecraft$itemInHand)) {
+    public HitResult vivecraft$activeHand(Minecraft instance) {
+        boolean isTelescope = false;
+        if (VRState.vrRunning) {
+            InteractionHand interactionHand = InteractionHand.values()[vivecraft$currentHand++];
+            ItemStack itemInHand = this.player.getItemInHand(interactionHand);
+            isTelescope = TelescopeTracker.isTelescope(itemInHand);
+            if (ClientDataHolderVR.getInstance().vrSettings.seated || !isTelescope) {
+                ClientNetworking.sendActiveHand((byte) interactionHand.ordinal());
+            }
+        }
+        if (!VRState.vrRunning || ClientDataHolderVR.getInstance().vrSettings.seated || !isTelescope) {
             return instance.hitResult;
         }
         return null;
