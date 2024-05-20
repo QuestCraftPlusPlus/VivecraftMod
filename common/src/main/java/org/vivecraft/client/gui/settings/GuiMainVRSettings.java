@@ -48,7 +48,7 @@ public class GuiMainVRSettings extends GuiVROptionsBase {
             return false;
         }, VROptionLayout.Position.POS_RIGHT, 2.0F, true, "gui.cancel"),
         new VROptionLayout((button, mousePos) -> {
-            this.dataholder.vrSettings.seated = true;
+            // this.dataholder.vrSettings.seated = true;
             this.settings.saveOptions();
             this.reinit = true;
             this.isConfirm = false;
