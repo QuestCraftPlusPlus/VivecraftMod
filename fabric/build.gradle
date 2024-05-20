@@ -70,9 +70,9 @@ dependencies {
     include(implementation('com.electronwill.night-config:core:3.6.6'))
 
     include(implementation("org.lwjgl:lwjgl-openvr:3.2.2"))
-    include(implementation("org.lwjgl:lwjgl-openvr:3.2.2:natives-linux"))
-    include(implementation("org.lwjgl:lwjgl-openvr:3.2.2:natives-macos"))
-    include(implementation("org.lwjgl:lwjgl-openvr:3.2.2:natives-windows"))
+    // include(implementation("org.lwjgl:lwjgl-openvr:3.2.2:natives-linux"))
+    // include(implementation("org.lwjgl:lwjgl-openvr:3.2.2:natives-macos"))
+    // include(implementation("org.lwjgl:lwjgl-openvr:3.2.2:natives-windows"))
 
 }
 

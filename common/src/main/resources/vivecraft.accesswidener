@@ -6,6 +6,8 @@ accessible class net/minecraft/client/model/geom/ModelPart$Vertex
 accessible field net/minecraft/client/model/geom/ModelPart cubes Ljava/util/List;
 accessible field net/minecraft/client/model/geom/ModelPart$Cube polygons [Lnet/minecraft/client/model/geom/ModelPart$Polygon;
 
+accessible class com/mojang/blaze3d/systems/RenderSystem$AutoStorageIndexBuffer$IndexGenerator
+
 # custom player modle rendering
 accessible field net/minecraft/client/model/PlayerModel slim Z
 extendable method net/minecraft/client/renderer/entity/player/PlayerRenderer setModelProperties (Lnet/minecraft/client/player/AbstractClientPlayer;)V
