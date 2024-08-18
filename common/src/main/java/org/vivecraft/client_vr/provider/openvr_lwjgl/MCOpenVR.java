@@ -1094,9 +1094,9 @@ public class MCOpenVR extends MCVR {
     private void readOriginInfo(long inputValueHandle) {
         int i = VRInput_GetOriginTrackedDeviceInfo(inputValueHandle, this.originInfo, InputOriginInfo.SIZEOF);
 
-        if (i != 0) {
-            throw new RuntimeException("Error reading origin info: " + getInputErrorName(i));
-        }
+        // if (i != 0) {
+        //     throw new RuntimeException("Error reading origin info: " + getInputErrorName(i));
+        // }
     }
 
     private void readPoseData(long actionHandle) {
