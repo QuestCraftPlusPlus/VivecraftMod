@@ -49,7 +49,7 @@ public abstract class OpenVRMixin {
         VRChaperone = getGenericInterface(IVRChaperone_Version, OpenVR.IVRChaperone::new);
         VRChaperoneSetup = getGenericInterface(IVRChaperoneSetup_Version, OpenVR.IVRChaperoneSetup::new);
         VRCompositor = getGenericInterface(IVRCompositor_Version, OpenVR.IVRCompositor::new);
-        VROverlay = getGenericInterface(IVROverlay_Version, OpenVR.IVROverlay::new);
+        // VROverlay = getGenericInterface(IVROverlay_Version, OpenVR.IVROverlay::new);
         // VRResources = getGenericInterface(IVRResources_Version, OpenVR.IVRResources::new);
         VRRenderModels = getGenericInterface(IVRRenderModels_Version, OpenVR.IVRRenderModels::new);
         VRExtendedDisplay = getGenericInterface(IVRExtendedDisplay_Version, OpenVR.IVRExtendedDisplay::new);
