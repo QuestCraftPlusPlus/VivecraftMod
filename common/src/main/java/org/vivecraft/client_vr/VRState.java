@@ -19,6 +19,7 @@ import org.vivecraft.client_xr.render_pass.RenderPassManager;
 import org.vivecraft.mod_compat_vr.ShadersHelper;
 import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
 
+import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryManagerMXBean;
 
@@ -43,8 +44,15 @@ public class VRState {
                 // make sure the lwjgl version is the right one
                 // TODO: move this into the init, does mean all callocs need to be done later
                 // check that the right lwjgl version is loaded that we ship the openvr part of
-                if (!Version.getVersion().startsWith("3.2.3")) {
-                    throw new RenderConfigException("VR Init Error", Component.translatable("vivecraft.messages.rendersetupfailed", I18n.get("vivecraft.messages.invalidlwjgl", Version.getVersion(), "3.3.2"), "OpenVR_LWJGL"));
+                if (!Version.getVersion().startsWith("3.3.3")) {
+                    String suppliedJar = "";
+                    try {
+                        suppliedJar = new File(Version.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName();
+                    } catch (Exception e) {
+                        VRSettings.logger.error("couldn't check lwjgl source:", e);
+                    }
+
+                    throw new RenderConfigException("VR Init Error", Component.translatable("vivecraft.messages.rendersetupfailed", I18n.get("vivecraft.messages.invalidlwjgl", Version.getVersion(), "3.3.3", suppliedJar), "OpenVR_LWJGL"));
                 }
 
                 dh.vr = new MCOpenVR(Minecraft.getInstance(), dh);
@@ -113,6 +121,7 @@ public class VRState {
         } catch (RenderConfigException renderConfigException) {
             vrEnabled = false;
             destroyVR(true);
+            renderConfigException.printStackTrace();
             Minecraft.getInstance().setScreen(new ErrorScreen(renderConfigException.title, renderConfigException.error));
         } catch (Throwable e) {
             vrEnabled = false;

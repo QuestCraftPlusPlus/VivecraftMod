@@ -235,7 +235,7 @@ public class VivecraftItemRendering {
                 rotation.mul(Axis.XP.rotationDegrees(-45.0F));
                 rotation.mul(Axis.XP.rotationDegrees((float) gunAngle));
             } else if (rendertype == VivecraftItemTransformType.Shield) {
-                boolean reverse = dh.vrSettings.reverseHands && !dh.vrSettings.seated;
+                boolean reverse = dh.vrSettings.reverseHands;
                 if (reverse) {
                     k *= -1;
                 }
@@ -285,14 +285,14 @@ public class VivecraftItemRendering {
                 scale = 0.6F;
                 float f4 = 0.0F;
                 boolean flag5 = false;
-                int i1 = 0;
+                float i1 = 0;
 
                 if (pPlayer.isUsingItem() && pPlayer.getUseItemRemainingTicks() > 0 && pPlayer.getUsedItemHand() == pHand) {
                     flag5 = true;
-                    i1 = EnchantmentHelper.getRiptide(pStack);
+                    i1 = EnchantmentHelper.getTridentSpinAttackStrength(pStack, pPlayer);
 
                     if (i1 <= 0 || i1 > 0 && pPlayer.isInWaterOrRain()) {
-                        f4 = (float) pStack.getUseDuration() - ((float) minecraft.player.getUseItemRemainingTicks() - pPartialTicks + 1.0F);
+                        f4 = (float) pStack.getUseDuration(pPlayer) - ((float) minecraft.player.getUseItemRemainingTicks() - pPartialTicks + 1.0F);
 
                         if (f4 > 10.0F) {
                             f4 = 10.0F;

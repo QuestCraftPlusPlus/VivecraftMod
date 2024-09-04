@@ -53,7 +53,7 @@ public abstract class EntityRenderDispatcherMixin implements ResourceManagerRelo
 
 
     @Inject(at = @At("HEAD"), method = "renderHitbox")
-    private static void vivecraft$headHitbox(PoseStack poseStack, VertexConsumer vertexConsumer, Entity entity, float f, CallbackInfo ci) {
+    private static void vivecraft$headHitbox(PoseStack poseStack, VertexConsumer vertexConsumer, Entity entity, float f, float g, float h, float i, CallbackInfo ci) {
         AABB headBox;
         if ((headBox = Utils.getEntityHeadHitbox(entity, 0.0)) != null) {
             // raw head box
@@ -96,7 +96,7 @@ public abstract class EntityRenderDispatcherMixin implements ResourceManagerRelo
         vivecraft$skinMapVR.clear();
     }
 
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/EntityRenderers;createPlayerRenderers(Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;)Ljava/util/Map;", shift = Shift.AFTER),
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/EntityRenderers;createPlayerRenderers(Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;)Ljava/util/Map;"),
         method = "onResourceManagerReload", locals = LocalCapture.CAPTURE_FAILEXCEPTION)
     public void vivecraft$reload(ResourceManager p_174004_, CallbackInfo info, EntityRendererProvider.Context context) {
         this.vivecraft$playerRendererVRSeated = new VRPlayerRenderer(context, false, true);

@@ -37,6 +37,8 @@ public class VRShaders {
     public static ShaderInstance gsrShader;
     public static AbstractUniform ViewportInfo;
 
+    public static ShaderInstance blitAspectShader;
+
     public static ShaderInstance rendertypeEndPortalShaderVR;
     public static ShaderInstance rendertypeEndGatewayShaderVR;
 
@@ -96,6 +98,10 @@ public class VRShaders {
         _Overlay_eye = fovReductionShader.safeGetUniform("eye");
         _Overlay_time = fovReductionShader.safeGetUniform("portaltime");
         _Overlay_BlackAlpha = fovReductionShader.safeGetUniform("blackalpha");
+    }
+
+    public static void setupBlitAspect() throws Exception {
+        blitAspectShader = new ShaderInstance(Minecraft.getInstance().getResourceManager(), "blit_aspect", DefaultVertexFormat.POSITION_TEX);
     }
 
     public static void setupPortalShaders() throws Exception {

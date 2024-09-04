@@ -32,8 +32,8 @@ public class XplatImpl implements Xplat {
         return FMLEnvironment.dist == Dist.DEDICATED_SERVER;
     }
 
-    public static String getModloader() {
-        return "neoforge";
+    public static ModLoader getModloader() {
+        return ModLoader.NEOFORGE;
     }
 
     public static String getModVersion() {
@@ -57,7 +57,7 @@ public class XplatImpl implements Xplat {
     }
 
     public static String getUseMethodName() {
-        return "use";
+        return "useWithoutItem";
     }
 
     public static TextureAtlasSprite[] getFluidTextures(BlockAndTintGetter level, BlockPos pos, FluidState fluidStateIn) {
@@ -72,8 +72,7 @@ public class XplatImpl implements Xplat {
         return biome.getModifiedSpecialEffects();
     }
 
-    public static void addNetworkChannel(ClientPacketListener listener, ResourceLocation resourceLocation) {
-        // neoforge does that automatically, since we use their networking system
-        // at least I have been told this
+    public static boolean serverAcceptsPacket(ClientPacketListener connection, ResourceLocation id) {
+        return connection.hasChannel(id);
     }
 }

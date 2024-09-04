@@ -23,6 +23,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
+import org.vivecraft.client.Xplat;
 
 import java.nio.file.Path;
 
@@ -40,8 +41,8 @@ public class XplatImpl {
         return FMLEnvironment.dist == Dist.DEDICATED_SERVER;
     }
 
-    public static String getModloader() {
-        return "forge";
+    public static Xplat.ModLoader getModloader() {
+        return Xplat.ModLoader.FORGE;
     }
 
     public static String getModVersion() {
@@ -65,15 +66,7 @@ public class XplatImpl {
     }
 
     public static String getUseMethodName() {
-        return ObfuscationReflectionHelper.findMethod(
-            net.minecraft.world.level.block.state.BlockBehaviour.class,
-            "m_6227_",
-            net.minecraft.world.level.block.state.BlockState.class,
-            net.minecraft.world.level.Level.class,
-            net.minecraft.core.BlockPos.class,
-            net.minecraft.world.entity.player.Player.class,
-            net.minecraft.world.InteractionHand.class,
-            net.minecraft.world.phys.BlockHitResult.class).getName();
+        return "useWithoutItem";
     }
 
     public static TextureAtlasSprite[] getFluidTextures(BlockAndTintGetter level, BlockPos pos, FluidState fluidStateIn) {
@@ -88,11 +81,7 @@ public class XplatImpl {
         return biome.getModifiedSpecialEffects();
     }
 
-    public static void addNetworkChannel(ClientPacketListener listener, ResourceLocation resourceLocation) {
-        // Forge I really don't know why you are insisting on this being a DiscardedPayload
-        listener.send(new ServerboundCustomPayloadPacket(new DiscardedPayload(
-            new ResourceLocation("minecraft:register"),
-            new FriendlyByteBuf(Unpooled.buffer())
-                .writeBytes(resourceLocation.toString().getBytes()))));
+    public static boolean serverAcceptsPacket(ClientPacketListener connection, ResourceLocation id) {
+        return true;
     }
 }

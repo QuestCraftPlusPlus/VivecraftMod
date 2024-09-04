@@ -64,7 +64,7 @@ public abstract class ClientPacketListenerVRMixin extends ClientCommonPacketList
         }
     }
 
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setLevel(Lnet/minecraft/client/multiplayer/ClientLevel;)V", shift = At.Shift.AFTER), method = "handleRespawn")
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setLevel(Lnet/minecraft/client/multiplayer/ClientLevel;Lnet/minecraft/client/gui/screens/ReceivingLevelScreen$Reason;)V", shift = At.Shift.AFTER), method = "handleRespawn")
     public void vivecraft$resetOnDimensionChange(ClientboundRespawnPacket clientboundRespawnPacket, CallbackInfo ci) {
         // clear old data
         ClientNetworking.resetServerSettings();
@@ -124,7 +124,7 @@ public abstract class ClientPacketListenerVRMixin extends ClientCommonPacketList
 
             if (dataholder.vrSettings.chatNotifications == VRSettings.ChatNotifications.SOUND || dataholder.vrSettings.chatNotifications == VRSettings.ChatNotifications.BOTH) {
                 Vec3 vec3 = dataholder.vrPlayer.vrdata_world_pre.getController(1).getPosition();
-                minecraft.level.playLocalSound(vec3.x(), vec3.y(), vec3.z(), BuiltInRegistries.SOUND_EVENT.get(new ResourceLocation(dataholder.vrSettings.chatNotificationSound)), SoundSource.NEUTRAL, 0.3F, 0.1F, false);
+                minecraft.level.playLocalSound(vec3.x(), vec3.y(), vec3.z(), BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse(dataholder.vrSettings.chatNotificationSound)), SoundSource.NEUTRAL, 0.3F, 0.1F, false);
             }
         }
     }
