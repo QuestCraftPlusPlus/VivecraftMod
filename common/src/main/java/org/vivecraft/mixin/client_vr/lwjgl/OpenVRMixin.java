@@ -72,7 +72,7 @@ public abstract class OpenVRMixin {
             org.vivecraft.client_vr.settings.VRSettings.logger.error("'{}' failed to load, trying IVRCompositor_026", IVRCompositor_Version);
             VRCompositor = getGenericInterface("IVRCompositor_026", OpenVR.IVRCompositor::new);
         }
-        VROverlay = getGenericInterface(IVROverlay_Version, OpenVR.IVROverlay::new);
+        //VROverlay = getGenericInterface(IVROverlay_Version, OpenVR.IVROverlay::new);
         // VRResources = getGenericInterface(IVRResources_Version, OpenVR.IVRResources::new);
         VRRenderModels = getGenericInterface(IVRRenderModels_Version, OpenVR.IVRRenderModels::new);
         VRExtendedDisplay = getGenericInterface(IVRExtendedDisplay_Version, OpenVR.IVRExtendedDisplay::new);
