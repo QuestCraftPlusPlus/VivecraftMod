@@ -1,0 +1,25 @@
+{
+  "required": false,
+  "package": "org.vivecraft.mod_compat_vr.iris.mixin",
+  "plugin": "org.vivecraft.MixinConfig",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "IrisBeginFrameHack",
+    "IrisBlockRenderingSettingsMixin",
+    "IrisDHCompatVRMixin",
+    "IrisHandRendererVRMixin",
+    "IrisLodRenderEventsVRMixin",
+    "IrisProgramUniformsMixin",
+    "IrisRenderSystemVRMixin",
+    "IrisShadowMatricesMixin",
+    "IrisShadowRendererMixin",
+    "irisshaders.IrisChunkProgramOverridesMixin",
+    "irisshaders.IrisChunkProgramOverridesMixinSodium_0_5_8",
+    "irisshaders.IrisChunkProgramOverridesMixinSodium_0_6",
+    "irisshaders.IrisPipelineManagerVRMixin",
+    "irisshaders.IrisRenderingPipelineVRMixin"
+  ],
+  "minVersion": "0.8.4",
+  "mixins": [
+  ]
+}

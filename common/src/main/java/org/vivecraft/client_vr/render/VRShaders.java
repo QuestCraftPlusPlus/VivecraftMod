@@ -34,8 +34,6 @@ public class VRShaders {
     public static AbstractUniform _Overlay_time;
     public static AbstractUniform _Overlay_BlackAlpha;
     public static AbstractUniform _Overlay_eye;
-    public static ShaderInstance gsrShader;
-    public static AbstractUniform ViewportInfo;
 
     public static ShaderInstance blitAspectShader;
 
@@ -51,12 +49,6 @@ public class VRShaders {
     }
 
     private VRShaders() {
-    }
-
-    public static void setupGSR() throws Exception {
-        gsrShader = new ShaderInstance(Minecraft.getInstance().getResourceManager(), "gsr", DefaultVertexFormat.POSITION_TEX);
-
-        ViewportInfo = gsrShader.safeGetUniform("ViewportInfo");
     }
 
     public static void setupDepthMask() throws Exception {
