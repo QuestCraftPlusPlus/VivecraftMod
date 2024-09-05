@@ -2,7 +2,7 @@
 
 uniform sampler2D Sampler0;
 uniform float circle_radius;
-uniform float circle_offset = 0.1;
+uniform float circle_offset;
 uniform float border;
 
 uniform float water;
