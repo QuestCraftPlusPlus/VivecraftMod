@@ -444,7 +444,7 @@ public class VRSettings {
     @SettingField(VrOptions.HUD_MAX_GUI_SCALE)
     public boolean hudMaxScale = false;
     @SettingField(VrOptions.SHOW_UPDATES)
-    public boolean alwaysShowUpdates = true;
+    public boolean alwaysShowUpdates = false;
     @SettingField
     public String lastUpdate = "";
     @SettingField(VrOptions.UPDATE_TYPE)
