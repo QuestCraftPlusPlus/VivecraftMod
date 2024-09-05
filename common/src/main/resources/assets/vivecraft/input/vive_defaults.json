@@ -200,8 +200,8 @@
             }
           },
           "mode" : "scroll",
-          "parameters" : {
-            "scroll_mode" : "discrete"
+               "parameters" : {
+                  "scroll_mode" : "discrete"
           },
           "path": "/user/hand/right/input/joystick"
         }
@@ -231,13 +231,13 @@
           "inputs": {
             "click": {
               "output": "/actions/ingame/in/key.attack"
-            }
-          },
-          "mode" : "button",
-          "path" : "/user/hand/right/input/trigger"
-        },
-        {
-          "inputs" : {
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/trigger"
+            },
+            {
+               "inputs" : {
             "click": {
               "output": "/actions/ingame/in/vivecraft.key.teleport"
             }
@@ -289,11 +289,11 @@
           },
           "mode": "joystick",
           "path": "/user/hand/right/input/joystick"
-        },
-        {
-          "inputs" : {
-            "click" : {
-              "output" : "/actions/ingame/in/key.sneak"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/ingame/in/key.sneak"
             }
           },
           "mode": "toggle_button",
@@ -307,11 +307,11 @@
           },
           "mode": "button",
           "path": "/user/hand/left/input/x"
-        }
-      ]
-    },
-    "/actions/keyboard" : {
-      "sources" : [
+            }
+         ]
+      },
+      "/actions/keyboard" : {
+         "sources" : [
         {
           "inputs": {
             "click": {
@@ -330,9 +330,9 @@
           "mode": "button",
           "path": "/user/hand/right/input/grip"
         },
-        {
-          "inputs" : {
-            "click": {
+            {
+               "inputs" : {
+                  "click": {
               "output": "/actions/keyboard/in/vivecraft.key.keyboardclick"
             }
           },

@@ -108,6 +108,7 @@ public class OpenVRStereoRenderer extends VRRenderer {
         this.openvr.texType1.handle(this.RightEyeTextureId);
         this.openvr.texType1.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
         this.openvr.texType1.eType(VR.ETextureType_TextureType_OpenGL);
+
         VLoader.setEGLGlobal();
     }
 

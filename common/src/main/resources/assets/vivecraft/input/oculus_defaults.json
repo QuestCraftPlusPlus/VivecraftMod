@@ -268,40 +268,40 @@
             "click": {
               "output": "/actions/ingame/in/key.jump"
             }
-          },
-          "mode" : "button",
-          "path" : "/user/hand/right/input/a"
-        },
-        {
-          "inputs" : {
-            "position" : {
-              "output" : "/actions/ingame/in/vivecraft.key.freemovestrafe"
-            }
-          },
-          "mode" : "joystick",
-          "path" : "/user/hand/left/input/joystick"
-        },
-        {
-          "inputs" : {
-            "position" : {
-              "output" : "/actions/ingame/in/vivecraft.key.rotateaxis"
-            }
-          },
-          "mode" : "joystick",
-          "path" : "/user/hand/right/input/joystick"
-        },
-        {
-          "inputs" : {
-            "click" : {
-              "output" : "/actions/ingame/in/key.sneak"
-            }
-          },
-          "mode" : "toggle_button",
-          "path" : "/user/hand/right/input/joystick"
-        },
-        {
-          "inputs" : {
-            "click": {
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
+            },
+            {
+               "inputs" : {
+                  "position" : {
+                     "output" : "/actions/ingame/in/vivecraft.key.freemovestrafe"
+                  }
+               },
+               "mode" : "joystick",
+               "path" : "/user/hand/left/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "position" : {
+                     "output" : "/actions/ingame/in/vivecraft.key.rotateaxis"
+                  }
+               },
+               "mode" : "joystick",
+               "path" : "/user/hand/right/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/ingame/in/key.sneak"
+                  }
+               },
+               "mode" : "toggle_button",
+               "path" : "/user/hand/right/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "click": {
               "output": "/actions/ingame/in/vivecraft.key.teleportfallback"
             }
           },

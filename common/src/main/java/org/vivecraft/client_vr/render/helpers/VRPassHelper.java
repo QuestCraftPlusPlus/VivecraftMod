@@ -204,7 +204,7 @@ public class VRPassHelper {
             mc.getProfiler().pop();
 
             VRShaders.ViewportInfo.setSafe(0.0f, 0.0f,  dataHolder.vrRenderer.framebufferEye0.viewWidth, dataHolder.vrRenderer.framebufferEye0.viewHeight);
-            ((RenderTargetExtension) rendertarget).vivecraft$blitFovReduction(VRShaders.gsrShader, dataHolder.vrRenderer.framebufferEye0.viewWidth, dataHolder.vrRenderer.framebufferEye0.viewHeight);
+            ((RenderTargetExtension) rendertarget).vivecraft$blitToScreen(0, dataHolder.vrRenderer.framebufferEye0.viewWidth, dataHolder.vrRenderer.framebufferEye0.viewHeight, 0, false, 0.0f,  0.0f, true);
             ProgramManager.glUseProgram(0);
             checkGLError("post overlay" + eye);
         }
