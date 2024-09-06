@@ -24,6 +24,7 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.system.MemoryUtil;
+import org.vivecraft.client.Xplat;
 import org.vivecraft.client.extensions.RenderTargetExtension;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRTextureTarget;
@@ -162,8 +163,8 @@ public abstract class VRRenderer {
         RenderTarget fb = minecraft.getMainRenderTarget();
         RenderSystem.backupProjectionMatrix();
         RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(0.0F, fb.viewWidth, 0.0F, fb.viewHeight, 0.0F, 20.0F), VertexSorting.ORTHOGRAPHIC_Z);
-        RenderSystem.getModelViewStack().pushPose();
-        RenderSystem.getModelViewStack().setIdentity();
+        RenderSystem.getModelViewStack().pushMatrix();
+        RenderSystem.getModelViewStack().identity();
         if (inverse) //draw on far clip
         {
             RenderSystem.getModelViewStack().translate(0, 0, -20);
@@ -178,7 +179,7 @@ public abstract class VRRenderer {
         }
 
         RenderSystem.restoreProjectionMatrix();
-        RenderSystem.getModelViewStack().popPose();
+        RenderSystem.getModelViewStack().popMatrix();
 
         RenderSystem.depthMask(true); // Do write to depth buffer
         RenderSystem.colorMask(true, true, true, true);
@@ -492,6 +493,9 @@ public abstract class VRRenderer {
             // main render target
             ((RenderTargetExtension) WorldRenderPass.stereoXR.target).vivecraft$setUseStencil(dataholder.vrSettings.vrUseStencil);
             WorldRenderPass.stereoXR.resize(eyeFBWidth, eyeFBHeight);
+            if (dataholder.vrSettings.vrUseStencil) {
+                Xplat.enableRenderTargetStencil(WorldRenderPass.stereoXR.target);
+            }
             if (dataholder.vrSettings.useFsaa) {
                 this.fsaaFirstPassResultFBO.resize(eyew, eyeFBHeight, Minecraft.ON_OSX);
             }

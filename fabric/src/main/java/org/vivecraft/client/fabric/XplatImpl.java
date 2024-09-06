@@ -14,13 +14,12 @@ import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.FluidState;
+import org.vivecraft.client.Xplat;
 import org.vivecraft.fabric.mixin.world.level.biome.BiomeAccessor;
 
 import java.nio.file.Path;
@@ -39,8 +38,8 @@ public class XplatImpl {
         return FabricLoader.getInstance().getEnvironmentType().equals(EnvType.SERVER);
     }
 
-    public static String getModloader() {
-        return "fabric";
+    public static Xplat.ModLoader getModloader() {
+        return Xplat.ModLoader.FABRIC;
     }
 
     public static String getModVersion() {
@@ -65,12 +64,11 @@ public class XplatImpl {
     public static String getUseMethodName() {
         return FabricLoader.getInstance().getMappingResolver().mapMethodName(
             "intermediary",
-            "net.minecraft.class_4970", "method_9534",
+            "net.minecraft.class_4970", "method_55766",
             "(Lnet/minecraft/class_2680;" +
                 "Lnet/minecraft/class_1937;" +
                 "Lnet/minecraft/class_2338;" +
                 "Lnet/minecraft/class_1657;" +
-                "Lnet/minecraft/class_1268;" +
                 "Lnet/minecraft/class_3965;)" +
                 "Lnet/minecraft/class_1269;");
     }
@@ -102,23 +100,7 @@ public class XplatImpl {
         return biome.getSpecialEffects();
     }
 
-    public static double getItemEntityReach(double baseRange, ItemStack itemStack, EquipmentSlot slot) {
-        return baseRange;
-    }
-
-    public static void addNetworkChannel(ClientPacketListener listener, ResourceLocation resourceLocation) {
-        listener.send(new ServerboundCustomPayloadPacket(new CustomPacketPayload() {
-            public static final ResourceLocation ID = new ResourceLocation("minecraft:register");
-
-            @Override
-            public void write(FriendlyByteBuf friendlyByteBuf) {
-                friendlyByteBuf.writeBytes(resourceLocation.toString().getBytes());
-            }
-
-            @Override
-            public ResourceLocation id() {
-                return ID;
-            }
-        }));
+    public static boolean serverAcceptsPacket(ClientPacketListener connection, ResourceLocation id) {
+        return true;
     }
 }

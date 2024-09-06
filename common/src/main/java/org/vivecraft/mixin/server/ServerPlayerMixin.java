@@ -2,6 +2,7 @@ package org.vivecraft.mixin.server;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -18,7 +19,7 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -32,9 +33,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+import org.vivecraft.server.ServerNetworking;
 import org.vivecraft.server.ServerVRPlayers;
 import org.vivecraft.server.ServerVivePlayer;
 import org.vivecraft.server.config.ServerConfig;
+
+import java.util.IllegalFormatException;
 
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerMixin extends Player {
@@ -53,13 +57,12 @@ public abstract class ServerPlayerMixin extends Player {
         if (ServerConfig.vrFun.get() && serverviveplayer != null && serverviveplayer.isVR() && this.random.nextInt(40) == 3) {
             ItemStack itemstack;
             if (this.random.nextInt(2) == 1) {
-                itemstack = (new ItemStack(Items.PUMPKIN_PIE)).setHoverName(Component.literal("EAT ME"));
+                itemstack = new ItemStack(Items.PUMPKIN_PIE);
+                itemstack.set(DataComponents.CUSTOM_NAME, Component.literal("EAT ME"));
             } else {
-                itemstack = PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.WATER)
-                    .setHoverName(Component.literal("DRINK ME"));
+                itemstack = PotionContents.createItemStack(Items.POTION, Potions.WATER);
+                itemstack.set(DataComponents.CUSTOM_NAME, Component.literal("DRINK ME"));
             }
-
-            itemstack.getTag().putInt("HideFlags", 32);
 
             if (this.getInventory().add(itemstack)) {
                 this.inventoryMenu.broadcastChanges();
@@ -219,6 +222,54 @@ public abstract class ServerPlayerMixin extends Player {
                     other.sendSystemMessage(Component.literal(blockedDamageCase));
                 }
                 cir.setReturnValue(false);
+            }
+        }
+    }
+
+    @Inject(at = @At("HEAD"), method = "die")
+    private void vivecraft$customDeathMessage(DamageSource damageSource, CallbackInfo ci) {
+        // only when enabled
+        if (ServerConfig.messagesEnabled.get()) {
+            ServerVivePlayer vivePlayer = ServerVRPlayers.getVivePlayer((ServerPlayer) (Object) this);
+            String message = "";
+            String entity = "";
+
+            // get the right message
+            if (damageSource.getEntity() != null) {
+                entity = damageSource.getEntity().getName().plainCopy().getString();
+                // death by mob
+                if (vivePlayer == null) {
+                    message = ServerConfig.messagesDeathByMobVanilla.get();
+                } else if (!vivePlayer.isVR()) {
+                    message = ServerConfig.messagesDeathByMobNonVR.get();
+                } else if (vivePlayer.isSeated()) {
+                    message = ServerConfig.messagesDeathByMobSeated.get();
+                } else {
+                    message = ServerConfig.messagesDeathByMobVR.get();
+                }
+            }
+
+            if (message.isEmpty()) {
+                // general death, of if the mob one isn't set
+                if (vivePlayer == null) {
+                    message = ServerConfig.messagesDeathVanilla.get();
+                } else if (!vivePlayer.isVR()) {
+                    message = ServerConfig.messagesDeathNonVR.get();
+                } else if (vivePlayer.isSeated()) {
+                    message = ServerConfig.messagesDeathSeated.get();
+                } else {
+                    message = ServerConfig.messagesDeathVR.get();
+                }
+            }
+
+            // actually send the message, if there is one set
+            if (!message.isEmpty()) {
+                try {
+                    this.server.getPlayerList().broadcastSystemMessage(Component.literal(message.formatted(getName().getString(), entity)), false);
+                } catch (IllegalFormatException e) {
+                    // catch errors users might put into the messages, to not crash other stuff
+                    ServerNetworking.LOGGER.error("Death message '{}' has errors: {}", message, e.toString());
+                }
             }
         }
     }

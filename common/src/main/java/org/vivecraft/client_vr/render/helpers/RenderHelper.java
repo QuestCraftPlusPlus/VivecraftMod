@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -17,17 +18,18 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL43C;
 import org.vivecraft.client.extensions.RenderTargetExtension;
 import org.vivecraft.client_vr.ClientDataHolderVR;
-import org.vivecraft.client_vr.MethodHolder;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
 import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.mixin.client.blaze3d.RenderSystemAccessor;
+import org.vivecraft.mod_compat_vr.ShadersHelper;
 
 import java.util.function.Supplier;
 
@@ -58,6 +60,18 @@ public class RenderHelper {
         poseStack.last().normal().mul(new Matrix3f(modelView));
     }
 
+    public static void applyVRModelView(RenderPass currentPass, Matrix4f matrix) {
+        Matrix4f modelView;
+        if (currentPass == RenderPass.CENTER && dataHolder.vrSettings.displayMirrorCenterSmooth > 0.0F) {
+            modelView = new Matrix4f().rotation(MCVR.get().hmdRotHistory
+                .averageRotation(dataHolder.vrSettings.displayMirrorCenterSmooth));
+        } else {
+            modelView = dataHolder.vrPlayer.vrdata_world_render.getEye(currentPass)
+                .getMatrix().transposed().toMCMatrix();
+        }
+        matrix.mul(modelView);
+    }
+
     public static Vec3 getSmoothCameraPosition(RenderPass renderpass, VRData vrData) {
         if (dataHolder.currentPass == RenderPass.CENTER && dataHolder.vrSettings.displayMirrorCenterSmooth > 0.0F) {
             return MCVR.get().hmdHistory.averagePosition(dataHolder.vrSettings.displayMirrorCenterSmooth)
@@ -83,23 +97,25 @@ public class RenderHelper {
             return dataHolder.vrPlayer.vrdata_world_render.getController(c).getPosition();
         } else {
             Vec3 out = null;
+            int mainHand = InteractionHand.MAIN_HAND.ordinal();
+            if (dataHolder.vrSettings.reverseHands) {
+                c = 1 - c;
+                mainHand = InteractionHand.OFF_HAND.ordinal();
+            }
 
             if (mc.getCameraEntity() != null && mc.level != null) {
                 Vec3 dir = dataHolder.vrPlayer.vrdata_world_render.hmd.getDirection();
                 dir = dir.yRot((float) Math.toRadians(c == 0 ? -35.0D : 35.0D));
                 dir = new Vec3(dir.x, 0.0D, dir.z);
                 dir = dir.normalize();
-                if (TelescopeTracker.isTelescope(mc.player.getUseItem())) {
-                    if (c == 0 && mc.player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
-                        out = dataHolder.vrPlayer.vrdata_world_render.eye0.getPosition()
-                            .add(dataHolder.vrPlayer.vrdata_world_render.hmd.getDirection()
-                                .scale(0.2 * dataHolder.vrPlayer.vrdata_world_render.worldScale));
-                    }
-                    if (c == 1 && mc.player.getUsedItemHand() == InteractionHand.OFF_HAND) {
-                        out = dataHolder.vrPlayer.vrdata_world_render.eye1.getPosition()
-                            .add(dataHolder.vrPlayer.vrdata_world_render.hmd.getDirection()
-                                .scale(0.2 * dataHolder.vrPlayer.vrdata_world_render.worldScale));
-                    }
+                if (TelescopeTracker.isTelescope(mc.player.getUseItem()) && TelescopeTracker.isTelescope(c == mainHand ? mc.player.getMainHandItem() : mc.player.getOffhandItem())) {
+                    // move the controller in front of the eye when using the spyglass
+                    VRData.VRDevicePose eye = c == 0 ? dataHolder.vrPlayer.vrdata_world_render.eye0 :
+                                              dataHolder.vrPlayer.vrdata_world_render.eye1;
+
+                    out = eye.getPosition()
+                        .add(dataHolder.vrPlayer.vrdata_world_render.hmd.getDirection()
+                            .scale(0.2 * dataHolder.vrPlayer.vrdata_world_render.worldScale));
                 }
                 if (out == null) {
                     out = dataHolder.vrPlayer.vrdata_world_render.getEye(RenderPass.CENTER).getPosition().add(
@@ -119,19 +135,19 @@ public class RenderHelper {
         }
     }
 
-    public static void setupRenderingAtController(int controller, PoseStack matrix) {
+    public static void setupRenderingAtController(int controller, Matrix4f matrix) {
         Vec3 aimSource = getControllerRenderPos(controller);
         aimSource = aimSource.subtract(
             getSmoothCameraPosition(dataHolder.currentPass, dataHolder.vrPlayer.getVRDataWorld()));
-        matrix.translate(aimSource.x, aimSource.y, aimSource.z);
+        matrix.translate((float) aimSource.x, (float) aimSource.y, (float) aimSource.z);
         float sc = dataHolder.vrPlayer.vrdata_world_render.worldScale;
-        if (mc.level != null && TelescopeTracker.isTelescope(mc.player.getUseItem())) {
-            matrix.mulPoseMatrix(dataHolder.vrPlayer.vrdata_world_render.hmd.getMatrix().inverted()
+        if (dataHolder.vrSettings.seated && mc.level != null && TelescopeTracker.isTelescope(mc.player.getUseItem()) && TelescopeTracker.isTelescope(controller == 0 ? mc.player.getMainHandItem() : mc.player.getOffhandItem())) {
+            matrix.mul(dataHolder.vrPlayer.vrdata_world_render.hmd.getMatrix().inverted()
                 .transposed().toMCMatrix());
-            MethodHolder.rotateDegXp(matrix, 90);
-            matrix.translate(controller == 0 ? 0.075 * sc : -0.075 * sc, -0.025 * sc, 0.0325 * sc);
+            matrix.rotate(Axis.XP.rotationDegrees(90));
+            matrix.translate(controller == (dataHolder.vrSettings.reverseHands ? 1 : 0) ? 0.075F * sc : -0.075F * sc, -0.025F * sc, 0.0325F * sc);
         } else {
-            matrix.mulPoseMatrix(dataHolder.vrPlayer.vrdata_world_render.getController(controller)
+            matrix.mul(dataHolder.vrPlayer.vrdata_world_render.getController(controller)
                 .getMatrix().inverted().transposed().toMCMatrix());
         }
 
@@ -223,11 +239,17 @@ public class RenderHelper {
     }
 
     public static void drawScreen(float f, Screen screen, GuiGraphics guiGraphics) {
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.setIdentity();
-        posestack.translate(0.0D, 0.0D, -2000.0D);
+        Matrix4fStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushMatrix();
+        posestack.identity();
+        posestack.translate(0.0F, 0.0F, -11000.0F);
         RenderSystem.applyModelViewMatrix();
+
+        Matrix4f guiProjection = (new Matrix4f()).setOrtho(
+            0.0F, (float) (mc.getWindow().getWidth() / mc.getWindow().getGuiScale()),
+                (float) (mc.getWindow().getHeight() / mc.getWindow().getGuiScale()), 0.0F,
+                1000.0F, 21000.0F);
+        RenderSystem.setProjectionMatrix(guiProjection, VertexSorting.ORTHOGRAPHIC_Z);
 
         RenderSystem.blendFuncSeparate(
             GlStateManager.SourceFactor.SRC_ALPHA,
@@ -243,7 +265,7 @@ public class RenderHelper {
             GlStateManager.SourceFactor.ONE,
             GlStateManager.DestFactor.ONE);
 
-        posestack.popPose();
+        posestack.popMatrix();
         RenderSystem.applyModelViewMatrix();
 
         RenderTarget main = mc.getMainRenderTarget();
@@ -339,8 +361,15 @@ public class RenderHelper {
         Vector3f light0Old = RenderSystemAccessor.getShaderLightDirections()[0];
         Vector3f light1Old = RenderSystemAccessor.getShaderLightDirections()[1];
 
+        Vector3f normal = new Vector3f(0, 0, 1);
+
+        // weird iris behaviour
+        if (ShadersHelper.isShaderActive()) {
+            normal = new Matrix3f(pMatrix).transform(normal);
+        }
+
         // set lights to front
-        RenderSystem.setShaderLights(new Vector3f(0, 0, 1), new Vector3f(0, 0, 1));
+        RenderSystem.setShaderLights(normal, normal);
         RenderSystem.setupShaderLights(RenderSystem.getShader());
 
         bufferbuilder.vertex(pMatrix, (-(size / 2.0F)), (-(size * aspect) / 2.0F), 0)
@@ -378,14 +407,13 @@ public class RenderHelper {
         }
     }
 
-    public static void renderFlatQuad(Vec3 pos, float width, float height, float yaw, int r, int g, int b, int a, PoseStack poseStack) {
+    public static void renderFlatQuad(Vec3 pos, float width, float height, float yaw, int r, int g, int b, int a, Matrix4f mat) {
         Tesselator tesselator = Tesselator.getInstance();
         tesselator.getBuilder().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
 
         Vec3 offset = (new Vec3((width / 2.0F), 0.0, height / 2.0F))
             .yRot((float) Math.toRadians(-yaw));
 
-        Matrix4f mat = poseStack.last().pose();
         tesselator.getBuilder().vertex(mat, (float) (pos.x + offset.x), (float) pos.y, (float) (pos.z + offset.z))
             .color(r, g, b, a).normal(0.0F, 1.0F, 0.0F).endVertex();
         tesselator.getBuilder().vertex(mat, (float) (pos.x + offset.x), (float) pos.y, (float) (pos.z - offset.z))
@@ -397,7 +425,7 @@ public class RenderHelper {
         tesselator.end();
     }
 
-    public static void renderBox(Tesselator tes, Vec3 start, Vec3 end, float minX, float maxX, float minY, float maxY, Vec3i color, byte alpha, PoseStack poseStack) {
+    public static void renderBox(Tesselator tes, Vec3 start, Vec3 end, float minX, float maxX, float minY, float maxY, Vec3i color, byte alpha, Matrix4f mat) {
         Vec3 forward = start.subtract(end).normalize();
         Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
         Vec3 up = right.cross(forward);
@@ -422,7 +450,6 @@ public class RenderHelper {
         Vec3 frontLeftTop = end.add(left.x + up.x, left.y + up.y, left.z + up.z);
 
         BufferBuilder bufferbuilder = tes.getBuilder();
-        Matrix4f mat = poseStack.last().pose();
 
         addVertex(bufferbuilder, mat, backRightBottom, color, alpha, forward);
         addVertex(bufferbuilder, mat, backLeftBottom, color, alpha, forward);
