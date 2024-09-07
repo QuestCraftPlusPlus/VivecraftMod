@@ -178,7 +178,7 @@ allprojects {
         maven { url = "https://storage.googleapis.com/devan-maven/" }
         maven { url = "https://maven.shedaniel.me/" }
         maven { url = "https://aperlambda.github.io/maven" }
-        maven { url = "https://maven.kotlindiscord.com/repository/terraformers/" }
+        maven { url = "https://maven.terraformersmc.com/" }
         maven { url = "https://mvn.devos.one/releases/" }
         maven { url = "https://mvn.devos.one/snapshots/" }
         maven { url = "https://maven.terraformersmc.com/" }
