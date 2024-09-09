@@ -28,7 +28,6 @@
     "client_vr.KeyboardInputVRMixin",
     "client_vr.MinecraftVRMixin",
     "client_vr.MouseHandlerVRMixin",
-    "client_vr.OpenVRMixin",
     "client_vr.OptionsVRMixin",
     "client_vr.blaze3d.audio.LibraryVRMixin",
     "client_vr.blaze3d.platform.GlStateManagerVRMixin",
