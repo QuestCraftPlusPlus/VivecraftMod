@@ -64,7 +64,7 @@ dependencies {
     include(implementation('com.electronwill.night-config:toml:3.6.6'))
     include(implementation('com.electronwill.night-config:core:3.6.6'))
 
-    include(implementation("org.lwjgl:lwjgl-openvr:3.3.1"))
+    include(implementation("org.lwjgl:lwjgl-openvr:3.3.3"))
     // include(implementation("org.lwjgl:lwjgl-openvr:3.2.1:natives-linux"))
     // include(implementation("org.lwjgl:lwjgl-openvr:3.2.1:natives-macos"))
     // include(implementation("org.lwjgl:lwjgl-openvr:3.2.1:natives-windows"))
