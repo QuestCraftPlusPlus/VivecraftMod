@@ -203,8 +203,8 @@ public class VRPassHelper {
             checkGLError("post overlay" + eye);
             mc.getProfiler().pop();
 
-            VRShaders.ViewportInfo.setSafe(0.0f, 0.0f,  dataHolder.vrRenderer.framebufferEye0.viewWidth, dataHolder.vrRenderer.framebufferEye0.viewHeight);
-            ((RenderTargetExtension) rendertarget).vivecraft$blitFovReduction(VRShaders.gsrShader, dataHolder.vrRenderer.framebufferEye0.viewWidth, dataHolder.vrRenderer.framebufferEye0.viewHeight);            ProgramManager.glUseProgram(0);
+            // VRShaders.ViewportInfo.setSafe(0.0f, 0.0f,  dataHolder.vrRenderer.framebufferEye0.viewWidth, dataHolder.vrRenderer.framebufferEye0.viewHeight);
+            // ((RenderTargetExtension) rendertarget).vivecraft$blitFovReduction(VRShaders.gsrShader, dataHolder.vrRenderer.framebufferEye0.viewWidth, dataHolder.vrRenderer.framebufferEye0.viewHeight);            ProgramManager.glUseProgram(0);
             checkGLError("post overlay" + eye);
         }
 

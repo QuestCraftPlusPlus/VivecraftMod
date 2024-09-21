@@ -709,7 +709,7 @@ public abstract class VRRenderer {
                 ShaderHelper.checkGLError("init FOV shader");
                 VRShaders.setupPortalShaders();
                 ShaderHelper.checkGLError("init portal shader");
-                VRShaders.setupGSR();
+                //VRShaders.setupGSR();
                 ShaderHelper.checkGLError("init gsr shader");
                 minecraft.gameRenderer.checkEntityPostEffect(minecraft.getCameraEntity());
             } catch (Exception exception1) {

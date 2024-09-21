@@ -6,11 +6,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.EXTMemoryObject;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.openvr.HiddenAreaMesh;
-import org.lwjgl.openvr.HmdMatrix44;
-import org.lwjgl.openvr.OpenVR;
-import org.lwjgl.openvr.VR;
+import org.lwjgl.openvr.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.vivecraft.client.utils.Utils;
@@ -92,32 +90,50 @@ public class OpenVRStereoRenderer extends VRRenderer {
         RenderSystem.bindTexture(this.LeftEyeTextureId);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        RenderSystem.texParameter(GL11.GL_TEXTURE_2D, EXTMemoryObject.GL_TEXTURE_TILING_EXT, EXTMemoryObject.GL_LINEAR_TILING_EXT);
         GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, null);
         RenderSystem.bindTexture(i);
-        this.openvr.texType0.handle(this.LeftEyeTextureId);
-        if (!System.getenv("VR_MODEL").contains("PICO")) {
-            this.openvr.texType0.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
-        } else {
-            this.openvr.texType0.eColorSpace(VR.EColorSpace_ColorSpace_Linear);
-        }
-        this.openvr.texType0.eType(VR.ETextureType_TextureType_OpenGL);
+        VRVulkanTextureData lData = VRVulkanTextureData.calloc();
+        lData.set(
+            VLoader.getVKImage1(),
+            VLoader.getVKDevice(),
+            VLoader.getVKPhysicalDevice(),
+            VLoader.getVKInstance(),
+            VLoader.getVKQueue(),
+            VLoader.getVKQueueIndex(),
+            lwidth,
+            lheight,
+            37,
+            1
+        );
+        this.openvr.texType0.handle(lData.address());
+        this.openvr.texType0.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
+        this.openvr.texType0.eType(VR.ETextureType_TextureType_Vulkan);
 
         this.RightEyeTextureId = GlStateManager._genTexture();
         i = GlStateManager._getInteger(GL11.GL_TEXTURE_BINDING_2D);
         RenderSystem.bindTexture(this.RightEyeTextureId);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        RenderSystem.texParameter(GL11.GL_TEXTURE_2D, EXTMemoryObject.GL_TEXTURE_TILING_EXT, EXTMemoryObject.GL_LINEAR_TILING_EXT);
         GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, null);
         RenderSystem.bindTexture(i);
-        this.openvr.texType1.handle(this.RightEyeTextureId);
-        if (!System.getenv("VR_MODEL").contains("PICO")) {
-            this.openvr.texType1.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
-        } else {
-            this.openvr.texType1.eColorSpace(VR.EColorSpace_ColorSpace_Linear);
-        }
-        this.openvr.texType1.eType(VR.ETextureType_TextureType_OpenGL);
-
-        VLoader.setEGLGlobal();
+        VRVulkanTextureData rData = VRVulkanTextureData.calloc();
+        rData.set(
+            VLoader.getVKImage2(),
+            VLoader.getVKDevice(),
+            VLoader.getVKPhysicalDevice(),
+            VLoader.getVKInstance(),
+            VLoader.getVKQueue(),
+            VLoader.getVKQueueIndex(),
+            lwidth,
+            lheight,
+            37,
+            1
+        );
+        this.openvr.texType1.handle(rData.address());
+        this.openvr.texType1.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
+        this.openvr.texType1.eType(VR.ETextureType_TextureType_Vulkan);
     }
 
     public boolean endFrame(RenderPass eye) {
@@ -126,6 +142,7 @@ public class OpenVRStereoRenderer extends VRRenderer {
 
     public void endFrame() throws RenderConfigException {
         if (OpenVR.VRCompositor.Submit != 0) {
+            GL11.glFinish();
             int i = VRCompositor_Submit(0, this.openvr.texType0, null, 0);
             int j = VRCompositor_Submit(1, this.openvr.texType1, null, 0);
             VRCompositor_PostPresentHandoff();
