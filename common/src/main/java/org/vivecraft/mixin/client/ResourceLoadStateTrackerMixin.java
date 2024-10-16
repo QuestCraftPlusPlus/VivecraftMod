@@ -23,13 +23,8 @@ public abstract class ResourceLoadStateTrackerMixin {
         if (reloadState != null && reloadState.reloadReason == ResourceLoadStateTracker.ReloadReason.INITIAL) {
             // init vr after first resource loading
             try {
-                if (ClientDataHolderVR.getInstance().vrSettings.vrEnabled && ClientDataHolderVR.getInstance().vrSettings.rememberVr) {
-                    VRState.vrEnabled = true;
-                    VRState.initializeVR();
-                } else {
-                    ClientDataHolderVR.getInstance().vrSettings.vrEnabled = false;
-                    ClientDataHolderVR.getInstance().vrSettings.saveOptions();
-                }
+                VRState.vrEnabled = true;
+                VRState.initializeVR();
             } catch (Exception exception) {
                 exception.printStackTrace();
             }

@@ -449,7 +449,7 @@ public class VRSettings {
     @SettingField(VrOptions.HUD_MAX_GUI_SCALE)
     public boolean hudMaxScale = false;
     @SettingField(VrOptions.SHOW_UPDATES)
-    public boolean alwaysShowUpdates = true;
+    public boolean alwaysShowUpdates = false;
     @SettingField
     public String lastUpdate = "";
     @SettingField(VrOptions.UPDATE_TYPE)
@@ -461,13 +461,13 @@ public class VRSettings {
     @SettingField(VrOptions.CHAT_MESSAGE_STENCIL)
     public boolean showChatMessageStencil = true;
     @SettingField(value = VrOptions.VR_ENABLED, config = "vrEnabled")
-    public boolean vrEnabled = false;
+    public boolean vrEnabled = true;
     @SettingField(VrOptions.VR_REMEMBER_ENABLED)
     public boolean rememberVr = true;
     @SettingField(VrOptions.VR_HOTSWITCH)
-    public boolean vrHotswitchingEnabled = true;
+    public boolean vrHotswitchingEnabled = false;
     @SettingField(value = VrOptions.VR_TOGGLE_BUTTON_VISIBLE, config = "vrToggleButtonEnabled")
-    public boolean vrToggleButtonEnabled = true;
+    public boolean vrToggleButtonEnabled = false;
     @SettingField(value = VrOptions.VR_SETTINGS_BUTTON_VISIBLE, config = "vrSettingsButtonEnabled")
     public boolean vrSettingsButtonEnabled = true;
     @SettingField(value = VrOptions.VR_SETTINGS_BUTTON_POSITION, config = "vrSettingsButtonPositionLeft")
