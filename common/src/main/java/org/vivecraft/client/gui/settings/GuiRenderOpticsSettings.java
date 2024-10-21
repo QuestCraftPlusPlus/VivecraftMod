@@ -55,12 +55,6 @@ public class GuiRenderOpticsSettings extends GuiVROptionsBase {
     static VRSettings.VrOptions[] SOptions = new VRSettings.VrOptions[]{
         VRSettings.VrOptions.MIRROR_EYE
     };
-    final VROptionEntry[] MROptions = new VROptionEntry[]{
-        new VROptionEntry("vivecraft.options.screen.mixedreality.button", (button, mousePos) -> {
-            Minecraft.getInstance().setScreen(new GuiMixedRealitySettings(this));
-            return true;
-        })
-    };
 
     private float prevRenderScaleFactor = this.settings.renderScaleFactor;
     private float prevHandCameraResScale = this.settings.handCameraResScale;

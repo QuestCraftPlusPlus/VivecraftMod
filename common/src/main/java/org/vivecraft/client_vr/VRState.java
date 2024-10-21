@@ -48,7 +48,6 @@ public class VRState {
             //if (!Version.getVersion().startsWith("3.3.2")) {
                 //
 
-                throw new RenderConfigException("VR Init Error", Component.translatable("vivecraft.messages.rendersetupfailed", I18n.get("vivecraft.messages.invalidlwjgl", Version.getVersion(), "3.3.2"), "OpenVR_LWJGL"));
             //}
             switch (dh.vrSettings.stereoProviderPluginID) {
                 case OPENVR -> dh.vr = new MCOpenVR(instance, dh);
