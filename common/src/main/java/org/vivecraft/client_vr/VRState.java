@@ -54,7 +54,6 @@ public class VRState {
                 case OPENXR -> dh.vr = new MCOpenXR(instance, dh);
                 default -> dh.vr = new NullVR(instance, dh);
             }
-
             if (!dh.vr.init()) {
                 throw new RenderConfigException("VR Init Error", Component.translatable("vivecraft.messages.rendersetupfailed", dh.vr.initStatus, dh.vr.getName()));
             }
