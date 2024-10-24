@@ -15,7 +15,6 @@ import org.lwjgl.opengl.GL31;
 import org.lwjgl.openxr.*;
 import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Struct;
 import org.vivecraft.client.VivecraftVRMod;
 import org.vivecraft.client.utils.Utils;
@@ -53,9 +52,10 @@ public class MCOpenXR extends MCVR {
     public XrSession session;
     public XrSpace xrAppSpace;
     public XrSpace xrViewSpace;
-    public XrSwapchain swapchain;
+    public OpenXRSwapchain[] swapchains;
     public final XrEventDataBuffer eventDataBuffer = XrEventDataBuffer.calloc();
     public long time;
+    public int viewCount;
     private boolean tried;
     private long systemID;
     public XrView.Buffer viewBuffer;
@@ -105,9 +105,11 @@ public class MCOpenXR extends MCVR {
             error = XR10.xrDestroyActionSet(new XrActionSet(inputActionSet, instance));
             logError(error, "xrDestroyActionSet", "");
         }
-        if (swapchain != null) {
-            error = XR10.xrDestroySwapchain(swapchain);
-            logError(error, "xrDestroySwapchain", "");
+        if (swapchains != null) {
+            for(OpenXRSwapchain swapchain : swapchains) {
+                error = XR10.xrDestroySwapchain(swapchain.handle);
+                logError(error, "xrDestroySwapchain", "");
+            }
         }
         if (viewBuffer != null) {
             viewBuffer.close();
@@ -222,7 +224,6 @@ public class MCOpenXR extends MCVR {
                 session,
                 XrFrameBeginInfo.calloc(stack).type(XR10.XR_TYPE_FRAME_BEGIN_INFO));
             logError(error, "xrBeginFrame", "");
-
 
             XrViewState viewState = XrViewState.calloc(stack).type(XR10.XR_TYPE_VIEW_STATE);
             IntBuffer intBuf = stack.callocInt(1);
@@ -980,27 +981,30 @@ public class MCOpenXR extends MCVR {
                 throw new RuntimeException("No compatible swapchain / framebuffer format available: " + formats);
             }
 
-            //Make swapchain
-            XrViewConfigurationView viewConfig = views.get(0);
-            XrSwapchainCreateInfo swapchainCreateInfo = XrSwapchainCreateInfo.calloc(stack);
-            swapchainCreateInfo.type(XR10.XR_TYPE_SWAPCHAIN_CREATE_INFO);
-            swapchainCreateInfo.next(NULL);
-            swapchainCreateInfo.createFlags(0);
-            swapchainCreateInfo.usageFlags(XR10.XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT);
-            swapchainCreateInfo.format(chosenFormat);
-            swapchainCreateInfo.sampleCount(1);
-            swapchainCreateInfo.width(viewConfig.recommendedImageRectWidth());
-            swapchainCreateInfo.height(viewConfig.recommendedImageRectHeight());
-            swapchainCreateInfo.faceCount(1);
-            swapchainCreateInfo.arraySize(2);
-            swapchainCreateInfo.mipCount(1);
+            swapchains = new OpenXRSwapchain[viewCountNumber];
+            for(int i = 0; i < viewCountNumber; i++) {
+                //Make swapchain
+                XrViewConfigurationView viewConfig = views.get(0);
+                XrSwapchainCreateInfo swapchainCreateInfo = XrSwapchainCreateInfo.calloc(stack);
+                swapchainCreateInfo.type(XR10.XR_TYPE_SWAPCHAIN_CREATE_INFO);
+                swapchainCreateInfo.next(NULL);
+                swapchainCreateInfo.createFlags(0);
+                swapchainCreateInfo.usageFlags(XR10.XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT);
+                swapchainCreateInfo.format(chosenFormat);
+                swapchainCreateInfo.sampleCount(1);
+                swapchainCreateInfo.width(viewConfig.recommendedImageRectWidth());
+                swapchainCreateInfo.height(viewConfig.recommendedImageRectHeight());
+                swapchainCreateInfo.faceCount(1);
+                swapchainCreateInfo.arraySize(1);
+                swapchainCreateInfo.mipCount(1);
 
-            PointerBuffer handlePointer = stack.callocPointer(1);
-            error = XR10.xrCreateSwapchain(session, swapchainCreateInfo, handlePointer);
-            logError(error, "xrCreateSwapchain",  "format: " + chosenFormat);
-            swapchain = new XrSwapchain(handlePointer.get(0), session);
-            this.width = swapchainCreateInfo.width();
-            this.height = swapchainCreateInfo.height();
+                PointerBuffer handlePointer = stack.callocPointer(1);
+                error = XR10.xrCreateSwapchain(session, swapchainCreateInfo, handlePointer);
+                logError(error, "xrCreateSwapchain", "format: " + chosenFormat);
+                swapchains[i] = new OpenXRSwapchain(new XrSwapchain(handlePointer.get(0), session), this, "Eye " + i);
+                this.width = swapchainCreateInfo.width();
+                this.height = swapchainCreateInfo.height();
+            }
         }
     }
 
