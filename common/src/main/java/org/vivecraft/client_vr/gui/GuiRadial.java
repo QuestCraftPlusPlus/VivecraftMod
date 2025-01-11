@@ -12,6 +12,8 @@ import org.vivecraft.client_vr.provider.control.VRInputAction;
 
 import java.util.Arrays;
 
+import java.util.Arrays;
+
 public class GuiRadial extends TwoHandedScreen {
     private boolean isShift = false;
     String[] arr;
