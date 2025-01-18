@@ -302,13 +302,13 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
 
     // if the gui didn't render yet, render it now.
     // or if shaders are on, and option AFTER_SHADER is selected
-    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Ljava/util/List;clear()V"))
+    @Inject(method = "renderLevel", at = @At("RETURN"))
     private void vivecraft$renderVrStuffFinal(
         CallbackInfo ci, @Local(ordinal = 0) float partialTick, @Share("guiRendered") LocalBooleanRef guiRendered)
     {
         if (RenderPassType.isVanilla()) return;
 
-        if (!guiRendered.get() && this.targets.translucent == null) {
+        if (!guiRendered.get() && !Minecraft.useShaderTransparency()) {
             // re set up modelView, since this is after everything got cleared
             RenderSystem.getModelViewStack().pushMatrix().identity();
             RenderHelper.applyVRModelView(ClientDataHolderVR.getInstance().currentPass,
