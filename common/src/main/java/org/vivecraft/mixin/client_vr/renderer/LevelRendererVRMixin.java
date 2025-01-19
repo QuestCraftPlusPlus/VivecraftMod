@@ -62,11 +62,16 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
     @Unique
     private Entity vivecraft$renderedEntity;
 
+    @Unique
+    private boolean vivecraft$guiRendered = false;
+
     @Final
     @Shadow
     private Minecraft minecraft;
+
     @Shadow
     private ClientLevel level;
+
     @Final
     @Shadow
     private RenderBuffers renderBuffers;
@@ -258,9 +263,7 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
         "lambda$addMainPass$1*", // forge
         "lambda$addMainPass$2*" // neoforge
     }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;endBatch()V", ordinal = 0, shift = Shift.AFTER, remap = true), remap = false)
-    private void vivecraft$renderVrStuffPart1(
-        CallbackInfo ci, @Local(ordinal = 0) float partialTick, @Share("guiRendered") LocalBooleanRef guiRendered)
-    {
+    private void vivecraft$renderVrStuffPart1(CallbackInfo ci, @Local(ordinal = 0) float partialTick) {
         if (RenderPassType.isVanilla()) return;
 
         if (this.targets.translucent != null) {
@@ -276,15 +279,14 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
             {
                 // shaders active, and render gui before translucents
                 VREffectsHelper.renderVrFast(partialTick, true);
-                guiRendered.set(true);
+                this.vivecraft$guiRendered = true;
             }
         }
     }
 
     @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Options;getCloudsType()Lnet/minecraft/client/CloudStatus;"))
     private void vivecraft$renderVrStuffPart2(
-        CallbackInfo ci, @Local(ordinal = 0) float partialTick, @Local FrameGraphBuilder frameGraphBuilder,
-        @Share("guiRendered") LocalBooleanRef guiRendered)
+        CallbackInfo ci, @Local(ordinal = 0) float partialTick, @Local FrameGraphBuilder frameGraphBuilder)
     {
         if (RenderPassType.isVanilla()) return;
 
@@ -296,7 +298,7 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
             FramePass framePass = frameGraphBuilder.addPass("vr stuff part2");
             this.targets.main = framePass.readsAndWrites(this.targets.main);
             framePass.executes(() -> VREffectsHelper.renderVrFast(partialTick, true));
-            guiRendered.set(true);
+            this.vivecraft$guiRendered = true;
         }
     }
 
@@ -304,11 +306,11 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
     // or if shaders are on, and option AFTER_SHADER is selected
     @Inject(method = "renderLevel", at = @At("RETURN"))
     private void vivecraft$renderVrStuffFinal(
-        CallbackInfo ci, @Local(ordinal = 0) float partialTick, @Share("guiRendered") LocalBooleanRef guiRendered)
+        CallbackInfo ci, @Local(ordinal = 0) float partialTick)
     {
         if (RenderPassType.isVanilla()) return;
 
-        if (!guiRendered.get() && !Minecraft.useShaderTransparency()) {
+        if (!this.vivecraft$guiRendered && !Minecraft.useShaderTransparency()) {
             // re set up modelView, since this is after everything got cleared
             RenderSystem.getModelViewStack().pushMatrix().identity();
             RenderHelper.applyVRModelView(ClientDataHolderVR.getInstance().currentPass,
@@ -318,6 +320,8 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
 
             RenderSystem.getModelViewStack().popMatrix();
         }
+        // reset for next frame
+        this.vivecraft$guiRendered = false;
     }
 
     @WrapOperation(method = "initOutline", at = @At(value = "NEW", target = "com/mojang/blaze3d/pipeline/TextureTarget"))
