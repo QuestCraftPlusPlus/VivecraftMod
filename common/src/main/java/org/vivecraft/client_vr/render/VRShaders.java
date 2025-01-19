@@ -1,12 +1,17 @@
 package org.vivecraft.client_vr.render;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.shaders.AbstractUniform;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.CompiledShaderProgram;
-import net.minecraft.client.renderer.ShaderDefines;
-import net.minecraft.client.renderer.ShaderProgram;
+import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.TriState;
+
+import java.util.function.Function;
 
 public class VRShaders {
     // FSAA shader and its uniforms
@@ -51,6 +56,26 @@ public class VRShaders {
     public static final ShaderProgram RENDERTYPE_END_GATEWAY_VR_SHADER = new ShaderProgram(
         ResourceLocation.fromNamespaceAndPath("vivecraft", "core/rendertype_end_gateway_vr"),
         DefaultVertexFormat.POSITION, ShaderDefines.EMPTY);
+
+    // menu crosshair shader
+    private static final RenderStateShard.TransparencyStateShard MENU_CROSSHAIR_TRANSPARENCY = new RenderStateShard.TransparencyStateShard(
+        "menu_crosshair_transparency", () -> {
+        RenderSystem.enableBlend();
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ZERO,
+            GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
+    }, () -> {
+        RenderSystem.disableBlend();
+        RenderSystem.defaultBlendFunc();
+    });
+
+    public static final Function<ResourceLocation, RenderType> MENU_CROSSHAIR = Util.memoize(
+        (resourceLocation) -> RenderType.create("menu_crosshair", DefaultVertexFormat.POSITION_TEX_COLOR,
+            VertexFormat.Mode.QUADS, 786432, RenderType.CompositeState.builder()
+                .setTextureState(new RenderStateShard.TextureStateShard(resourceLocation, TriState.FALSE, false))
+                .setShaderState(RenderStateShard.POSITION_TEXTURE_COLOR_SHADER)
+                .setTransparencyState(MENU_CROSSHAIR_TRANSPARENCY)
+                .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
+                .createCompositeState(false)));
 
     // fabulous vr shader
     public static final ResourceLocation VR_TRANSPARENCY_SHADER_ID = ResourceLocation.fromNamespaceAndPath("vivecraft",

@@ -104,3 +104,8 @@ accessible field net/minecraft/client/renderer/item/ItemStackRenderState$LayerRe
 # to let the vr transparancy shader fail to compile
 accessible class net/minecraft/client/renderer/ShaderManager$CompilationCache
 accessible field net/minecraft/client/renderer/ShaderManager$CompilationCache programs Ljava/util/Map;
+
+# to have a custom crosshair shader
+accessible method net/minecraft/client/renderer/RenderType create (Ljava/lang/String;Lcom/mojang/blaze3d/vertex/VertexFormat;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;ILnet/minecraft/client/renderer/RenderType$CompositeState;)Lnet/minecraft/client/renderer/RenderType$CompositeRenderType;
+accessible field net/minecraft/client/renderer/RenderStateShard NO_DEPTH_TEST Lnet/minecraft/client/renderer/RenderStateShard$DepthTestStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard POSITION_TEXTURE_COLOR_SHADER Lnet/minecraft/client/renderer/RenderStateShard$ShaderStateShard;
