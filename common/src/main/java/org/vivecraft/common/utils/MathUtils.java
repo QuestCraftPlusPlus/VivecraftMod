@@ -14,6 +14,7 @@ public class MathUtils {
     public static final Vector3fc RIGHT = new Vector3f(-1.0F, 0.0F, 0.0F);
     public static final Vector3fc UP = new Vector3f(0.0F, 1.0F, 0.0F);
     public static final Vector3fc DOWN = new Vector3f(0.0F, -1.0F, 0.0F);
+    public static final Vector3fc ZERO = new Vector3f();
 
     public static final Vec3 FORWARD_D = new Vec3(0.0, 0.0, 1.0);
     public static final Vec3 BACK_D = new Vec3(0.0, 0.0, -1.0);
@@ -21,6 +22,8 @@ public class MathUtils {
     public static final Vec3 RIGHT_D = new Vec3(-1.0, 0.0, 0.0);
     public static final Vec3 UP_D = new Vec3(0.0, 1.0, 0.0);
     public static final Vec3 DOWN_D = new Vec3(0.0, -1.0, 0.0);
+
+    public static final Matrix4fc IDENTITY = new Matrix4f();
 
     /**
      * subtracts {@code b} from {@code a}, and returns the result as a Vector3f, should only be used to get local position differences
