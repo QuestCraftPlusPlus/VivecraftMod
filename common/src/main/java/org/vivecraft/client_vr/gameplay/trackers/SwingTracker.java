@@ -135,6 +135,13 @@ public class SwingTracker extends Tracker {
                 boolean isTool = false;
                 boolean isSword = false;
 
+                if (this.dh.vrSettings.onlySwordCollision &&
+                    !(item instanceof SwordItem || itemstack.is(ItemTags.VIVECRAFT_SWORDS)))
+                {
+                    // only swords can hit
+                    continue;
+                }
+
                 if (!(item instanceof SwordItem || itemstack.is(ItemTags.VIVECRAFT_SWORDS)) &&
                     !(item instanceof TridentItem || itemstack.is(ItemTags.VIVECRAFT_SPEARS)))
                 {
@@ -214,12 +221,14 @@ public class SwingTracker extends Tracker {
                 AABB weaponTipBB = new AABB(handPos, weaponTip);
 
                 List<Entity> mobs = this.mc.level.getEntities(this.mc.player, weaponTipBB);
-                mobs.removeIf((e) -> e instanceof Player);
+                if (this.dh.vrSettings.reducedPlayerReach) {
+                    // shorter range for players to try to prevent accidental hits
+                    mobs.removeIf((e) -> e instanceof Player);
 
-                // shorter range for players to try to prevent accidental hits
-                List<Entity> players = this.mc.level.getEntities(this.mc.player, weaponBB);
-                players.removeIf((e) -> !(e instanceof Player));
-                mobs.addAll(players);
+                    List<Entity> players = this.mc.level.getEntities(this.mc.player, weaponBB);
+                    players.removeIf((e) -> !(e instanceof Player));
+                    mobs.addAll(players);
+                }
 
                 for (Entity entity : mobs) {
                     if (entity.isPickable() && entity != this.mc.getCameraEntity().getVehicle()) {

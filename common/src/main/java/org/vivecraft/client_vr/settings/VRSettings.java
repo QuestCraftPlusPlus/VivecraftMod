@@ -279,6 +279,10 @@ public class VRSettings {
     public boolean feetCollision = true;  // VIVE weapon feet collides with blocks/enemies
     @SettingField(VrOptions.SWORD_BLOCK_COLLISION)
     public boolean swordBlockCollision = true;
+    @SettingField(VrOptions.ONLY_SWORD_COLLISION)
+    public boolean onlySwordCollision = false;
+    @SettingField(VrOptions.REDUCED_PLAYER_REACH)
+    public boolean reducedPlayerReach = true;
     @SettingField(VrOptions.MOVEMENT_MULTIPLIER)
     public float movementSpeedMultiplier = 1.0f;   // VIVE - use full speed by default
     @SettingField(VrOptions.FREEMOVE_MODE)
@@ -1634,6 +1638,8 @@ public class VRSettings {
         },
         FEET_COLLISION(false, true),
         SWORD_BLOCK_COLLISION(false, true), // lets swords hit blocks that can be mined or instabroken
+        ONLY_SWORD_COLLISION(false, true), // only let swords hit stuff
+        REDUCED_PLAYER_REACH(false, true), // reduces roomscale reach to hit players
         // VIVE END - new options
         // JRBUDDA VIVE
         ALLOW_CRAWLING(false, true), // Roomscale Crawling
