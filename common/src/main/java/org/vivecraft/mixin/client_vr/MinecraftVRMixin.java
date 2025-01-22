@@ -16,7 +16,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.ReportedException;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.screens.*;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.gui.screens.ReceivingLevelScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
@@ -125,10 +128,6 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
 
     @Shadow
     @Final
-    private RenderBuffers renderBuffers;
-
-    @Shadow
-    @Final
     private EntityRenderDispatcher entityRenderDispatcher;
 
     @Shadow
@@ -168,8 +167,10 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     @Final
     private DeltaTracker.Timer deltaTracker;
 
-    @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V"), index = 0)
-    private Overlay vivecraft$initVivecraft(Overlay overlay) {
+    @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/ResourceLoadStateTracker;startReload(Lnet/minecraft/client/ResourceLoadStateTracker$ReloadReason;Ljava/util/List;)V"), index = 0)
+    private ResourceLoadStateTracker.ReloadReason vivecraft$initVivecraft(
+        ResourceLoadStateTracker.ReloadReason reloadReason)
+    {
         RenderPassManager.INSTANCE = new RenderPassManager((MainTarget) this.mainRenderTarget);
         VRSettings.initSettings();
         new Thread(UpdateChecker::checkForUpdates, "VivecraftUpdateThread").start();
@@ -204,7 +205,7 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
                 }
             }
         });
-        return overlay;
+        return reloadReason;
     }
 
     @Inject(method = "onGameLoadFinished", at = @At("TAIL"))
