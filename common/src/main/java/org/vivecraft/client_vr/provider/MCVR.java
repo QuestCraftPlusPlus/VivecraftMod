@@ -1272,25 +1272,25 @@ public abstract class MCVR {
         if (startIndex >= 0) {
             this.usingUnlabeledTrackers = true;
 
-            // unassigned trackers, assign them by distance
+            // only check non identified trackers
+            List<Integer> indices = new ArrayList<>();
             for (int t = startIndex + 3; t < endIndex + 3; t++) {
+                if (this.deviceSource[t].isValid()) {
+                    int finalT = t;
+                    trackers.removeIf((triple -> triple.getLeft().equals(this.deviceSource[finalT])));
+                } else {
+                    indices.add(t);
+                }
+            }
+
+            // unassigned trackers, assign them by distance
+            for (int t : indices) {
                 int closestIndex = -1;
                 float closestDistance = Float.MAX_VALUE;
 
                 // find the closest tracker to the reference point
                 for (int i = 0; i < trackers.size(); i++) {
-                    // int trackerIndex = trackers.get(i);
                     Triple<DeviceSource, Integer, Matrix4fc> tracker = trackers.get(i);
-
-                    // if regular fbt is already detected, skip those trackers
-                    if (hasFBT()) {
-                        if (this.deviceSource[WAIST_TRACKER].equals(tracker.getLeft()) ||
-                            this.deviceSource[LEFT_FOOT_TRACKER].equals(tracker.getLeft()) ||
-                            this.deviceSource[RIGHT_FOOT_TRACKER].equals(tracker.getLeft()))
-                        {
-                            continue;
-                        }
-                    }
 
                     tracker.getRight().getTranslation(tempV)
                         .sub(posAvg.x, 0F, posAvg.z) // center around headset
