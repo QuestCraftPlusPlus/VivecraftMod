@@ -24,7 +24,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.server.IntegratedServer;
@@ -97,6 +96,9 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     // stores the list of resourcepacks that were loaded before a reload, to know if the menuworld should be rebuilt
     @Unique
     private List<String> vivecraft$resourcepacks;
+
+    @Unique
+    private CameraType vivecraft$lastCameraType;
 
     @Final
     @Shadow
@@ -776,6 +778,10 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     private void vivecraft$switchVRState(boolean vrActive) {
         VRState.VR_RUNNING = vrActive;
         if (vrActive) {
+            // force first person camera in VR
+            this.vivecraft$lastCameraType = this.options.getCameraType();
+            this.options.setCameraType(CameraType.FIRST_PERSON);
+
             if (this.player != null) {
                 // snap room origin to the player
                 ClientDataHolderVR.getInstance().vrPlayer.snapRoomOriginToPlayerEntity(this.player, false, false);
@@ -791,6 +797,11 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
             GuiHandler.GUI_POS_ROOM = null;
             GuiHandler.GUI_ROTATION_ROOM = null;
             GuiHandler.GUI_SCALE = 1.0F;
+
+            // reset camera
+            if (this.vivecraft$lastCameraType != null) {
+                this.options.setCameraType(this.vivecraft$lastCameraType);
+            }
 
             if (this.player != null) {
                 // remove vr player instance
