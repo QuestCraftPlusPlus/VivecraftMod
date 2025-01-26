@@ -24,7 +24,6 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.gameplay.trackers.ClimbTracker;
 import org.vivecraft.client_vr.render.RenderPass;
-import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.mod_compat_vr.immersiveportals.ImmersivePortalsHelper;
 import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
 
@@ -42,26 +41,6 @@ public abstract class ItemInHandLayerMixin extends RenderLayer {
             return !ClientVRPlayers.getInstance().isVRAndLeftHanded(entity.getUUID());
         } else {
             return isRightMainHand;
-        }
-    }
-
-    @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
-    private void vivecraft$noItemsInFirstPerson(
-        CallbackInfo ci, @Local(argsOnly = true) LivingEntity entity, @Local(argsOnly = true) HumanoidArm arm,
-        @Local(argsOnly = true) ItemStack itemStack)
-    {
-        if (entity == Minecraft.getInstance().player && VRState.VR_RUNNING &&
-            ClientDataHolderVR.getInstance().vrSettings.shouldRenderSelf &&
-            RenderPass.isFirstPerson(ClientDataHolderVR.getInstance().currentPass) &&
-            !ShadersHelper.isRenderingShadows() &&
-            !(ImmersivePortalsHelper.isLoaded() && ImmersivePortalsHelper.isRenderingPortal()) &&
-            // don't cancel climbing claws, unless menu hand
-            (ClientDataHolderVR.getInstance().vrSettings.modelArmsMode != VRSettings.ModelArmsMode.COMPLETE ||
-                ClientDataHolderVR.getInstance().isMenuHand(arm) ||
-                !(ClientDataHolderVR.getInstance().climbTracker.isClimbeyClimb() || ClimbTracker.isClaws(itemStack))
-            ))
-        {
-            ci.cancel();
         }
     }
 
