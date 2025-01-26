@@ -9,17 +9,14 @@ public class XRBindings {
 
     public static HashSet<String> supportedHeadsets() {
         HashSet<String> set = new HashSet<>();
-        if (MCOpenXR.get().systemName.toLowerCase().contains("oculus")
-            || MCOpenXR.get().systemName.toLowerCase().contains("meta")
-            || MCOpenXR.get().systemName.toLowerCase().contains("pico")
-            || MCOpenXR.get().systemName.toLowerCase().contains("bytedance")) {
-
-            set.add("/interaction_profiles/oculus/touch_controller");
-            return set;
-        }
         if (MCOpenXR.get().session.getCapabilities().XR_HTC_vive_cosmos_controller_interaction) {
             set.add("/interaction_profiles/htc/vive_cosmos_controller");
         }
+        if (MCOpenXR.get().session.getCapabilities().XR_BD_controller_interaction) {
+            set.add("/interaction_profiles/bytedance/pico4_controller");
+            set.add("/interaction_profiles/bytedance/pico_neo3_controller");
+        }
+        set.add("/interaction_profiles/oculus/touch_controller");
         set.add("/interaction_profiles/htc/vive_controller");
         return set;
     }
@@ -155,8 +152,8 @@ public class XRBindings {
             case "/interaction_profiles/htc/vive_cosmos_controller" -> {
                 return cosmosBindings();
             }
-            case "/interaction_profiles/oculus/touch_controller" -> {
-                return quest2Bindings();
+            case "/interaction_profiles/oculus/touch_controller", "/interaction_profiles/bytedance/pico4_controller", "/interaction_profiles/bytedance/pico_neo3_controller" -> {
+                return quest2Bindings(); // Funny enough, the pathing is the same between all three. Minus the menu button on the right hand
             }
             default -> {
                 return viveBindings();
