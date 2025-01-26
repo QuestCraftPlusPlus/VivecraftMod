@@ -74,8 +74,8 @@ public class GlDeviceMixin implements GlDeviceExtension {
 
     @Override
     public GpuTexture vivecraft$precreatedFixedIdTexture(
-        @Nullable Supplier<String> labelSup, TextureFormat textureFormat, int width,
-        int height, int mipmapLevels, int texId)
+        @Nullable Supplier<String> labelSup, int usageFlags, TextureFormat textureFormat, int width,
+        int height, int depthLayers, int mipmapLevels, int texId)
     {
         if (mipmapLevels < 1) {
             throw new IllegalArgumentException("mipLevels must be at least 1");
@@ -86,7 +86,7 @@ public class GlDeviceMixin implements GlDeviceExtension {
                 label = String.valueOf(texId);
             }
 
-            GlTexture glTexture = new GlTexture(label, textureFormat, width, height, mipmapLevels, texId);
+            GlTexture glTexture = new GlTexture(usageFlags, label, textureFormat, width, height, depthLayers, mipmapLevels, texId);
             this.debugLabels.applyLabel(glTexture);
             return glTexture;
         }
