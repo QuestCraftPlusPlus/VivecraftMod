@@ -285,9 +285,7 @@ public class InteractTracker extends Tracker {
 
     public void processBindings() {
         for (int c = 0; c < 2; c++) {
-            if (MethodHolder.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL) ||
-                VivecraftVRMod.INSTANCE.keyVRInteract.consumeClick(ControllerType.values()[c]) && this.active[c])
-            {
+            if (VivecraftVRMod.INSTANCE.keyVRInteract.consumeClick(ControllerType.values()[c]) && this.active[c]) {
                 InteractionHand hand = InteractionHand.values()[c];
                 boolean success = false;
 
