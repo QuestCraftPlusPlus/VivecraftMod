@@ -1146,18 +1146,17 @@ public class VREffectsHelper {
         RenderSystem.setShaderColor(0.0F, 0.0F, 0.0F, 1.0f);
 
         RenderSystem.depthFunc(GL11C.GL_ALWAYS);
+        RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
         RenderSystem.enableBlend();
         RenderSystem.disableCull();
         BufferBuilder bufferbuilder = Tesselator.getInstance()
             .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
         // render a big quad 2 meters in front
-        // identity matrix
-        Matrix4f mat = new Matrix4f();
-        bufferbuilder.addVertex(mat, -100.F, -100.F, -2.0F);
-        bufferbuilder.addVertex(mat, 100.F, -100.F, -2.0F);
-        bufferbuilder.addVertex(mat, 100.F, 100.F, -2.0F);
-        bufferbuilder.addVertex(mat, -100.F, 100.F, -2.0F);
+        bufferbuilder.addVertex(-100.F, -100.F, -2.0F);
+        bufferbuilder.addVertex(100.F, -100.F, -2.0F);
+        bufferbuilder.addVertex(100.F, 100.F, -2.0F);
+        bufferbuilder.addVertex(-100.F, 100.F, -2.0F);
         BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
         RenderSystem.depthFunc(GL11C.GL_LEQUAL);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
