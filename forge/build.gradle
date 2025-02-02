@@ -15,6 +15,7 @@ loom {
 
         mixinConfig "vivecraft.mixins.json"
         mixinConfig "vivecraft.alexmobs.mixins.json"
+        mixinConfig "vivecraft.armourers_workshop.mixins.json"
         mixinConfig "vivecraft.blur.mixins.json"
         mixinConfig "vivecraft.bedrockify.mixins.json"
         mixinConfig "vivecraft.emf.mixins.json"

@@ -37,6 +37,7 @@
     "vivecraft.emf.mixins.json",
     "vivecraft.sodium.mixins.json",
     "vivecraft.iris.mixins.json",
+    "vivecraft.armourers_workshop.mixins.json",
     "vivecraft.mca.mixins.json",
     "vivecraft.modmenu.mixins.json",
     "vivecraft.physicsmod.mixins.json",
