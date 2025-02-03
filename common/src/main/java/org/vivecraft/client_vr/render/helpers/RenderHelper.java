@@ -454,7 +454,7 @@ public class RenderHelper {
         Vector3f light0Old = RenderSystemAccessor.getShaderLightDirections()[0];
         Vector3f light1Old = RenderSystemAccessor.getShaderLightDirections()[1];
 
-        Vector3f normal = new Matrix3f(matrix).transform(new Vector3f(0, 0, 1));
+        Vector3f normal = new Matrix3f(matrix).transform(new Vector3f(0, 0, 1)).normalize();
 
         // set lights to front
         RenderSystem.setShaderLights(normal, normal);
