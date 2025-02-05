@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.component.PatchedDataComponentMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -163,8 +164,10 @@ public abstract class ItemInHandRendererVRMixin {
 
             ItemDisplayContext itemDisplayContext;
 
-            // third person transforms for custom model data items, but not spear, shield and crossbow
-            boolean hasCMD = itemStack.has(DataComponents.CUSTOM_MODEL_DATA) &&
+            // third person transforms for custom model data items/item model overrides, but not spear, shield and crossbow
+            boolean hasItemOverride = itemStack.getComponents() instanceof PatchedDataComponentMap patched &&
+                patched.hasNonDefault(DataComponents.ITEM_MODEL);
+            boolean hasCMD = (hasItemOverride || itemStack.has(DataComponents.CUSTOM_MODEL_DATA)) &&
                 transformType != VivecraftItemRendering.VivecraftItemTransformType.Crossbow &&
                 transformType != VivecraftItemRendering.VivecraftItemTransformType.Spear &&
                 transformType != VivecraftItemRendering.VivecraftItemTransformType.Shield;
