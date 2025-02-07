@@ -268,13 +268,12 @@ public abstract class ItemInHandRendererVRMixin {
              z offset: (arm y origin + arm y offset + arm y dimension) / 16
              slim
              x offset: (5 + -1 + 3*0.5) / 16 = 0.34375
-             z offset: (-2 + 2.5 + 12) / 16 = 0.78125
              regular
              x offset: (5 - 1 + 4*0.5) / 16 = 0.375
              z offset: (-2 + 2 + 12) / 16 = 0.75
             */
 
-        poseStack.translate((slim ? -0.34375F : -0.375F) * offsetDirection, 0.0F, slim ? 0.78125F : 0.75F);
+        poseStack.translate((slim ? -0.34375F : -0.375F) * offsetDirection, 0.0F, 0.75F);
         poseStack.mulPose(Axis.XP.rotationDegrees(-90));
         poseStack.mulPose(Axis.YP.rotationDegrees(180));
         if (rightHand) {

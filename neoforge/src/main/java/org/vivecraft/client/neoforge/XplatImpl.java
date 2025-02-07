@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
@@ -19,6 +20,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.client.textures.FluidSpriteCache;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import org.lwjgl.glfw.GLFW;
 import org.vivecraft.client.Xplat;
 import org.vivecraft.common.network.packet.c2s.VivecraftPayloadC2S;
@@ -117,5 +119,9 @@ public class XplatImpl implements Xplat {
             case CONTROL -> GLFW.GLFW_KEY_LEFT_CONTROL;
             default -> -1;
         };
+    }
+
+    public static boolean isFakePlayer(ServerPlayer player) {
+        return player instanceof FakePlayer;
     }
 }

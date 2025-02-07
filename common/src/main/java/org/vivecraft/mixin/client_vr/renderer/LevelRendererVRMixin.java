@@ -74,6 +74,7 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
     @Final
     @Shadow
     private Minecraft minecraft;
+
     @Shadow
     private ClientLevel level;
     @Shadow
@@ -318,7 +319,7 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
 
     @Inject(method = {"initOutline", "initTransparency"}, at = @At("HEAD"))
     private void vivecraft$ensureVanillaPass(CallbackInfo ci) {
-        if (VRState.VR_INITIALIZED) {
+        if (VRState.VR_RUNNING) {
             RenderPassManager.setVanillaRenderPass();
         }
     }

@@ -823,7 +823,7 @@ public class VREffectsHelper {
 
         // code adapted from net.minecraft.client.renderer.ScreenEffectRenderer.renderFire
 
-        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
         RenderSystem.setShaderTexture(0, fireSprite.atlasLocation());
         float uMin = fireSprite.getU0();
         float uMax = fireSprite.getU1();
@@ -852,15 +852,15 @@ public class VREffectsHelper {
             posestack.translate(0.0D, -headHeight, 0.0D);
 
             Matrix4f matrix = posestack.last().pose();
-            bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+            bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
             bufferbuilder.vertex(matrix, -width, 0.0F, -width)
-                .uv(u1, v1).color(1.0F, 1.0F, 1.0F, 0.9F).endVertex();
+                .color(1.0F, 1.0F, 1.0F, 0.9F).uv(u1, v1).endVertex();
             bufferbuilder.vertex(matrix, width, 0.0F, -width)
-                .uv(u0, v1).color(1.0F, 1.0F, 1.0F, 0.9F).endVertex();
+                .color(1.0F, 1.0F, 1.0F, 0.9F).uv(u0, v1).endVertex();
             bufferbuilder.vertex(matrix, width, headHeight, -width)
-                .uv(u0, v0).color(1.0F, 1.0F, 1.0F, 0.9F).endVertex();
+                .color(1.0F, 1.0F, 1.0F, 0.9F).uv(u0, v0).endVertex();
             bufferbuilder.vertex(matrix, -width, headHeight, -width)
-                .uv(u1, v0).color(1.0F, 1.0F, 1.0F, 0.9F).endVertex();
+                .color(1.0F, 1.0F, 1.0F, 0.9F).uv(u1, v0).endVertex();
             BufferUploader.drawWithShader(bufferbuilder.end());
 
             posestack.popPose();

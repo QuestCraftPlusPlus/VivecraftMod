@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
@@ -122,5 +123,11 @@ public class XplatImpl implements Xplat {
             case CONTROL -> GLFW.GLFW_KEY_LEFT_CONTROL;
             default -> -1;
         };
+    }
+
+    public static boolean isFakePlayer(ServerPlayer player) {
+        // TODO check if forge reimplemented it, it was removed with 1.20.3
+        // return player instanceof FakePlayer;
+        return false;
     }
 }
