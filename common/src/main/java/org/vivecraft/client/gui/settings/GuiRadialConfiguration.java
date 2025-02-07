@@ -10,7 +10,11 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.vivecraft.client.gui.framework.GuiVROptionButton;
 import org.vivecraft.client.gui.framework.GuiVROptionsBase;
 import org.vivecraft.client.gui.framework.VROptionLayout;
+import org.vivecraft.client_vr.gui.GuiRadial;
 import org.vivecraft.client_vr.settings.VRSettings;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 public class GuiRadialConfiguration extends GuiVROptionsBase {
     private static final VROptionLayout[] OPTIONS = new VROptionLayout[]{
@@ -87,12 +91,8 @@ public class GuiRadialConfiguration extends GuiVROptionsBase {
 
             super.init(OPTIONS, false);
 
-            int numButtons = this.dataHolder.vrSettings.vrRadialButtons;
-            int buttonWidthMin = 120;
-            // distance from the center, with 14 buttons, move them closer together
-            float dist = numButtons * (numButtons >= 14 ? 5F : 5.5F);
             int centerX = this.width / 2;
-            int centerY = this.height / 2;
+            int centerY = this.height / 2 + 10;
             this.arr = ArrayUtils.clone(this.dataHolder.vrSettings.vrRadialItems);
             String[] altSet = ArrayUtils.clone(this.dataHolder.vrSettings.vrRadialItemsAlt);
 
@@ -100,57 +100,29 @@ public class GuiRadialConfiguration extends GuiVROptionsBase {
                 this.arr = altSet;
             }
 
-            for (int i = 0; i < numButtons; i++) {
-                KeyMapping keymapping = null;
+            for (int i = 0; i < this.dataHolder.vrSettings.vrRadialButtons; i++) {
+                // not all buttons need to be set
+                if (i >= this.arr.length) break;
 
-                for (KeyMapping keymapping1 : this.minecraft.options.keyMappings) {
-                    if (i < this.arr.length && keymapping1.getName().equalsIgnoreCase(this.arr[i])) {
-                        keymapping = keymapping1;
-                    }
-                }
-
-                String label = "";
-
-                if (keymapping != null) {
-                    label = I18n.get(keymapping.getName());
-                }
-
-                int buttonWidth = Math.max(buttonWidthMin, this.font.width(label));
-
-                // coords of the button, button 0 is at the top with x = 0, y = -dist
-                float distX = numButtons * 4 + buttonWidth * 0.5F;
-
-                // position buttons on equal y spacing
-                float btnIndex = (i < numButtons / 2 ? i : numButtons - i) / (float) (numButtons / 2);
-                int y = (int) (2.0F * dist * btnIndex - dist);
-
-                // position x so the buttons produce an ellipse
-                int x = (int) (distX * (Math.sqrt(1.0F - (y * y) / (dist * dist))));
-
-                // move in between buttons closer to the middle
-                if (Math.abs(y) > 20) {
-                    x = (int) (x * 0.87F);
-                }
-
-                // second half of buttons should be on the left side
-                x *= i > numButtons / 2 ? -1 : 1;
-
+                String current = this.arr[i];
                 int index = i;
-                this.addRenderableWidget(new Button.Builder(Component.translatable(label),
-                    (p) -> {
-                        this.selectedIndex = index;
-                        this.isselectmode = true;
-                        this.reinit = true;
-                        this.visibleList = this.list;
-                    })
-                    .size(buttonWidth, 20)
-                    .pos(centerX + x - buttonWidth / 2, centerY + y)
-                    .build());
+                Optional<KeyMapping> keyMapping = Arrays.stream(this.minecraft.options.keyMappings)
+                    .filter(keymapping -> keymapping.getName().equalsIgnoreCase(current))
+                    .findFirst();
+
+                String label = keyMapping.map(mapping -> I18n.get(mapping.getName())).orElse("");
+                this.addRenderableWidget(GuiRadial.createButton(label, (p) -> {
+                    this.selectedIndex = index;
+                    this.isselectmode = true;
+                    this.reinit = true;
+                    this.visibleList = this.list;
+                }, index, centerX, centerY));
             }
 
+            // add button count button
             this.addRenderableWidget(
                 new GuiVROptionButton(VRSettings.VrOptions.RADIAL_NUMBER.ordinal(),
-                    centerX - 10, centerY, 20, 20,
+                    centerX - 10, centerY - 10, 20, 20,
                     VRSettings.VrOptions.RADIAL_NUMBER, "" + this.dataHolder.vrSettings.vrRadialButtons,
                     (p) -> {
                         this.dataHolder.vrSettings.vrRadialButtons += 2;

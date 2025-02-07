@@ -48,6 +48,7 @@ public class ServerConfig {
     public static ConfigBuilder.StringValue MESSAGES_KICK_VR_ONLY;
 
     public static ConfigBuilder.BooleanValue DUAL_WIELDING;
+    public static ConfigBuilder.DoubleValue BOOTS_ARMOR_DAMAGE;
     public static ConfigBuilder.DoubleValue CREEPER_SWELL_DISTANCE;
     public static ConfigBuilder.DoubleValue BOW_STANDING_MULTIPLIER;
     public static ConfigBuilder.DoubleValue BOW_SEATED_MULTIPLIER;
@@ -248,6 +249,10 @@ public class ServerConfig {
             .push("dualWielding")
             .comment("Allows vr players to hit with their offhand items")
             .define(true);
+        BOOTS_ARMOR_DAMAGE = BUILDER
+            .push("bootsArmorDamage")
+            .comment("Melee damage addition for Vivecraft users when hitting with their feet.\n This scales with the armor attribute of the boots, doing 1 additional damage per Armor level, times the set multiplier\n Set to 0.0 to disable")
+            .defineInRange(0.0, 0.0, 5.0);
 
         BUILDER
             .push("bow")

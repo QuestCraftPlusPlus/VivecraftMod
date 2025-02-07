@@ -10,6 +10,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
@@ -149,5 +150,11 @@ public class XplatImpl implements Xplat {
             case CONTROL -> GLFW.GLFW_KEY_LEFT_CONTROL;
             default -> -1;
         };
+    }
+
+    public static boolean isFakePlayer(ServerPlayer player) {
+        // TODO check if forge reimplemented it, it was removed with 1.20.3
+        // return player instanceof FakePlayer;
+        return false;
     }
 }

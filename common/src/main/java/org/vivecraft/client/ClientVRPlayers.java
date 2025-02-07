@@ -24,6 +24,7 @@ import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_vr.settings.AutoCalibration;
 import org.vivecraft.client_vr.settings.VRSettings;
+import org.vivecraft.client_xr.render_pass.RenderPassType;
 import org.vivecraft.common.network.FBTMode;
 import org.vivecraft.common.network.VrPlayerState;
 import org.vivecraft.common.utils.MathUtils;
@@ -86,6 +87,19 @@ public class ClientVRPlayers {
     public boolean isVRPlayer(UUID uuid) {
         return this.vivePlayers.containsKey(uuid) ||
             (VRState.VR_RUNNING && this.mc.player != null && uuid.equals(this.mc.player.getUUID()));
+    }
+
+    /**
+     * checks if the given player is in VR and using seated mode, without lerping the RotInfo
+     *
+     * @param uuid UUID of the player
+     * @return if the player is in VR and using seated modes
+     */
+    public boolean isVRAndSeated(UUID uuid) {
+        return (this.vivePlayers.containsKey(uuid) && this.vivePlayers.get(uuid).seated) ||
+            (VRState.VR_RUNNING && this.mc.player != null && uuid.equals(this.mc.player.getUUID()) &&
+                ClientDataHolderVR.getInstance().vrSettings.seated
+            );
     }
 
     /**
@@ -215,7 +229,9 @@ public class ClientVRPlayers {
                         Vector3f look;
                         if (rotInfo != null) {
                             look = MathUtils.FORWARD.rotateY(-rotInfo.getBodyYawRad(), new Vector3f());
-                            if (player.isVisuallySwimming() && (player.isInWater() || rotInfo.fbtMode == FBTMode.ARMS_ONLY)) {
+                            if (player.isVisuallySwimming() &&
+                                (player.isInWater() || rotInfo.fbtMode == FBTMode.ARMS_ONLY))
+                            {
                                 yOffset = 0.3F * rotInfo.heightScale;
                                 xzOffset = 14f * rotInfo.heightScale;
 
@@ -236,10 +252,10 @@ public class ClientVRPlayers {
                                     if (ClientDataHolderVR.getInstance().vrSettings.playerModelType ==
                                         VRSettings.PlayerModelType.SPLIT_ARMS_LEGS)
                                     {
-                                        yOffset = -0.7F * Mth.cos(bend*Mth.HALF_PI) * rotInfo.heightScale;
+                                        yOffset = -0.7F * Mth.cos(bend * Mth.HALF_PI) * rotInfo.heightScale;
                                         xzOffset = bend * 14f * rotInfo.heightScale;
                                     } else {
-                                        yOffset = -0.7F * Mth.cos(bend*Mth.PI) * rotInfo.heightScale;
+                                        yOffset = -0.7F * Mth.cos(bend * Mth.PI) * rotInfo.heightScale;
                                         xzOffset = 14f * rotInfo.heightScale * Mth.sin(bend * Mth.PI);
                                     }
                                     pos = pos.add(pivot.x, pivot.y, pivot.z);
@@ -280,6 +296,26 @@ public class ClientVRPlayers {
         return this.donors.containsKey(uuid);
     }
 
+    public int getHMD(UUID uuid) {
+        return this.donors.getOrDefault(uuid, 0);
+    }
+
+    /**
+     * gets the latest clientside player data, use this when not rendering, i.e. on tick
+     *
+     * @param uuid uuid of the player to get the data for
+     * @return latest available player data
+     */
+    public RotInfo getLatestRotationsForPlayer(UUID uuid) {
+        return this.vivePlayers.containsKey(uuid) ? this.vivePlayers.get(uuid) : this.vivePlayersLast.get(uuid);
+    }
+
+    /**
+     * gets the clientside interpolated player data, this one should only be called during rendering
+     *
+     * @param uuid uuid of the player to get the data for
+     * @return interpolated data
+     */
     public RotInfo getRotationsForPlayer(UUID uuid) {
         float partialTick = ClientUtils.getCurrentPartialTick();
 
@@ -404,7 +440,7 @@ public class ClientVRPlayers {
         rotInfo.headRot = rotInfo.headQuat.transform(MathUtils.BACK, new Vector3f());
 
         Vec3 pos;
-        if (player == Minecraft.getInstance().player) {
+        if (player == Minecraft.getInstance().player && !RenderPassType.isGuiOnly()) {
             pos = ((GameRendererExtension) Minecraft.getInstance().gameRenderer).vivecraft$getRvePos(partialTick);
         } else {
             pos = player.getPosition(partialTick);
