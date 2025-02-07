@@ -18,6 +18,7 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
+import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
 
 @Pseudo
 @Mixin(targets = "net.optifine.shaders.Shaders")
@@ -69,5 +70,15 @@ public class ShadersVRMixin {
         } else {
             return ClientDataHolderVR.getInstance().vrPlayer.getVRDataWorld().getEye(RenderPass.CENTER).getPosition().z;
         }
+    }
+
+    @Inject(method = "beginRender", at = @At(value = "INVOKE", target = "Ljava/nio/FloatBuffer;position(I)Ljava/nio/FloatBuffer;", ordinal = 0), remap = false)
+    private static void vivecraft$updateVivecraftUniforms(CallbackInfo ci) {
+        OptifineHelper.updateUniforms();
+    }
+
+    @Inject(method = "setProgramUniforms", at = @At("TAIL"), remap = false)
+    private static void vivecraft$setVivecraftUniforms(CallbackInfo ci) {
+        OptifineHelper.setUniforms();
     }
 }

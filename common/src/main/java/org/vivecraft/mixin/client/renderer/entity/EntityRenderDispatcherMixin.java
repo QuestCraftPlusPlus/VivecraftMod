@@ -94,10 +94,9 @@ public abstract class EntityRenderDispatcherMixin implements ResourceManagerRelo
             (player.getClass() == LocalPlayer.class || player.getClass() == RemotePlayer.class))
         {
             String skinType = player.getModelName();
-            ClientVRPlayers.RotInfo rotInfo = ClientVRPlayers.getInstance().getRotationsForPlayer(player.getUUID());
-            if (rotInfo != null) {
+            if (ClientVRPlayers.getInstance().isVRPlayer(player)) {
                 VRPlayerRenderer vrPlayerRenderer;
-                if (rotInfo.seated ||
+                if (ClientVRPlayers.getInstance().isVRAndSeated(player.getUUID()) ||
                     ClientDataHolderVR.getInstance().vrSettings.playerModelType == VRSettings.PlayerModelType.VANILLA)
                 {
                     vrPlayerRenderer = this.vivecraft$skinMapVRVanilla.getOrDefault(skinType,

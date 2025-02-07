@@ -7,6 +7,7 @@ import com.mojang.math.Matrix3f;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
@@ -256,19 +257,23 @@ public class RenderHelper {
     /**
      * renders the given screen to the current main target and generates mipmaps for it
      *
-     * @param poseStack   PoseStack to render with
      * @param partialTick partial tick for the screen rendering
      * @param screen      the Screen to render
      * @param maxGuiScale if set, renders the screen at max gui scale
      */
-    public static void drawScreen(PoseStack poseStack, float partialTick, Screen screen, boolean maxGuiScale) {
+    public static void drawScreen(float partialTick, Screen screen, boolean maxGuiScale) {
         // setup modelview for screen rendering
+        PoseStack poseStack = RenderSystem.getModelViewStack();
         poseStack.pushPose();
         poseStack.setIdentity();
         poseStack.translate(0.0F, 0.0F, -2000.0F);
         RenderSystem.applyModelViewMatrix();
 
         double guiScale = maxGuiScale ? GuiHandler.GUI_SCALE_FACTOR_MAX : MC.getWindow().getGuiScale();
+
+        // set gui scale to make the scissor work, that checks the window gui scale
+        int backupGuiScale = GuiHandler.GUI_SCALE_FACTOR;
+        GuiHandler.GUI_SCALE_FACTOR = (int) guiScale;
 
         Matrix4f guiProjection = Matrix4f.orthographic(
             0.0F, (float) (MC.getMainRenderTarget().width / guiScale),
@@ -282,7 +287,7 @@ public class RenderHelper {
             GlStateManager.SourceFactor.ONE,
             GlStateManager.DestFactor.ONE);
 
-        screen.render(poseStack, 0, 0, partialTick);
+        screen.render(new PoseStack(), 0, 0, partialTick);
 
         RenderSystem.blendFuncSeparate(
             GlStateManager.SourceFactor.SRC_ALPHA,
@@ -290,6 +295,8 @@ public class RenderHelper {
             GlStateManager.SourceFactor.ONE,
             GlStateManager.DestFactor.ONE);
 
+        // reset gui scale
+        GuiHandler.GUI_SCALE_FACTOR = backupGuiScale;
         poseStack.popPose();
         RenderSystem.applyModelViewMatrix();
 
@@ -323,17 +330,9 @@ public class RenderHelper {
         int x = (int) (mouseX - size * 0.5F + 1);
         int y = (int) (mouseY - size * 0.5F + 1);
 
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShaderTexture(0, Gui.GUI_ICONS_LOCATION);
 
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferBuilder.vertex(x, y, 0).uv(0, 0).endVertex();
-        bufferBuilder.vertex(x, y + size, 0).uv(0, 15F / 265F).endVertex();
-        bufferBuilder.vertex(x + size, y + size, 0).uv(15F / 265F, 15F / 265F).endVertex();
-        bufferBuilder.vertex(x + size, y, 0).uv(15F / 265F, 0).endVertex();
-        BufferUploader.drawWithShader(bufferBuilder.end());
+        GuiComponent.blit(poseStack, x, y, (int) size, (int) size, 0, 0, 15, 15, 256, 256);
 
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();

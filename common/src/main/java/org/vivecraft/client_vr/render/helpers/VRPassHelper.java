@@ -143,7 +143,7 @@ public class VRPassHelper {
                 MC.mouseHandler.ypos() * (double) MC.getWindow().getGuiScaledHeight() /
                     (double) MC.getWindow().getScreenHeight()
             );
-            RenderHelper.drawMouseMenuQuad(poseStack, x, y);
+            RenderHelper.drawMouseMenuQuad(new PoseStack(), x, y);
 
             poseStack.popPose();
             RenderSystem.applyModelViewMatrix();
@@ -169,7 +169,7 @@ public class VRPassHelper {
             MC.mainRenderTarget = KeyboardHandler.FRAMEBUFFER;
             MC.mainRenderTarget.clear(Minecraft.ON_OSX);
             MC.mainRenderTarget.bindWrite(true);
-            RenderHelper.drawScreen(new PoseStack(), actualPartialTick, KeyboardHandler.UI, true);
+            RenderHelper.drawScreen(actualPartialTick, KeyboardHandler.UI, true);
         }
 
         MC.getProfiler().popPush("Radial Menu");
@@ -177,7 +177,7 @@ public class VRPassHelper {
             MC.mainRenderTarget = RadialHandler.FRAMEBUFFER;
             MC.mainRenderTarget.clear(Minecraft.ON_OSX);
             MC.mainRenderTarget.bindWrite(true);
-            RenderHelper.drawScreen(new PoseStack(), actualPartialTick, RadialHandler.UI, true);
+            RenderHelper.drawScreen(actualPartialTick, RadialHandler.UI, true);
         }
         MC.getProfiler().pop();
         RenderHelper.checkGLError("post 2d ");

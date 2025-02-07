@@ -69,22 +69,24 @@ public abstract class ItemInHandLayerMixin extends RenderLayer {
     private ItemStack vivecraft$climbClawsOverride(
         ItemStack itemStack, @Local(argsOnly = true) LivingEntity entity, @Local(argsOnly = true) HumanoidArm arm)
     {
-        if (ClientNetworking.SERVER_ALLOWS_CLIMBEY && entity instanceof Player && !ClimbTracker.isClaws(itemStack) &&
-            getParentModel() instanceof VRPlayerModel)
+        if (ClientNetworking.SERVER_ALLOWS_CLIMBEY && entity instanceof Player &&
+            ClientVRPlayers.getInstance().isVRPlayer(entity.getUUID()) && !ClimbTracker.isClaws(itemStack))
         {
-            ClientVRPlayers.RotInfo rotInfo = ClientVRPlayers.getInstance().getRotationsForPlayer(entity.getUUID());
-            if (rotInfo != null) {
-                boolean mainHand = arm == (rotInfo.leftHanded ? HumanoidArm.LEFT : HumanoidArm.RIGHT);
-                ItemStack otherStack = mainHand ? entity.getOffhandItem() : entity.getMainHandItem();
-                if (ClimbTracker.isClaws(otherStack)) {
-                    if (entity instanceof LocalPlayer player && VRState.VR_RUNNING &&
-                        ClientDataHolderVR.getInstance().climbTracker.isActive(player) &&
-                        ClimbTracker.hasClimbeyClimbEquipped(player))
-                    {
-                        return otherStack;
-                    } else if (entity instanceof RemotePlayer && !rotInfo.seated) {
-                        return otherStack;
-                    }
+            boolean mainHand = arm ==
+                (ClientVRPlayers.getInstance().isVRAndLeftHanded(entity.getUUID()) ? HumanoidArm.LEFT :
+                    HumanoidArm.RIGHT
+                );
+            ItemStack otherStack = mainHand ? entity.getOffhandItem() : entity.getMainHandItem();
+            if (ClimbTracker.isClaws(otherStack)) {
+                if (entity instanceof LocalPlayer player && VRState.VR_RUNNING &&
+                    ClientDataHolderVR.getInstance().climbTracker.isActive(player) &&
+                    ClimbTracker.hasClimbeyClimbEquipped(player))
+                {
+                    return otherStack;
+                } else if (entity instanceof RemotePlayer &&
+                    !ClientVRPlayers.getInstance().isVRAndSeated(entity.getUUID()))
+                {
+                    return otherStack;
                 }
             }
         }

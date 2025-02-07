@@ -15,6 +15,7 @@ import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
@@ -148,5 +149,9 @@ public class XplatImpl implements Xplat {
 
     public static int getKeyModifierKey(KeyMapping keyMapping) {
         return -1;
+    }
+
+    public static boolean isFakePlayer(ServerPlayer player) {
+        return false;
     }
 }

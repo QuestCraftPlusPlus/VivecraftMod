@@ -15,6 +15,7 @@ public class MathUtils {
     public static final Vector3fc RIGHT = new Vector3f(-1.0F, 0.0F, 0.0F);
     public static final Vector3fc UP = new Vector3f(0.0F, 1.0F, 0.0F);
     public static final Vector3fc DOWN = new Vector3f(0.0F, -1.0F, 0.0F);
+    public static final Vector3fc ZERO = new Vector3f();
 
     public static final Vec3 FORWARD_D = new Vec3(0.0, 0.0, 1.0);
     public static final Vec3 BACK_D = new Vec3(0.0, 0.0, -1.0);
@@ -22,6 +23,8 @@ public class MathUtils {
     public static final Vec3 RIGHT_D = new Vec3(-1.0, 0.0, 0.0);
     public static final Vec3 UP_D = new Vec3(0.0, 1.0, 0.0);
     public static final Vec3 DOWN_D = new Vec3(0.0, -1.0, 0.0);
+
+    public static final Matrix4fc IDENTITY = new Matrix4f();
 
     /**
      * subtracts {@code b} from {@code a}, and returns the result as a Vector3f, should only be used to get local position differences
@@ -44,7 +47,7 @@ public class MathUtils {
     /**
      * @return {@code m} as a Minecraft Matrix4f
      */
-    public static com.mojang.math.Matrix4f toMcMat4(Matrix4f m) {
+    public static com.mojang.math.Matrix4f toMcMat4(Matrix4fc m) {
         com.mojang.math.Matrix4f mcMat = new com.mojang.math.Matrix4f();
         mcMat.m00 = m.m00();
         mcMat.m01 = m.m10();
@@ -219,6 +222,19 @@ public class MathUtils {
         eulerAngles.z = org.joml.Math.atan2(rot.x() * rot.y() + rot.w() * rot.z(),
             0.5f - rot.y() * rot.y() - rot.z() * rot.z());
         return eulerAngles;
+    }
+
+    /**
+     * adds the give nvector to the translation component, without doing any Matrix multiplication
+     *
+     * @param matrix      Matrix to alter
+     * @param translation Translation to add
+     * @return the supplied matrix, for chaining
+     */
+    public static Matrix4f addTranslation(Matrix4f matrix, Vector3f translation) {
+        return matrix.m30(matrix.m30() + translation.x)
+            .m31(matrix.m31() + translation.y)
+            .m32(matrix.m32() + translation.z);
     }
 
     /**

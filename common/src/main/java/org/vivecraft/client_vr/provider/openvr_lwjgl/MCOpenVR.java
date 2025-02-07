@@ -1612,18 +1612,28 @@ public class MCOpenVR extends MCVR {
     public List<Triple<DeviceSource, Integer, Matrix4fc>> getTrackers() {
         List<Triple<DeviceSource, Integer, Matrix4fc>> trackers = super.getTrackers();
         List<Integer> ovrTrackers = getTrackerIds();
+
+        Vector3f offset = new Vector3f();
+        if (!this.dh.vrSettings.seated && this.dh.vrSettings.allowStandingOriginOffset) {
+            if (this.dh.vr.isHMDTracking()) {
+                offset.set(this.dh.vrSettings.originOffset);
+            }
+        }
+
         for (int tracker : ovrTrackers) {
             int type = -1;
             // check if we already know the role of the tracker
             for (int i = 0; i < TRACKABLE_DEVICE_COUNT; i++) {
                 if (this.deviceSource[i].is(DeviceSource.Source.OPENVR, tracker)) {
                     type = i;
+                    break;
                 }
             }
             // super already adds the assigned trackers
             if (trackers.stream().noneMatch(t -> t.getLeft().is(DeviceSource.Source.OPENVR, tracker))) {
                 trackers.add(
-                    Triple.of(new DeviceSource(DeviceSource.Source.OPENVR, tracker), type, this.poseMatrices[tracker]));
+                    Triple.of(new DeviceSource(DeviceSource.Source.OPENVR, tracker), type,
+                        MathUtils.addTranslation(new Matrix4f(this.poseMatrices[tracker]), offset)));
             }
         }
         return trackers;

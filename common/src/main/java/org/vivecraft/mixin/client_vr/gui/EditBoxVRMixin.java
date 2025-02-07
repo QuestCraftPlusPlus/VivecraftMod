@@ -36,6 +36,9 @@ public abstract class EditBoxVRMixin extends AbstractWidget {
     public abstract int getInnerWidth();
 
     @Shadow
+    private String suggestion;
+
+    @Shadow
     private String value;
 
     public EditBoxVRMixin(int x, int y, int width, int height, Component message) {
@@ -47,10 +50,10 @@ public abstract class EditBoxVRMixin extends AbstractWidget {
         PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci,
         @Local String content, @Local(ordinal = 5) int xPos, @Local(ordinal = 6) int yPos)
     {
-        if (VRState.VR_RUNNING && content.isEmpty() && !ClientDataHolderVR.getInstance().vrSettings.seated &&
-            !KeyboardHandler.SHOWING)
+        if (VRState.VR_RUNNING && !ClientDataHolderVR.getInstance().vrSettings.seated && !KeyboardHandler.SHOWING &&
+            content.isEmpty())
         {
-            if (this.value.isEmpty() || this.isFocused()) {
+            if ((this.value.isEmpty() && (this.suggestion == null || this.suggestion.isEmpty())) || this.isFocused()) {
                 // limit text to field size
                 String fullString = I18n.get("vivecraft.message.openKeyboard");
                 String cutString = this.font.plainSubstrByWidth(fullString, this.getInnerWidth());
