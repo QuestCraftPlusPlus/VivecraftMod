@@ -747,8 +747,11 @@ public class MCOpenXR extends MCVR {
 
             this.session = new XrSession(sessionPtr.get(0), this.instance);
 
+            boolean checked = false;
             while (!this.isActive) {
-                VRSettings.LOGGER.info("Vivecraft: waiting for OpenXR session to start");
+                if (!checked)
+                    VRSettings.LOGGER.info("Vivecraft: waiting for OpenXR session to start");
+                checked = true;
                 pollVREvents();
             }
         }
