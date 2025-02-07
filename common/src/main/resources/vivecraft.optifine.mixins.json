@@ -6,6 +6,7 @@
   "client": [
     "OptifineLiquidBlockRendererMixin",
     "OptifineModelBlockRendererMixin",
+    "ShaderMacrosVRMixin",
     "ShaderPackParserVRMixin",
     "ShadersRenderVRMixin",
     "ShadersVRMixin"

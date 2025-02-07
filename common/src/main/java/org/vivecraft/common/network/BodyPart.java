@@ -39,4 +39,12 @@ public enum BodyPart {
             case RIGHT_KNEE, LEFT_KNEE, RIGHT_ELBOW, LEFT_ELBOW -> fbtMode == FBTMode.WITH_JOINTS;
         };
     }
+
+    public boolean isFoot() {
+        return this == RIGHT_FOOT || this == LEFT_FOOT;
+    }
+
+    public boolean isHand() {
+        return this == MAIN_HAND || this == OFF_HAND;
+    }
 }

@@ -38,10 +38,6 @@ public class IrisHelper {
 
     private static Method CapturedRenderingState_getGbufferProjection;
 
-    private static Method WorldRenderingSettings_setUseExtendedVertexFormat;
-    private static Method WorldRenderingSettings_shouldUseExtendedVertexFormat;
-    private static Object WorldRenderingSettings_INSTANCE;
-
     public static boolean SLOW_MODE = false;
 
     public static boolean isLoaded() {
@@ -52,15 +48,7 @@ public class IrisHelper {
      * @return if a shaderpack is in use
      */
     public static boolean isShaderActive() {
-        try {
-            return IrisApi.getInstance().isShaderPackInUse() ||
-                (WorldRenderingSettings_shouldUseExtendedVertexFormat != null &&
-                    (boolean) WorldRenderingSettings_shouldUseExtendedVertexFormat.invoke(
-                        WorldRenderingSettings_INSTANCE)
-                );
-        } catch (IllegalAccessException | InvocationTargetException ignored) {
-            return false;
-        }
+        return IrisApi.getInstance().isShaderPackInUse();
     }
 
     /**
@@ -77,20 +65,13 @@ public class IrisHelper {
      */
     public static void setShadersActive(boolean enabled) {
         IrisApi.getInstance().getConfig().setShadersEnabledAndApply(enabled);
-        if (!enabled && hasIssuesWithMenuWorld()) {
-            try {
-                WorldRenderingSettings_setUseExtendedVertexFormat.invoke(WorldRenderingSettings_INSTANCE, false);
-            } catch (InvocationTargetException | IllegalAccessException e) {
-                VRSettings.LOGGER.error("Vivecraft: error disabling Iris shaders:", e);
-            }
-        }
     }
 
     /**
      * @return if the currently loaded iris version has issues with building menuworlds while shaders are enabled
      */
     public static boolean hasIssuesWithMenuWorld() {
-        return init() && WorldRenderingSettings_setUseExtendedVertexFormat != null;
+        return false;
     }
 
     /**
@@ -210,17 +191,6 @@ public class IrisHelper {
 
             WorldRenderingPipeline_shouldRenderUnderwaterOverlay = worldRenderingPipeline.getMethod(
                 "shouldRenderUnderwaterOverlay");
-
-            try {
-                // iris versions that have this have issues with menuworld building when shaders are on
-                Class<?> WorldRenderingSettings = Class.forName(
-                    "net.irisshaders.iris.shaderpack.materialmap.WorldRenderingSettings");
-                WorldRenderingSettings_setUseExtendedVertexFormat = WorldRenderingSettings.getMethod(
-                    "setUseExtendedVertexFormat", boolean.class);
-                WorldRenderingSettings_shouldUseExtendedVertexFormat = WorldRenderingSettings.getMethod(
-                    "shouldUseExtendedVertexFormat");
-                WorldRenderingSettings_INSTANCE = WorldRenderingSettings.getField("INSTANCE").get(null);
-            } catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException | IllegalAccessException ignore) {}
 
 
             // distant horizon compat

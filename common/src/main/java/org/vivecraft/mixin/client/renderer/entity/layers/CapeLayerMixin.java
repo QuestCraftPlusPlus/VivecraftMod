@@ -55,7 +55,8 @@ public abstract class CapeLayerMixin extends RenderLayer<AbstractClientPlayer, P
         @Local(argsOnly = true) AbstractClientPlayer player, @Local(argsOnly = true, ordinal = 2) float partialTick,
         @Share("xRot") LocalFloatRef xRotation, @Share("yRot") LocalFloatRef yRotation)
     {
-        ClientVRPlayers.RotInfo rotInfo = ClientVRPlayers.getInstance().getRotationsForPlayer(player.getUUID());
+        // don't care about interpolation here, only needs the scales which aren't interpolated
+        ClientVRPlayers.RotInfo rotInfo = ClientVRPlayers.getInstance().getLatestRotationsForPlayer(player.getUUID());
         // only do this if it's a vr player
         if (rotInfo != null) {
             this.vivecraft$bodyRot.rotationZYX(getParentModel().body.zRot, -getParentModel().body.yRot,
