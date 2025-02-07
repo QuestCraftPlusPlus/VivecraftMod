@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
@@ -225,5 +226,16 @@ public interface Xplat {
     @ExpectPlatform
     static int getKeyModifierKey(KeyMapping keyMapping) {
         return -1;
+    }
+
+    /**
+     * checks if the given player is a fake player, instead of an actual player
+     *
+     * @param player player to check
+     * @return {@code true} when it is a fake player
+     */
+    @ExpectPlatform
+    static boolean isFakePlayer(ServerPlayer player) {
+        return false;
     }
 }

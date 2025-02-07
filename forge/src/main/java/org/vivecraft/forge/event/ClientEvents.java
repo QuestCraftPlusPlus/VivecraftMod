@@ -4,8 +4,9 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
 import org.vivecraft.client.gui.settings.VivecraftMainSettings;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
@@ -25,8 +26,12 @@ public class ClientEvents {
         event.register(CameraTracker.CAMERA_DISPLAY_MODEL);
     }
 
-    public static void registerConfigScreen(FMLJavaModLoadingContext context) {
-        context.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
+    @SubscribeEvent
+    // this is only removed in 1.21.1 don't bother me please
+    // need it thought to support 1.21.0
+    @SuppressWarnings("removal")
+    public static void registerConfigScreen(FMLConstructModEvent constructModEvent) {
+        ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
             () -> new ConfigScreenHandler.ConfigScreenFactory((mc, screen) -> new VivecraftMainSettings(screen)));
     }
 }

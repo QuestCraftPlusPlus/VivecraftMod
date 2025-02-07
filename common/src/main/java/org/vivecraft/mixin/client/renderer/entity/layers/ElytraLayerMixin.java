@@ -39,7 +39,8 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, M extends EntityM
         PoseStack instance, float x, float y, float z, Operation<Void> original,
         @Local(argsOnly = true) LivingEntity entity, @Local(argsOnly = true, ordinal = 2) float partialTick)
     {
-        ClientVRPlayers.RotInfo rotInfo = ClientVRPlayers.getInstance().getRotationsForPlayer(entity.getUUID());
+        // don't care about interpolation here, only needs the scales which aren't interpolated
+        ClientVRPlayers.RotInfo rotInfo = ClientVRPlayers.getInstance().getLatestRotationsForPlayer(entity.getUUID());
         // only do this if it's a player model and a vr player
         if (getParentModel() instanceof PlayerModel<?> model && rotInfo != null) {
             this.vivecraft$bodyRot.rotationZYX(model.body.zRot, -model.body.yRot, -model.body.xRot);

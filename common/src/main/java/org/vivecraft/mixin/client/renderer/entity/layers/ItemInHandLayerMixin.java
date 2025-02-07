@@ -24,7 +24,6 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.gameplay.trackers.ClimbTracker;
 import org.vivecraft.client_vr.render.RenderPass;
-import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.mod_compat_vr.immersiveportals.ImmersivePortalsHelper;
 import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
 
@@ -45,46 +44,28 @@ public abstract class ItemInHandLayerMixin extends RenderLayer {
         }
     }
 
-    @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
-    private void vivecraft$noItemsInFirstPerson(
-        CallbackInfo ci, @Local(argsOnly = true) LivingEntity entity, @Local(argsOnly = true) HumanoidArm arm,
-        @Local(argsOnly = true) ItemStack itemStack)
-    {
-        if (entity == Minecraft.getInstance().player && VRState.VR_RUNNING &&
-            ClientDataHolderVR.getInstance().vrSettings.shouldRenderSelf &&
-            RenderPass.isFirstPerson(ClientDataHolderVR.getInstance().currentPass) &&
-            !ShadersHelper.isRenderingShadows() &&
-            !(ImmersivePortalsHelper.isLoaded() && ImmersivePortalsHelper.isRenderingPortal()) &&
-            // don't cancel climbing claws, unless menu hand
-            (ClientDataHolderVR.getInstance().vrSettings.modelArmsMode != VRSettings.ModelArmsMode.COMPLETE ||
-                ClientDataHolderVR.getInstance().isMenuHand(arm) ||
-                !(ClientDataHolderVR.getInstance().climbTracker.isClimbeyClimb() || ClimbTracker.isClaws(itemStack))
-            ))
-        {
-            ci.cancel();
-        }
-    }
-
     @ModifyVariable(method = "renderArmWithItem", at = @At("HEAD"), argsOnly = true)
     private ItemStack vivecraft$climbClawsOverride(
         ItemStack itemStack, @Local(argsOnly = true) LivingEntity entity, @Local(argsOnly = true) HumanoidArm arm)
     {
-        if (ClientNetworking.SERVER_ALLOWS_CLIMBEY && entity instanceof Player && !ClimbTracker.isClaws(itemStack) &&
-            getParentModel() instanceof VRPlayerModel)
+        if (ClientNetworking.SERVER_ALLOWS_CLIMBEY && entity instanceof Player &&
+            ClientVRPlayers.getInstance().isVRPlayer(entity.getUUID()) && !ClimbTracker.isClaws(itemStack))
         {
-            ClientVRPlayers.RotInfo rotInfo = ClientVRPlayers.getInstance().getRotationsForPlayer(entity.getUUID());
-            if (rotInfo != null) {
-                boolean mainHand = arm == (rotInfo.leftHanded ? HumanoidArm.LEFT : HumanoidArm.RIGHT);
-                ItemStack otherStack = mainHand ? entity.getOffhandItem() : entity.getMainHandItem();
-                if (ClimbTracker.isClaws(otherStack)) {
-                    if (entity instanceof LocalPlayer player && VRState.VR_RUNNING &&
-                        ClientDataHolderVR.getInstance().climbTracker.isActive(player) &&
-                        ClimbTracker.hasClimbeyClimbEquipped(player))
-                    {
-                        return otherStack;
-                    } else if (entity instanceof RemotePlayer && !rotInfo.seated) {
-                        return otherStack;
-                    }
+            boolean mainHand = arm ==
+                (ClientVRPlayers.getInstance().isVRAndLeftHanded(entity.getUUID()) ? HumanoidArm.LEFT :
+                    HumanoidArm.RIGHT
+                );
+            ItemStack otherStack = mainHand ? entity.getOffhandItem() : entity.getMainHandItem();
+            if (ClimbTracker.isClaws(otherStack)) {
+                if (entity instanceof LocalPlayer player && VRState.VR_RUNNING &&
+                    ClientDataHolderVR.getInstance().climbTracker.isActive(player) &&
+                    ClimbTracker.hasClimbeyClimbEquipped(player))
+                {
+                    return otherStack;
+                } else if (entity instanceof RemotePlayer &&
+                    !ClientVRPlayers.getInstance().isVRAndSeated(entity.getUUID()))
+                {
+                    return otherStack;
                 }
             }
         }

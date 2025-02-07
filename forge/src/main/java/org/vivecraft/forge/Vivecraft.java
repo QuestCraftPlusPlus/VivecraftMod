@@ -3,8 +3,6 @@ package org.vivecraft.forge;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.EventNetworkChannel;
 import org.vivecraft.client.Xplat;
@@ -12,7 +10,6 @@ import org.vivecraft.client.network.ClientNetworking;
 import org.vivecraft.common.network.CommonNetworkHelper;
 import org.vivecraft.common.network.packet.c2s.VivecraftPayloadC2S;
 import org.vivecraft.common.network.packet.s2c.VivecraftPayloadS2C;
-import org.vivecraft.forge.event.ClientEvents;
 import org.vivecraft.server.ServerNetworking;
 import org.vivecraft.server.config.ServerConfig;
 
@@ -27,7 +24,7 @@ public class Vivecraft {
             .networkProtocolVersion(0)
             .eventNetworkChannel();
 
-    public Vivecraft(FMLJavaModLoadingContext context) {
+    public Vivecraft() {
         // init server config
         ServerConfig.init(null);
 
@@ -39,9 +36,6 @@ public class Vivecraft {
             }
             event.getSource().setPacketHandled(true);
         });
-        if (FMLEnvironment.dist.isClient()) {
-            ClientEvents.registerConfigScreen(context);
-        }
     }
 
     private static void handleClientVivePacket(FriendlyByteBuf buffer, CustomPayloadEvent.Context context) {

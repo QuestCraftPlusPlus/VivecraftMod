@@ -39,6 +39,8 @@ config = "vivecraft.mixins.json"
 [[mixins]]
 config = "vivecraft.alexmobs.mixins.json"
 [[mixins]]
+config = "vivecraft.armourers_workshop.mixins.json"
+[[mixins]]
 config = "vivecraft.blur.mixins.json"
 [[mixins]]
 config = "vivecraft.bedrockify.mixins.json"

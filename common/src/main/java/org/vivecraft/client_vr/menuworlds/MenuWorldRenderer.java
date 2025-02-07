@@ -33,6 +33,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
+import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
@@ -1564,9 +1565,8 @@ public class MenuWorldRenderer {
             Vector3f finalColor = new Vector3f();
             for (int i = 0; i < 16; ++i) {
                 for (int j = 0; j < 16; ++j) {
-                    float skyBrightness =
-                        LightTexture.getBrightness(this.blockAccess.dimensionType(), i) * effectiveSkyLight;
-                    float blockBrightnessRed = LightTexture.getBrightness(this.blockAccess.dimensionType(), j) *
+                    float skyBrightness = getBrightness(this.blockAccess.dimensionType(), i) * effectiveSkyLight;
+                    float blockBrightnessRed = getBrightness(this.blockAccess.dimensionType(), j) *
                         (this.blockLightRedFlicker + 1.5f);
                     float blockBrightnessGreen =
                         blockBrightnessRed * ((blockBrightnessRed * 0.6f + 0.4f) * 0.6f + 0.4f);
@@ -1630,6 +1630,15 @@ public class MenuWorldRenderer {
     private float notGamma(float f) {
         float g = 1.0f - f;
         return 1.0f - g * g * g * g;
+    }
+
+    /**
+     * copy of {@link LightTexture#getBrightness(DimensionType, int)}, because some mods access the player in that
+     */
+    private float getBrightness(DimensionType dimensionType, int lightLevel) {
+        float f = (float) lightLevel / 15.0F;
+        float g = f / (4.0F - 3.0F * f);
+        return Mth.lerp(dimensionType.ambientLight(), g, 1.0F);
     }
 
     public float getWaterVision() {

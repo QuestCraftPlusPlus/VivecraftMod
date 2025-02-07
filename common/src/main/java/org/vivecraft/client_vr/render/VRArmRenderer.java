@@ -65,12 +65,10 @@ public class VRArmRenderer extends PlayerRenderer {
             GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE,
             GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 
-        playerModel.attackTime = 0.0F;
-        playerModel.crouching = false;
-        playerModel.swimAmount = 0.0F;
-
         // in case some mod messes with it
-        rendererArm.resetPose();
+        rendererArm.setPos(side == ControllerType.LEFT ? 5F : -5F, 2F, 0F);
+        rendererArm.setRotation(0F, 0F, 0F);
+        rendererArm.xScale = rendererArm.yScale = rendererArm.zScale = 1F;
 
         // make sure they have the same state
         rendererArmwear.copyFrom(rendererArm);

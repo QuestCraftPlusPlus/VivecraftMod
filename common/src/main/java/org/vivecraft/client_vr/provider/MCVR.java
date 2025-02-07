@@ -1268,25 +1268,25 @@ public abstract class MCVR {
         if (startIndex >= 0) {
             this.usingUnlabeledTrackers = true;
 
-            // unassigned trackers, assign them by distance
+            // only check non identified trackers
+            List<Integer> indices = new ArrayList<>();
             for (int t = startIndex + 3; t < endIndex + 3; t++) {
+                if (this.deviceSource[t].isValid()) {
+                    int finalT = t;
+                    trackers.removeIf((triple -> triple.getLeft().equals(this.deviceSource[finalT])));
+                } else {
+                    indices.add(t);
+                }
+            }
+
+            // unassigned trackers, assign them by distance
+            for (int t : indices) {
                 int closestIndex = -1;
                 float closestDistance = Float.MAX_VALUE;
 
                 // find the closest tracker to the reference point
                 for (int i = 0; i < trackers.size(); i++) {
-                    // int trackerIndex = trackers.get(i);
                     Triple<DeviceSource, Integer, Matrix4fc> tracker = trackers.get(i);
-
-                    // if regular fbt is already detected, skip those trackers
-                    if (hasFBT()) {
-                        if (this.deviceSource[WAIST_TRACKER].equals(tracker.getLeft()) ||
-                            this.deviceSource[LEFT_FOOT_TRACKER].equals(tracker.getLeft()) ||
-                            this.deviceSource[RIGHT_FOOT_TRACKER].equals(tracker.getLeft()))
-                        {
-                            continue;
-                        }
-                    }
 
                     tracker.getRight().getTranslation(tempV)
                         .sub(posAvg.x, 0F, posAvg.z) // center around headset
@@ -1344,9 +1344,18 @@ public abstract class MCVR {
      */
     public List<Triple<DeviceSource, Integer, Matrix4fc>> getTrackers() {
         List<Triple<DeviceSource, Integer, Matrix4fc>> poses = new ArrayList<>();
+
+        Vector3f offset = new Vector3f();
+        if (!this.dh.vrSettings.seated && this.dh.vrSettings.allowStandingOriginOffset) {
+            if (this.dh.vr.isHMDTracking()) {
+                offset.set(this.dh.vrSettings.originOffset);
+            }
+        }
+
         for (int i = 3; i < TRACKABLE_DEVICE_COUNT; i++) {
             if (this.deviceSource[i].isValid()) {
-                poses.add(Triple.of(this.deviceSource[i], i, this.controllerPose[i]));
+                poses.add(Triple.of(this.deviceSource[i], i,
+                    MathUtils.addTranslation(new Matrix4f(this.controllerPose[i]), offset)));
             }
         }
 
@@ -1357,7 +1366,8 @@ public abstract class MCVR {
                 if (tracker.isTracking() &&
                     poses.stream().noneMatch(t -> t.getLeft().is(DeviceSource.Source.OSC, finalI)))
                 {
-                    poses.add(Triple.of(new DeviceSource(DeviceSource.Source.OSC, i), -1, tracker.pose));
+                    poses.add(Triple.of(new DeviceSource(DeviceSource.Source.OSC, i), -1,
+                        MathUtils.addTranslation(new Matrix4f(tracker.pose), offset)));
                 }
             }
         }

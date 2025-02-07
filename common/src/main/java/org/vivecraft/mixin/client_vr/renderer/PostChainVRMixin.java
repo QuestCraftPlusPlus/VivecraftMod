@@ -19,6 +19,7 @@ import org.vivecraft.client.extensions.RenderTargetExtension;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.MultiPassRenderTarget;
 import org.vivecraft.client_vr.VRState;
+import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_xr.render_pass.RenderPassManager;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
@@ -45,8 +46,15 @@ public class PostChainVRMixin {
     {
         if (VRState.VR_INITIALIZED && this.screenTarget == RenderPassManager.INSTANCE.vanillaRenderTarget) {
             for (RenderPass pass : RenderPass.values()) {
+                // gui has no world renderpass
+                if (pass == RenderPass.GUI) {
+                    this.vivecraft$VRPostChains.put(pass,
+                        new PostChain(textureManager, resourceProvider, GuiHandler.GUI_FRAMEBUFFER, name));
+                    continue;
+                }
+
                 // create one post chain for each active render pass
-                if (pass == RenderPass.GUI || WorldRenderPass.getByRenderPass(pass) == null) continue;
+                if (WorldRenderPass.getByRenderPass(pass) == null) continue;
                 this.vivecraft$VRPostChains.put(pass,
                     new PostChain(textureManager, resourceProvider, WorldRenderPass.getByRenderPass(pass).target,
                         name));
@@ -85,7 +93,8 @@ public class PostChainVRMixin {
     @Inject(method = "resize", at = @At("TAIL"))
     private void vivecraft$resizeVRChains(CallbackInfo ci) {
         for (Map.Entry<RenderPass, PostChain> entry : this.vivecraft$VRPostChains.entrySet()) {
-            RenderTarget target = WorldRenderPass.getByRenderPass(entry.getKey()).target;
+            RenderTarget target = entry.getKey() == RenderPass.GUI ? GuiHandler.GUI_FRAMEBUFFER :
+                WorldRenderPass.getByRenderPass(entry.getKey()).target;
             entry.getValue().resize(target.width, target.height);
         }
     }

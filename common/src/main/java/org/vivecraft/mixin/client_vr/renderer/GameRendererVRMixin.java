@@ -3,6 +3,7 @@ package org.vivecraft.mixin.client_vr.renderer;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -141,51 +142,45 @@ public abstract class GameRendererVRMixin
             RenderPassManager.setVanillaRenderPass();
         }
     }
+    @WrapMethod(method = "pick(F)V")
+    private void vivecraft$vrPick(float partialTick, Operation<Void> original) {
+        if (VRState.VR_RUNNING) {
+            // skip when data not available yet
+            if (vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render == null ||
+                this.minecraft.getCameraEntity() == null)
+            {
+                return;
+            }
 
-    @Inject(method = "pick(F)V", at = @At("HEAD"), cancellable = true)
-    private void vivecraft$skipFirstPick(CallbackInfo ci) {
-        if (VRState.VR_RUNNING && vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render == null) {
-            ci.cancel();
+            // set the entity position and view to the controller
+            this.vivecraft$cacheRVEPos(this.minecraft.getCameraEntity());
+            this.vivecraft$setupRVEAtDevice(vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0));
+        }
+
+        // call the vanilla method
+        original.call(partialTick);
+
+        if (VRState.VR_RUNNING) {
+            // restore entity
+            this.vivecraft$restoreRVEPos(this.minecraft.getCameraEntity());
         }
     }
 
-    @WrapOperation(method = "pick(Lnet/minecraft/world/entity/Entity;DDF)Lnet/minecraft/world/phys/HitResult;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;pick(DFZ)Lnet/minecraft/world/phys/HitResult;"))
-    private HitResult vivecraft$changeRaytrace(
-        Entity instance, double hitDistance, float partialTick, boolean hitFluids, Operation<HitResult> original)
-    {
-        if (!VRState.VR_RUNNING) {
-            return original.call(instance, hitDistance, partialTick, hitFluids);
-        } else {
+    @ModifyArg(method = "pick(Lnet/minecraft/world/entity/Entity;DDF)Lnet/minecraft/world/phys/HitResult;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;pick(DFZ)Lnet/minecraft/world/phys/HitResult;"), index = 0)
+    private double vivecraft$getCrossVec(double hitDistance) {
+        if (VRState.VR_RUNNING) {
+            // get the end of the reach point here, to have the correct reach distance
             this.vivecraft$crossVec = vivecraft$DATA_HOLDER.vrPlayer.AimedPointAtDistance(
                 vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render, 0, hitDistance);
-            return vivecraft$DATA_HOLDER.vrPlayer.rayTraceBlocksVR(vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render,
-                0, hitDistance, hitFluids);
         }
-    }
-
-    @WrapOperation(method = "pick(Lnet/minecraft/world/entity/Entity;DDF)Lnet/minecraft/world/phys/HitResult;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getEyePosition(F)Lnet/minecraft/world/phys/Vec3;"))
-    private Vec3 vivecraft$changeRayStart(Entity instance, float partialTick, Operation<Vec3> original) {
-        if (!VRState.VR_RUNNING) {
-            return original.call(instance, partialTick);
-        } else {
-            return vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0).getPosition();
-        }
-    }
-
-    @WrapOperation(method = "pick(Lnet/minecraft/world/entity/Entity;DDF)Lnet/minecraft/world/phys/HitResult;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getViewVector(F)Lnet/minecraft/world/phys/Vec3;"))
-    private Vec3 vivecraft$changeRayDirection(Entity instance, float partialTick, Operation<Vec3> original) {
-        if (!VRState.VR_RUNNING) {
-            return original.call(instance, partialTick);
-        } else {
-            return new Vec3(vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0).getDirection());
-        }
+        return hitDistance;
     }
 
     @ModifyArg(method = "pick(Lnet/minecraft/world/entity/Entity;DDF)Lnet/minecraft/world/phys/HitResult;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/ProjectileUtil;getEntityHitResult(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;"))
     private Predicate<Entity> vivecraft$dontHitRiddenEntity(Predicate<Entity> filter) {
         // it is technically possible to hit the ridden entity when the distance is 0, we don't want that
         if (VRState.VR_RUNNING) {
-            return entity -> filter.test(entity) && entity != Minecraft.getInstance().getCameraEntity().getVehicle();
+            return filter.and(entity -> entity != Minecraft.getInstance().getCameraEntity().getVehicle());
         } else {
             return filter;
         }
@@ -211,7 +206,7 @@ public abstract class GameRendererVRMixin
     private Matrix4f vivecraft$customProjectionMatrix(
         Matrix4f instance, float fovy, float aspect, float zNear, float zFar, Operation<Matrix4f> original)
     {
-        if (VRState.VR_RUNNING) {
+        if (!RenderPassType.isVanilla()) {
             zNear = vivecraft$MIN_CLIP_DISTANCE;
             if (MethodHolder.isInMenuRoom()) {
                 // use 16 Chunks as minimum, to have no issues with clipping in the menuworld
@@ -286,7 +281,7 @@ public abstract class GameRendererVRMixin
         GameRenderer instance, DeltaTracker deltaTracker, Operation<Void> original)
     {
         original.call(instance, deltaTracker);
-        if (VRState.VR_RUNNING && vivecraft$DATA_HOLDER.currentPass != RenderPass.THIRD &&
+        if (!RenderPassType.isVanilla() && vivecraft$DATA_HOLDER.currentPass != RenderPass.THIRD &&
             vivecraft$DATA_HOLDER.currentPass != RenderPass.CAMERA)
         {
             VREffectsHelper.renderFaceOverlay(deltaTracker.getGameTimeDeltaPartialTick(false));
@@ -344,6 +339,8 @@ public abstract class GameRendererVRMixin
             RenderSystem.getModelViewStack().pushMatrix().identity();
             RenderHelper.applyVRModelView(vivecraft$DATA_HOLDER.currentPass, RenderSystem.getModelViewStack());
             RenderSystem.applyModelViewMatrix();
+
+            vivecraft$resetProjectionMatrix(partialTick);
 
             VREffectsHelper.renderGuiLayer(partialTick, true);
 
@@ -536,9 +533,13 @@ public abstract class GameRendererVRMixin
     @Override
     @Unique
     public void vivecraft$setupRVE() {
+        this.vivecraft$setupRVEAtDevice(
+            vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(vivecraft$DATA_HOLDER.currentPass));
+    }
+
+    @Unique
+    private void vivecraft$setupRVEAtDevice(VRData.VRDevicePose eyePose) {
         if (this.vivecraft$cached) {
-            VRData.VRDevicePose eyePose = vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render
-                .getEye(vivecraft$DATA_HOLDER.currentPass);
             Vec3 eye = eyePose.getPosition();
             Entity entity = this.minecraft.getCameraEntity();
             entity.setPosRaw(eye.x, eye.y, eye.z);
@@ -551,6 +552,7 @@ public abstract class GameRendererVRMixin
             entity.setXRot(-eyePose.getPitch());
             entity.xRotO = entity.getXRot();
             entity.setYRot(eyePose.getYaw());
+            entity.yRotO = entity.getYRot();
             if (entity instanceof LivingEntity livingEntity) {
                 livingEntity.yHeadRot = entity.getYRot();
                 livingEntity.yHeadRotO = entity.getYRot();
