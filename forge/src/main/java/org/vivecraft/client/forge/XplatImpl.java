@@ -10,6 +10,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
@@ -18,6 +19,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.common.ForgeMod;
+import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -150,5 +152,9 @@ public class XplatImpl implements Xplat {
             case CONTROL -> GLFW.GLFW_KEY_LEFT_CONTROL;
             default -> -1;
         };
+    }
+
+    public static boolean isFakePlayer(ServerPlayer player) {
+        return player instanceof FakePlayer;
     }
 }
