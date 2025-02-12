@@ -410,7 +410,7 @@ public abstract class LocalPlayerVRMixin extends LocalPlayer_PlayerVRMixin imple
                 mY = direction.y;
                 mZ = direction.z;
 
-                if (!this.getAbilities().flying && !this.wasTouchingWater) {
+                if (this.onGround() && !this.getAbilities().flying && !this.wasTouchingWater) {
                     addFactor = this.vivecraft$dataholder.vrSettings.inertiaFactor.getFactor();
                 }
 
@@ -424,12 +424,22 @@ public abstract class LocalPlayerVRMixin extends LocalPlayer_PlayerVRMixin imple
                 this.vivecraft$additionX = mX;
                 this.vivecraft$additionZ = mZ;
             }
-
-            if (!this.getAbilities().flying && !this.wasTouchingWater) {
-                this.vivecraft$doDrag();
-            }
         }
         return movement;
+    }
+
+    /**
+     * inject into {@link Entity#moveRelative(float, Vec3)}
+     */
+    @Override
+    protected void vivecraft$afterMoveRelative(CallbackInfo ci) {
+        // do drag after setting the delta movement
+        if (VRState.VR_RUNNING && vivecraft$isLocalPlayer(this) &&
+            ClientDataHolderVR.getInstance().vrPlayer.getFreeMove() &&
+            this.onGround() && !this.getAbilities().flying && !this.wasTouchingWater)
+        {
+            this.vivecraft$doDrag();
+        }
     }
 
     /**
@@ -437,33 +447,34 @@ public abstract class LocalPlayerVRMixin extends LocalPlayer_PlayerVRMixin imple
      */
     @Unique
     private void vivecraft$doDrag() {
-        float friction = 0.91F;
+        double friction = 0.91;
 
         if (this.onGround()) {
-            friction = this.level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement())
-                .getBlock().getFriction() * 0.91F;
+            friction *= this.level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement())
+                .getBlock().getFriction();
         }
-        double xFactor = friction;
-        double zFactor = friction;
+
         // account for stock drag code we can't change in LivingEntity#travel
         this.setDeltaMovement(
-            this.getDeltaMovement().x / xFactor,
+            this.getDeltaMovement().x / friction,
             this.getDeltaMovement().y,
-            this.getDeltaMovement().z / zFactor);
+            this.getDeltaMovement().z / friction);
 
         double addFactor = this.vivecraft$dataholder.vrSettings.inertiaFactor.getFactor();
 
         double boundedAdditionX = vivecraft$getBoundedAddition(this.vivecraft$additionX);
         double targetLimitX = (friction * boundedAdditionX) / (1f - friction);
         double multiFactorX = targetLimitX / (friction * (targetLimitX + (boundedAdditionX * addFactor)));
-        xFactor *= multiFactorX;
+        double xFactor = friction * multiFactorX;
 
         double boundedAdditionZ = vivecraft$getBoundedAddition(this.vivecraft$additionZ);
         double targetLimitZ = (friction * boundedAdditionZ) / (1f - friction);
         double multiFactorZ = targetLimitZ / (friction * (targetLimitZ + (boundedAdditionZ * addFactor)));
-        zFactor *= multiFactorZ;
+        double zFactor = friction * multiFactorZ;
 
-        this.setDeltaMovement(this.getDeltaMovement().x * xFactor, this.getDeltaMovement().y,
+        this.setDeltaMovement(
+            this.getDeltaMovement().x * xFactor,
+            this.getDeltaMovement().y,
             this.getDeltaMovement().z * zFactor);
     }
 
