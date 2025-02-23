@@ -123,6 +123,7 @@ public interface DeviceCompat {
         public void initOpenXRLoader(MemoryStack stack) {
             VRSettings.LOGGER.info("Platform: {}", System.getProperty("os.version"));
             VLoader.setupAndroid();
+            try {Thread.sleep(5000);} catch (InterruptedException ignored) {}
             XrLoaderInitInfoAndroidKHR initInfo = XrLoaderInitInfoAndroidKHR.calloc(stack).set(
                 KHRLoaderInitAndroid.XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR,
                 NULL,
