@@ -1165,11 +1165,22 @@ public class MCOpenXR extends MCVR {
         });
     }
 
+    private String processActionName(String name) {
+        String s = name.substring(name.lastIndexOf('/') + 1)
+            .toLowerCase()
+            .replaceAll(" ", "-")
+            .replaceAll("[()]", "");
+
+        if (s.length() > 64) {s = s.substring(0, 60) + "...";}
+        return s;
+    }
+
     private long createAction(
         String name, String localisedName, String type, XrActionSet actionSet, @Nullable String[] subactionPaths)
     {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            String s = name.split("/")[name.split("/").length - 1].toLowerCase();
+
+            String s = processActionName(name);
             XrActionCreateInfo hands = XrActionCreateInfo.calloc(stack);
             hands.type(XR10.XR_TYPE_ACTION_CREATE_INFO);
             hands.next(NULL);
