@@ -25,7 +25,7 @@ subprojects {
             // The following line declares the mojmap mappings
             officialMojangMappings()
             // parchment mappings as backup
-            parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment_version}@zip")
+            parchment("org.parchmentmc.data:parchment-${rootProject.parchment_version}@zip")
         }
         implementation("org.lwjgl:lwjgl-openvr:${rootProject.lwjgl_version}") { transitive = false }
         implementation("org.lwjgl:lwjgl-openvr:${rootProject.lwjgl_version}:natives-linux") { transitive = false }

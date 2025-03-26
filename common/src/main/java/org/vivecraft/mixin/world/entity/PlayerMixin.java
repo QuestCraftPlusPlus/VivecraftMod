@@ -5,12 +5,10 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.vivecraft.mixin.server.ServerPlayerMixin;
 
 @Mixin(Player.class)
-public abstract class PlayerMixin extends LivingEntity {
+public abstract class PlayerMixin extends LivingEntityMixin {
 
     @Shadow
     public abstract Inventory getInventory();
@@ -28,9 +26,6 @@ public abstract class PlayerMixin extends LivingEntity {
     @Shadow
     @Final
     public InventoryMenu inventoryMenu;
-
-    @Shadow
-    public abstract ItemStack getItemBySlot(EquipmentSlot slot);
 
     protected PlayerMixin(EntityType<? extends LivingEntity> entityType, Level level) {
         super(entityType, level);

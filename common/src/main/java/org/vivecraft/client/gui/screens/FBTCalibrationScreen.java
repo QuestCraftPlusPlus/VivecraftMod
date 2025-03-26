@@ -1,12 +1,12 @@
 package org.vivecraft.client.gui.screens;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.CoreShaders;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -188,11 +188,9 @@ public class FBTCalibrationScreen extends Screen {
             poseStack.scale(min, -min, min);
             poseStack.mulPose(Axis.YP.rotation(Mth.PI));
 
-            RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-
             // arms outline
-            BufferBuilder builder = Tesselator.getInstance()
-                .begin(VertexFormat.Mode.DEBUG_LINE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+            RenderType renderType = RenderType.debugLine(2F);
+            VertexConsumer builder = this.minecraft.renderBuffers().bufferSource().getBuffer(renderType);
 
             builder.addVertex(poseStack.last().pose(), 4, 24, -100)
                 .setColor(1F, 1F, 1F, 1F);
@@ -222,7 +220,7 @@ public class FBTCalibrationScreen extends Screen {
             builder.addVertex(poseStack.last().pose(), -4, 24, -100)
                 .setColor(1F, 1F, 1F, 1F);
 
-            BufferUploader.drawWithShader(builder.buildOrThrow());
+            this.minecraft.renderBuffers().bufferSource().endLastBatch();
 
             if (VRState.VR_RUNNING) {
                 poseStack.mulPose(Axis.YP.rotation(
@@ -230,8 +228,9 @@ public class FBTCalibrationScreen extends Screen {
             }
 
             // body overlay
-            builder = Tesselator.getInstance()
-                .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            renderType = RenderType.debugQuads();
+            builder = this.minecraft.renderBuffers().bufferSource().getBuffer(renderType);
+
             // legs
             RenderHelper.renderBox(builder,
                 new Vec3(2, 0, 0), new Vec3(2, 12, 0),
@@ -259,7 +258,7 @@ public class FBTCalibrationScreen extends Screen {
                 new Vec3(-6, 22, 0).add(this.rightHand.x * 10F, this.rightHand.y * 10F, this.rightHand.z * 10F),
                 4, 4, this.rightHandAtPosition ? colorActive : color, (byte) 200, poseStack.last().pose());
 
-            BufferUploader.drawWithShader(builder.buildOrThrow());
+            this.minecraft.renderBuffers().bufferSource().endBatch(renderType);
 
             if (VRState.VR_RUNNING) {
                 ClientDataHolderVR.getInstance().vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract)

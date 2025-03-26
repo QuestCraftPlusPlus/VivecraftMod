@@ -297,7 +297,7 @@ public abstract class GameRendererVRMixin
         this.vivecraft$shouldDrawGui = shouldDrawGui;
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getWindow()Lcom/mojang/blaze3d/platform/Window;", ordinal = 6), cancellable = true)
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getWindow()Lcom/mojang/blaze3d/platform/Window;", ordinal = 2), cancellable = true)
     private void vivecraft$mainMenu(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         if (RenderPassType.isVanilla()) {
             return;
@@ -356,7 +356,7 @@ public abstract class GameRendererVRMixin
         ci.cancel();
     }
 
-    @ModifyVariable(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getWindow()Lcom/mojang/blaze3d/platform/Window;", shift = Shift.AFTER, ordinal = 6), ordinal = 0, argsOnly = true)
+    @ModifyVariable(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getWindow()Lcom/mojang/blaze3d/platform/Window;", shift = Shift.AFTER, ordinal = 2), ordinal = 0, argsOnly = true)
     private boolean vivecraft$renderGui(boolean renderLevel) {
         return RenderPassType.isVanilla() ? renderLevel : this.vivecraft$shouldDrawGui;
     }
@@ -456,10 +456,10 @@ public abstract class GameRendererVRMixin
         this.vivecraft$setupOverlayStatus();
     }
 
-    @ModifyVariable(method = "renderLevel", at = @At(value = "STORE"))
-    private int vivecraft$reduceNauseaSpeed(int oldVal) {
+    @ModifyArg(method = "renderLevel", at = @At(value = "INVOKE", target = "Lorg/joml/Matrix4f;rotate(FLorg/joml/Vector3fc;)Lorg/joml/Matrix4f;", remap = false), index = 0, remap = true)
+    private float vivecraft$reduceNauseaSpeed(float oldVal) {
         if (!RenderPassType.isVanilla()) {
-            return oldVal / 5;
+            return oldVal * 0.2F;
         } else {
             return oldVal;
         }

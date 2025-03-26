@@ -10,6 +10,7 @@ import net.minecraft.client.Options;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.client.player.KeyboardInput;
 import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.phys.Vec2;
 import org.joml.Vector2fc;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -87,6 +88,9 @@ public class KeyboardInputVRMixin extends ClientInput {
 
         ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
 
+        float x = this.moveVector.x;
+        float y = this.moveVector.y;
+
         if (!climbing.get() && !dataHolder.vrSettings.seated && Minecraft.getInstance().screen == null &&
             !KeyboardHandler.SHOWING)
         {
@@ -101,54 +105,54 @@ public class KeyboardInputVRMixin extends ClientInput {
                 forwardAxis = moveStrafe.y();
 
                 if (dataHolder.vrSettings.analogMovement) {
-                    this.forwardImpulse = moveStrafe.y();
-                    this.leftImpulse = -moveStrafe.x();
+                    y = moveStrafe.y();
+                    x = -moveStrafe.x();
                 } else {
-                    this.forwardImpulse = this.vivecraft$axisToDigital(moveStrafe.y());
-                    this.leftImpulse = this.vivecraft$axisToDigital(-moveStrafe.x());
+                    y = this.vivecraft$axisToDigital(moveStrafe.y());
+                    x = this.vivecraft$axisToDigital(-moveStrafe.x());
                 }
             } else if (moveRotate.y() != 0.0F) {
                 setMovement = true;
                 forwardAxis = moveRotate.y();
 
                 if (dataHolder.vrSettings.analogMovement) {
-                    this.forwardImpulse = moveRotate.y();
+                    y = moveRotate.y();
                     // use left/right key as fallback
-                    this.leftImpulse = 0.0F;
-                    this.leftImpulse -= vivecraft$getAxisValue(this.options.keyRight);
-                    this.leftImpulse += vivecraft$getAxisValue(this.options.keyLeft);
+                    x = 0.0F;
+                    x -= vivecraft$getAxisValue(this.options.keyRight);
+                    x += vivecraft$getAxisValue(this.options.keyLeft);
                 } else {
-                    this.forwardImpulse = this.vivecraft$axisToDigital(moveRotate.y());
+                    y = this.vivecraft$axisToDigital(moveRotate.y());
                 }
             } else if (dataHolder.vrSettings.analogMovement) {
                 // neither axis input active, use single key values
                 setMovement = true;
-                this.forwardImpulse = 0.0F;
-                this.leftImpulse = 0.0F;
+                y = 0.0F;
+                x = 0.0F;
 
                 forwardAxis = vivecraft$getAxisValue(this.options.keyUp);
                 if (forwardAxis == 0.0F) {
                     forwardAxis = vivecraft$getAxisValue(VivecraftVRMod.INSTANCE.keyTeleportFallback);
                 }
 
-                this.forwardImpulse += forwardAxis;
-                this.forwardImpulse -= vivecraft$getAxisValue(this.options.keyDown);
+                y += forwardAxis;
+                y -= vivecraft$getAxisValue(this.options.keyDown);
 
-                this.leftImpulse -= vivecraft$getAxisValue(this.options.keyRight);
-                this.leftImpulse += vivecraft$getAxisValue(this.options.keyLeft);
+                x -= vivecraft$getAxisValue(this.options.keyRight);
+                x += vivecraft$getAxisValue(this.options.keyLeft);
 
                 float deadZone = 0.05F;
-                this.forwardImpulse = MathUtils.applyDeadzone(this.forwardImpulse, deadZone);
-                this.leftImpulse = MathUtils.applyDeadzone(this.leftImpulse, deadZone);
+                y = MathUtils.applyDeadzone(y, deadZone);
+                x = MathUtils.applyDeadzone(x, deadZone);
             }
 
             if (setMovement) {
                 this.vivecraft$wasAnalogMovement = true;
                 // just assuming all this below is needed for compatibility.
-                boolean forward = this.forwardImpulse > 0.0F;
-                boolean backward = this.forwardImpulse < 0.0F;
-                boolean left = this.leftImpulse > 0.0F;
-                boolean right = this.leftImpulse < 0.0F;
+                boolean forward = y > 0.0F;
+                boolean backward = y < 0.0F;
+                boolean left = x > 0.0F;
+                boolean right = x < 0.0F;
                 VRInputAction.setKeyBindState(this.options.keyUp, forward);
                 VRInputAction.setKeyBindState(this.options.keyDown, backward);
                 VRInputAction.setKeyBindState(this.options.keyLeft, left);
@@ -163,10 +167,10 @@ public class KeyboardInputVRMixin extends ClientInput {
                     if (forwardAxis >= dataHolder.vrSettings.autoSprintThreshold) {
                         Minecraft.getInstance().player.setSprinting(true);
                         this.vivecraft$wasAutoSprint = true;
-                        this.forwardImpulse = 1.0F;
-                    } else if (this.forwardImpulse > 0.0F && dataHolder.vrSettings.analogMovement) {
+                        y = 1.0F;
+                    } else if (y > 0.0F && dataHolder.vrSettings.analogMovement) {
                         // Adjust range so you can still reach full speed while not sprinting
-                        this.forwardImpulse = this.forwardImpulse / dataHolder.vrSettings.autoSprintThreshold;
+                        y = y / dataHolder.vrSettings.autoSprintThreshold;
                     }
                 }
             }
@@ -186,5 +190,6 @@ public class KeyboardInputVRMixin extends ClientInput {
             Minecraft.getInstance().player.setSprinting(false);
             this.vivecraft$wasAutoSprint = false;
         }
+        this.moveVector = new Vec2(x, y);
     }
 }

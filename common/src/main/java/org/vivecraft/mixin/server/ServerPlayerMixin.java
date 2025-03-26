@@ -1,5 +1,6 @@
 package org.vivecraft.mixin.server;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.core.component.DataComponents;
@@ -136,14 +137,12 @@ public abstract class ServerPlayerMixin extends PlayerMixin {
         return damage;
     }
 
-    @Inject(method = "drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z")
+    @ModifyReturnValue(method = "drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;", at = @At(value = "RETURN")
     )
-    private void vivecraft$dropVive(
-        ItemStack droppedItem, boolean dropAround, boolean includeThrowerName, CallbackInfoReturnable<ItemEntity> cir,
-        @Local ItemEntity item)
-    {
+    private ItemEntity vivecraft$dropVive(ItemEntity item, @Local(argsOnly = true, ordinal = 0) boolean dropAround) {
         ServerVivePlayer serverVivePlayer = vivecraft$getVivePlayer();
-        if (!Xplat.isFakePlayer((ServerPlayer) (Object) this) && !dropAround && serverVivePlayer != null &&
+        if (item != null && !Xplat.isFakePlayer((ServerPlayer) (Object) this) && !dropAround &&
+            serverVivePlayer != null &&
             serverVivePlayer.isVR())
         {
             // spawn item from players hand
@@ -157,6 +156,7 @@ public abstract class ServerPlayerMixin extends PlayerMixin {
                 pos.y + item.getDeltaMovement().y,
                 pos.z + item.getDeltaMovement().z);
         }
+        return item;
     }
 
     @Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)

@@ -1,9 +1,7 @@
 package org.vivecraft.client_vr.provider.openvr_lwjgl;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.opengl.GlStateManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
@@ -102,9 +100,9 @@ public class OpenVRStereoRenderer extends VRRenderer {
 
         // generate left eye texture
         this.LeftEyeTextureId = GlStateManager._genTexture();
-        RenderSystem.bindTexture(this.LeftEyeTextureId);
-        RenderSystem.texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
-        RenderSystem.texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+        GlStateManager._bindTexture(this.LeftEyeTextureId);
+        GlStateManager._texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+        GlStateManager._texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
         GlStateManager._texImage2D(GL11C.GL_TEXTURE_2D, 0, GL11C.GL_RGBA8, width, height, 0, GL11C.GL_RGBA,
             GL11C.GL_INT, null);
         this.openvr.texType0.handle(this.LeftEyeTextureId);
@@ -113,18 +111,16 @@ public class OpenVRStereoRenderer extends VRRenderer {
 
         // generate right eye texture
         this.RightEyeTextureId = GlStateManager._genTexture();
-        RenderSystem.bindTexture(this.RightEyeTextureId);
-        RenderSystem.texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
-        RenderSystem.texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+        GlStateManager._bindTexture(this.RightEyeTextureId);
+        GlStateManager._texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+        GlStateManager._texParameter(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
         GlStateManager._texImage2D(GL11C.GL_TEXTURE_2D, 0, GL11C.GL_RGBA8, width, height, 0, GL11C.GL_RGBA,
             GL11C.GL_INT, null);
         this.openvr.texType1.handle(this.RightEyeTextureId);
         this.openvr.texType1.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
         this.openvr.texType1.eType(VR.ETextureType_TextureType_OpenGL);
 
-        VRSettings.LOGGER.info("Vivecraft: VR Provider supplied render texture IDs: {}, {}", this.LeftEyeTextureId,
-            this.RightEyeTextureId);
-
+        GlStateManager._bindTexture(boundTextureId);
         this.lastError = RenderHelper.checkGLError("create VR textures");
 
         this.framebufferEyeLeft = new VRTextureTarget("L Eye", width, height, false, this.LeftEyeTextureId, true, false,
@@ -231,12 +227,12 @@ public class OpenVRStereoRenderer extends VRRenderer {
             this.framebufferEyeRight = null;
         }
         if (this.LeftEyeTextureId > -1) {
-            TextureUtil.releaseTextureId(this.LeftEyeTextureId);
+            GlStateManager._deleteTexture(this.LeftEyeTextureId);
             this.LeftEyeTextureId = -1;
         }
 
         if (this.RightEyeTextureId > -1) {
-            TextureUtil.releaseTextureId(this.RightEyeTextureId);
+            GlStateManager._deleteTexture(this.RightEyeTextureId);
             this.RightEyeTextureId = -1;
         }
     }

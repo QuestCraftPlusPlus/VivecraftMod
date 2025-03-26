@@ -38,6 +38,7 @@ public class NullVR extends MCVR {
     protected static final int HEAD_TRACKER = CAMERA_TRACKER;
 
     private BodyPart currentBodyPart = BodyPart.HEAD;
+    private boolean syncBodyparts = true;
     private FBTMode fbtMode = FBTMode.ARMS_ONLY;
 
     private ControllerTransform controllerType = ControllerTransform.NULL;
@@ -184,10 +185,18 @@ public class NullVR extends MCVR {
                     this.hmdRotation.set3x3(GuiHandler.GUI_ROTATION_ROOM);
                 }
             }
+
+            if (!this.dh.vrSettings.seated) {
+                if (this.mc.screen == null && this.dh.vrSettings.vrTouchHotbar) {
+                    Profiler.get().popPush("touchHotbar");
+                    if (this.dh.vrSettings.vrHudLockMode != VRSettings.HUDLock.HEAD && this.hudPopup) {
+                        this.processHotbar();
+                    }
+                }
+            }
+
             Profiler.get().popPush("hmdSampling");
             this.hmdSampling();
-
-            Profiler.get().pop();
         }
     }
 
@@ -322,6 +331,11 @@ public class NullVR extends MCVR {
                     this.fbtMode = ClientUtils.getNextEnum(this.fbtMode, offset);
                     MirrorNotification.notify("Changed fbt mode to: " + this.fbtMode, false, 1000);
                     triggered = true;
+                } else if (key == GLFW.GLFW_KEY_KP_MULTIPLY) {
+                    // toggle body sync
+                    this.syncBodyparts = !this.syncBodyparts;
+                    MirrorNotification.notify("toggled body part sync to : " + this.syncBodyparts, false, 1000);
+                    triggered = true;
                 }
             }
 
@@ -387,7 +401,7 @@ public class NullVR extends MCVR {
 
     private void rotateBody(float angle, Vector3fc axis) {
         this.deviceRotations[this.currentBodyPart.rightIndex].rotateAxis(angle, axis);
-        if (this.currentBodyPart.leftIndex != -1) {
+        if (this.currentBodyPart.leftIndex != -1 && this.syncBodyparts) {
             if (axis == MathUtils.RIGHT) {
                 this.deviceRotations[this.currentBodyPart.leftIndex].rotateAxis(angle, axis);
             } else {
@@ -398,7 +412,7 @@ public class NullVR extends MCVR {
 
     private void translateBody(float x, float y, float z) {
         this.deviceOffsets[this.currentBodyPart.rightIndex].add(x, y, z);
-        if (this.currentBodyPart.leftIndex != -1) {
+        if (this.currentBodyPart.leftIndex != -1 && this.syncBodyparts) {
             this.deviceOffsets[this.currentBodyPart.leftIndex].add(-x, y, z);
         }
     }

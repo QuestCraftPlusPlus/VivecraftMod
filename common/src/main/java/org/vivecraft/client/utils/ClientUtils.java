@@ -13,6 +13,8 @@ import org.vivecraft.client_vr.settings.VRSettings;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Random;
 
 public class ClientUtils {
@@ -126,5 +128,13 @@ public class ClientUtils {
 
     public static long milliTime() {
         return System.nanoTime() / 1000000L;
+    }
+
+    public static URI parseUri(String uri) {
+        try {
+            return new URI(uri);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Failed to parse Uri: " + uri, e);
+        }
     }
 }

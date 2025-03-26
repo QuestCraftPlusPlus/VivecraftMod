@@ -67,11 +67,11 @@ public class BackpackTracker extends Tracker {
                         if (!this.dh.climbTracker.isGrabbingLadder() ||
                             !ClimbTracker.isClaws(this.mc.player.getMainHandItem()))
                         {
-                            if (player.getInventory().selected != 0) {
-                                this.previousSlot = player.getInventory().selected;
-                                player.getInventory().selected = 0;
+                            if (player.getInventory().getSelectedSlot() != 0) {
+                                this.previousSlot = player.getInventory().getSelectedSlot();
+                                player.getInventory().setSelectedSlot(0);
                             } else {
-                                player.getInventory().selected = this.previousSlot;
+                                player.getInventory().setSelectedSlot(this.previousSlot);
                                 this.previousSlot = 0;
                             }
                         }

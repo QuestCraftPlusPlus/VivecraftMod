@@ -2,25 +2,24 @@ package org.vivecraft.client_vr.provider;
 
 import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.CompiledShaderProgram;
-import net.minecraft.client.renderer.CoreShaders;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 import org.vivecraft.client.Xplat;
 import org.vivecraft.client.extensions.RenderTargetExtension;
+import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client.utils.StencilHelper;
 import org.vivecraft.client.utils.TextUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
@@ -32,7 +31,7 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.RadialHandler;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
 import org.vivecraft.client_vr.render.RenderConfigException;
 import org.vivecraft.client_vr.render.RenderPass;
-import org.vivecraft.client_vr.render.VRShaders;
+import org.vivecraft.client_vr.render.VRRenderTypes;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_xr.render_pass.WorldRenderPass;
@@ -176,6 +175,8 @@ public abstract class VRRenderer {
         ClientDataHolderVR dataholder = ClientDataHolderVR.getInstance();
 
         // setup stencil for writing
+        // TODO 1.21.5 no stencil for now
+        /*
         if (StencilHelper.stencilBufferSupported()) {
             GL11.glEnable(GL11.GL_STENCIL_TEST);
             RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
@@ -205,12 +206,7 @@ public abstract class VRRenderer {
         }
 
         RenderSystem.clearStencil(0);
-        RenderSystem.clearDepth(1);
-
-        RenderSystem.depthMask(true);
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(GL11.GL_ALWAYS);
-        RenderSystem.disableCull();
+        */
 
         RenderSystem.setShaderColor(0F, 0F, 0F, 1.0F);
 
@@ -225,8 +221,6 @@ public abstract class VRRenderer {
             RenderSystem.getModelViewStack().translate(0, 0, -20);
         }
 
-        CompiledShaderProgram lastShader = RenderSystem.getShader();
-
         if (dataholder.currentPass == RenderPass.SCOPEL || dataholder.currentPass == RenderPass.SCOPER) {
             drawCircle(fb.viewWidth, fb.viewHeight);
         } else if (providesStencilMask() &&
@@ -238,19 +232,15 @@ public abstract class VRRenderer {
         RenderSystem.restoreProjectionMatrix();
         RenderSystem.getModelViewStack().popMatrix();
 
-        RenderSystem.depthMask(true); // Do write to depth buffer
-        RenderSystem.colorMask(true, true, true, true);
-        RenderSystem.enableDepthTest();
-
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.enableCull();
-        RenderSystem.setShader(lastShader);
+        // TODO 1.21.5 stencil
+        /*
         if (StencilHelper.stencilBufferSupported()) {
             RenderSystem.stencilFunc(GL11.GL_NOTEQUAL, 255, 1);
             RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
             RenderSystem.stencilMask(0); // Dont Write to stencil buffer
         }
-        RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        */
     }
 
     /**
@@ -260,8 +250,9 @@ public abstract class VRRenderer {
      * @param height height of the circle in screen pixels
      */
     private void drawCircle(float width, float height) {
-        BufferBuilder builder = Tesselator.getInstance()
-            .begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION);
+        RenderType renderType = VRRenderTypes.debugTriangleFanAlways();
+        VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(renderType);
+
         final float edges = 32.0F;
         float radius = width / 2.0F;
 
@@ -272,11 +263,12 @@ public abstract class VRRenderer {
         for (int i = 0; i < edges + 1; i++) {
             float startAngle = (float) i / edges * Mth.TWO_PI;
             builder.addVertex(
-                radius + Mth.cos(startAngle) * radius,
-                radius + Mth.sin(startAngle) * radius,
-                0.0F);
+                    radius + Mth.cos(startAngle) * radius,
+                    radius + Mth.sin(startAngle) * radius,
+                    0.0F)
+                .setColor(0, 0, 0, 255);
         }
-        BufferUploader.drawWithShader(builder.buildOrThrow());
+        Minecraft.getInstance().renderBuffers().bufferSource().endBatch(renderType);
     }
 
     /**
@@ -290,22 +282,20 @@ public abstract class VRRenderer {
             return;
         }
 
-        BufferBuilder builder = Tesselator.getInstance()
-            .begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION);
+        RenderType renderType = VRRenderTypes.debugTrianglesAlways();
+        VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(renderType);
 
-        RenderSystem.setShaderTexture(0, RenderHelper.BLACK_TEXTURE);
-        RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
-        RenderSystem.setShaderTexture(0, RenderHelper.BLACK_TEXTURE);
+        RenderSystem.setShaderTexture(0, RenderHelper.getGpuTexture(RenderHelper.BLACK_TEXTURE));
 
         for (int i = 0; i < verts.length; i += 2) {
             builder.addVertex(
-                verts[i] * this.renderScale + 0.5F,
-                verts[i + 1] * this.renderScale + 0.5F,
-                0.0F);
+                    verts[i] * this.renderScale + 0.5F,
+                    verts[i + 1] * this.renderScale + 0.5F,
+                    0.0F)
+                .setColor(0, 0, 0, 255);
         }
 
-        RenderSystem.setShader(CoreShaders.POSITION);
-        BufferUploader.drawWithShader(builder.buildOrThrow());
+        Minecraft.getInstance().renderBuffers().bufferSource().endBatch(renderType);
     }
 
     /**
@@ -530,16 +520,6 @@ public abstract class VRRenderer {
             this.reinitFrameBuffers("gfx setting changed to: " + this.previousGraphics);
         }
 
-        if (minecraft.options.graphicsMode().get() == GraphicsStatus.FABULOUS &&
-            minecraft.getShaderManager().getProgram(VRShaders.VR_TRANSPARENCY_SHADER) == null)
-        {
-            // fabulous shader didn't compile
-            minecraft.gui.getChat().addMessage(Component.translatable("vivecraft.messages.fabulousFailed"));
-            minecraft.options.graphicsMode().set(GraphicsStatus.FAST);
-            minecraft.levelRenderer.allChanged();
-            this.reinitFrameBuffers("fabulous missing");
-        }
-
         if (this.resizeFrameBuffers && !this.reinitFrameBuffers) {
             Tuple<Integer, Integer> tuple = this.getRenderTextureSizes();
             int eyew = tuple.getA();
@@ -622,7 +602,9 @@ public abstract class VRRenderer {
             RenderHelper.checkGLError("Start Init");
 
             // intel drivers have issues with opengl interop on windows so throw an error
-            if (Util.getPlatform() == Util.OS.WINDOWS && GlUtil.getRenderer().toLowerCase().contains("intel")) {
+            if (Util.getPlatform() == Util.OS.WINDOWS &&
+                RenderSystem.getDevice().getRenderer().toLowerCase().contains("intel"))
+            {
                 StringBuilder gpus = new StringBuilder();
                 boolean onlyIntel = true;
                 for (GraphicsCard gpu : (new SystemInfo()).getHardware().getGraphicsCards()) {
@@ -639,17 +621,16 @@ public abstract class VRRenderer {
                 }
                 throw new RenderConfigException(Component.translatable("vivecraft.messages.incompatiblegpu"),
                     Component.translatable("vivecraft.messages.intelgraphics1",
-                        Component.literal(GlUtil.getRenderer()).withStyle(ChatFormatting.GOLD),
+                        Component.literal(RenderSystem.getDevice().getRenderer()).withStyle(ChatFormatting.GOLD),
                         gpus.toString(),
                         onlyIntel ? Component.empty()
                             : Component.translatable("vivecraft.messages.intelgraphics2",
                             Component.literal("https://www.vivecraft.org/faq/#gpu")
                                 .withStyle(style -> style.withUnderlined(true)
                                     .withColor(ChatFormatting.GREEN)
-                                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                        CommonComponents.GUI_OPEN_IN_BROWSER))
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL,
-                                        "https://www.vivecraft.org/faq/#gpu"))))));
+                                    .withHoverEvent(new HoverEvent.ShowText(CommonComponents.GUI_OPEN_IN_BROWSER))
+                                    .withClickEvent(new ClickEvent.OpenUrl(
+                                        ClientUtils.parseUri("https://www.vivecraft.org/faq/#gpu")))))));
             }
 
             if (!this.isInitialized()) {
@@ -745,16 +726,21 @@ public abstract class VRRenderer {
                 true, -1, false, false, false);
             WorldRenderPass.RIGHT_TELESCOPE = new WorldRenderPass(this.telescopeFramebufferR);
             VRSettings.LOGGER.info("Vivecraft: {}", this.telescopeFramebufferR);
-            this.telescopeFramebufferR.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            this.telescopeFramebufferR.clear();
+
+            RenderSystem.getDevice().createCommandEncoder()
+                .clearColorAndDepthTextures(this.telescopeFramebufferR.getColorTexture(), ARGB.color(0, 0, 0, 255),
+                    this.telescopeFramebufferR.getDepthTexture(), 1F);
             RenderHelper.checkGLError("TelescopeR framebuffer setup");
 
             this.telescopeFramebufferL = new VRTextureTarget("TelescopeL", telescopeSize.getA(), telescopeSize.getB(),
                 true, -1, false, false, false);
             WorldRenderPass.LEFT_TELESCOPE = new WorldRenderPass(this.telescopeFramebufferL);
             VRSettings.LOGGER.info("Vivecraft: {}", this.telescopeFramebufferL);
-            this.telescopeFramebufferL.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            this.telescopeFramebufferL.clear();
+            RenderSystem.getDevice().createCommandEncoder()
+                .clearColorAndDepthTextures(this.telescopeFramebufferL.getColorTexture(), ARGB.color(0, 0, 0, 255),
+                    this.telescopeFramebufferL.getDepthTexture(), 1F);
+            RenderSystem.getDevice().createCommandEncoder()
+                .clearColorTexture(this.telescopeFramebufferR.getColorTexture(), 0);
             RenderHelper.checkGLError("TelescopeL framebuffer setup");
 
 
@@ -788,9 +774,6 @@ public abstract class VRRenderer {
                     VRSettings.LOGGER.info("Vivecraft: {}", this.fsaaFirstPassResultFBO);
                     VRSettings.LOGGER.info("Vivecraft: {}", this.fsaaLastPassResultFBO);
                     RenderHelper.checkGLError("FSAA FBO creation");
-
-                    VRShaders.setupFSAA();
-                    RenderHelper.checkGLError("FBO init fsaa shader");
                 } catch (Exception exception) {
                     // FSAA failed to initialize so don't use it
                     dataholder.vrSettings.useFsaa = false;
@@ -804,10 +787,6 @@ public abstract class VRRenderer {
 
             try {
                 minecraft.mainRenderTarget = this.framebufferVrRender;
-                VRShaders.setupDepthMask();
-                RenderHelper.checkGLError("init depth shader");
-                VRShaders.setupFOVReduction();
-                RenderHelper.checkGLError("init FOV shader");
                 minecraft.gameRenderer.checkEntityPostEffect(minecraft.getCameraEntity());
             } catch (Exception exception) {
                 VRSettings.LOGGER.error("Vivecraft: Shader creation failed:", exception);

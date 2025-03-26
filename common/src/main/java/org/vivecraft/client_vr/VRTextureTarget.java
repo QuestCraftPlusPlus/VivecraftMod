@@ -1,11 +1,16 @@
 package org.vivecraft.client_vr;
 
+import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import org.lwjgl.opengl.GL30;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.TextureFormat;
+import net.minecraft.util.Mth;
 import org.vivecraft.client.Xplat;
+import org.vivecraft.client.extensions.GlDeviceExtension;
 import org.vivecraft.client.extensions.RenderTargetExtension;
 
 /**
@@ -13,55 +18,40 @@ import org.vivecraft.client.extensions.RenderTargetExtension;
  */
 public class VRTextureTarget extends RenderTarget {
 
-    private final String name;
-
     public VRTextureTarget(
         String name, int width, int height, boolean useDepth, int texId, boolean linearFilter, boolean mipmaps,
         boolean useStencil)
     {
-        super(useDepth);
-        this.name = name;
-        RenderSystem.assertOnRenderThreadOrInit();
-        ((RenderTargetExtension) this).vivecraft$setTexId(texId);
+        super(name, useDepth);
+        RenderSystem.assertOnRenderThread();
         ((RenderTargetExtension) this).vivecraft$setLinearFilter(linearFilter);
         ((RenderTargetExtension) this).vivecraft$setMipmaps(mipmaps);
 
         // need to set this first, because the forge/neoforge stencil enabled does a resize
         this.viewWidth = width;
         this.viewHeight = height;
+        this.width = width;
+        this.height = height;
 
         if (useStencil && !Xplat.enableRenderTargetStencil(this)) {
             // use our stencil only if the modloader doesn't support it
             ((RenderTargetExtension) this).vivecraft$setStencil(true);
         }
-        this.resize(width, height);
+        if (texId >= 0) {
+            // hardcoded opengl here
+            if (RenderSystem.getDevice() instanceof GlDevice glDevice) {
+                this.colorTexture = ((GlDeviceExtension) glDevice).vivecraft$createFixedIdTexture(
+                    () -> this.label + " / Color", TextureFormat.RGBA8, width, height,
+                    mipmaps ? Math.max(Mth.log2(width), Mth.log2(height)) : 1, texId);
 
-        this.setClearColor(0, 0, 0, 0);
-    }
-
-    public VRTextureTarget(String name, int width, int height, int colorId, int index) {
-        super(false);
-        this.name = name;
-        RenderSystem.assertOnRenderThreadOrInit();
-        this.resize(width, height);
-
-        // free the old one when setting a new one
-        if (this.colorTextureId != -1) {
-            TextureUtil.releaseTextureId(this.colorTextureId);
+                this.colorTexture.setAddressMode(AddressMode.CLAMP_TO_EDGE);
+                this.setFilterMode(linearFilter ? FilterMode.LINEAR : FilterMode.NEAREST);
+            } else {
+                throw new IllegalStateException("Only Opengl is currently supported by Vivecraft");
+            }
+        } else {
+            this.resize(width, height);
         }
-        this.colorTextureId = colorId;
-
-        GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.frameBufferId);
-        // unset the old GL_COLOR_ATTACHMENT0
-        GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL30.GL_TEXTURE_2D, 0,
-            0);
-        GL30.glFramebufferTextureLayer(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, colorId, 0, index);
-
-        // unbind the framebuffer
-        this.unbindRead();
-        this.unbindWrite();
-
-        this.setClearColor(0, 0, 0, 0);
     }
 
     @Override
@@ -70,12 +60,10 @@ public class VRTextureTarget extends RenderTarget {
             
             Vivecraft RenderTarget: %s
             Size: %s x %s
-            FB ID: %s
             Tex ID: %s"""
             .formatted(
-                this.name,
+                this.label,
                 this.viewWidth, this.viewHeight,
-                this.frameBufferId,
-                this.colorTextureId);
+                this.colorTexture.getLabel());
     }
 }

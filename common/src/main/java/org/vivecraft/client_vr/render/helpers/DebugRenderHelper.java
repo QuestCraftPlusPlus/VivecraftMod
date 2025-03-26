@@ -1,11 +1,12 @@
 package org.vivecraft.client_vr.render.helpers;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -69,17 +70,16 @@ public class DebugRenderHelper {
      */
     public static void renderPlayerAxes(float partialTick) {
         if (MC.player != null) {
-            BufferBuilder bufferbuilder = null;
+            VertexConsumer consumer = null;
+            RenderType renderType = RenderType.debugLineStrip(2F);
             Vec3 camPos = MC.gameRenderer.getMainCamera().getPosition();
 
             for (Player p : MC.player.level().players()) {
                 if (ClientVRPlayers.getInstance().isVRPlayer(p)) {
                     ClientVRPlayers.RotInfo info = ClientVRPlayers.getInstance().getRotationsForPlayer(p.getUUID());
 
-                    if (bufferbuilder == null) {
-                        RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-                        bufferbuilder = Tesselator.getInstance()
-                            .begin(VertexFormat.Mode.DEBUG_LINE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+                    if (consumer == null) {
+                        consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
                     }
 
                     Vector3f playerPos = p.getPosition(partialTick).subtract(camPos).toVector3f();
@@ -89,29 +89,29 @@ public class DebugRenderHelper {
                     }
 
                     if (p != MC.player || DATA_HOLDER.currentPass == RenderPass.THIRD) {
-                        addAxes(bufferbuilder, playerPos, info.headPos, info.headRot, info.headQuat);
+                        addAxes(consumer, playerPos, info.headPos, info.headRot, info.headQuat);
                     }
                     if (!info.seated) {
-                        addAxes(bufferbuilder, playerPos, info.mainHandPos, info.mainHandRot,
+                        addAxes(consumer, playerPos, info.mainHandPos, info.mainHandRot,
                             info.mainHandQuat);
-                        addAxes(bufferbuilder, playerPos, info.offHandPos, info.offHandRot,
+                        addAxes(consumer, playerPos, info.offHandPos, info.offHandRot,
                             info.offHandQuat);
                     }
                     if (info.fbtMode != FBTMode.ARMS_ONLY) {
-                        addAxes(bufferbuilder, playerPos, info.waistPos, info.waistQuat);
-                        addAxes(bufferbuilder, playerPos, info.rightFootPos, info.rightFootQuat);
-                        addAxes(bufferbuilder, playerPos, info.leftFootPos, info.leftFootQuat);
+                        addAxes(consumer, playerPos, info.waistPos, info.waistQuat);
+                        addAxes(consumer, playerPos, info.rightFootPos, info.rightFootQuat);
+                        addAxes(consumer, playerPos, info.leftFootPos, info.leftFootQuat);
                     }
                     if (info.fbtMode == FBTMode.WITH_JOINTS) {
-                        addAxes(bufferbuilder, playerPos, info.rightElbowPos, info.rightElbowQuat);
-                        addAxes(bufferbuilder, playerPos, info.leftElbowPos, info.leftElbowQuat);
-                        addAxes(bufferbuilder, playerPos, info.rightKneePos, info.rightKneeQuat);
-                        addAxes(bufferbuilder, playerPos, info.leftKneePos, info.leftKneeQuat);
+                        addAxes(consumer, playerPos, info.rightElbowPos, info.rightElbowQuat);
+                        addAxes(consumer, playerPos, info.leftElbowPos, info.leftElbowQuat);
+                        addAxes(consumer, playerPos, info.rightKneePos, info.rightKneeQuat);
+                        addAxes(consumer, playerPos, info.leftKneePos, info.leftKneeQuat);
                     }
                 }
             }
-            if (bufferbuilder != null) {
-                BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
+            if (consumer != null) {
+                MC.renderBuffers().bufferSource().endBatch(renderType);
             }
         }
     }
@@ -122,9 +122,8 @@ public class DebugRenderHelper {
      * @param data VRData to get the devices from
      */
     public static void renderDeviceAxes(VRData data) {
-        RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-        BufferBuilder bufferbuilder = Tesselator.getInstance()
-            .begin(VertexFormat.Mode.DEBUG_LINE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        RenderType renderType = RenderType.debugLineStrip(2F);
+        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
         List<VRData.VRDevicePose> list = new ArrayList<>();
 
@@ -166,9 +165,9 @@ public class DebugRenderHelper {
             list.add(data.knee_right);
         }
 
-        list.forEach(p -> addAxes(bufferbuilder, data, p));
+        list.forEach(p -> addAxes(consumer, data, p));
 
-        BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
+        MC.renderBuffers().bufferSource().endBatch(renderType);
     }
 
     /**
@@ -227,29 +226,28 @@ public class DebugRenderHelper {
     public static void renderLocalAxes(Matrix4f matrix) {
         RenderSystem.getModelViewStack().pushMatrix().mul(matrix);
 
-        RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-        BufferBuilder bufferbuilder = Tesselator.getInstance()
-            .begin(VertexFormat.Mode.DEBUG_LINE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        RenderType renderType = RenderType.debugLineStrip(2F);
+        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
         Vector3f position = new Vector3f();
 
-        addLine(bufferbuilder, position, MathUtils.BACK, BLUE);
-        addLine(bufferbuilder, position, MathUtils.UP, GREEN);
-        addLine(bufferbuilder, position, MathUtils.RIGHT, RED);
+        addLine(consumer, position, MathUtils.BACK, BLUE);
+        addLine(consumer, position, MathUtils.UP, GREEN);
+        addLine(consumer, position, MathUtils.RIGHT, RED);
 
-        BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
+        MC.renderBuffers().bufferSource().endBatch(renderType);
         RenderSystem.getModelViewStack().popMatrix();
     }
 
     /**
-     * adds device axes to the {@code bufferBuilder} for the given VRDevicePose
+     * adds device axes to the {@code consumer} for the given VRDevicePose
      *
-     * @param bufferBuilder BufferBuilder to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
-     * @param data          VRData to get camera position from
-     * @param pose          VRDevicePose to ge the orientation and position from.
+     * @param consumer VertexConsumer to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
+     * @param data     VRData to get camera position from
+     * @param pose     VRDevicePose to ge the orientation and position from.
      */
     private static void addAxes(
-        BufferBuilder bufferBuilder, VRData data, VRData.VRDevicePose pose)
+        VertexConsumer consumer, VRData data, VRData.VRDevicePose pose)
     {
         Vector3f position = pose.getPosition().subtract(data.getEye(DATA_HOLDER.currentPass).getPosition())
             .toVector3f();
@@ -260,36 +258,36 @@ public class DebugRenderHelper {
         Vector3f up = pose.getCustomVector(MathUtils.UP).mul(scale);
         Vector3f right = pose.getCustomVector(MathUtils.RIGHT).mul(scale);
 
-        addLine(bufferBuilder, position, forward, BLUE);
-        addLine(bufferBuilder, position, up, GREEN);
-        addLine(bufferBuilder, position, right, RED);
+        addLine(consumer, position, forward, BLUE);
+        addLine(consumer, position, up, GREEN);
+        addLine(consumer, position, right, RED);
     }
 
     /**
-     * adds device axes to the {@code bufferBuilder} for the given VRDevicePose, without dedicated direction vector
+     * adds device axes to the {@code consumer} for the given VRDevicePose, without dedicated direction vector
      *
-     * @param bufferBuilder BufferBuilder to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
-     * @param playerPos     player position, relative to the camera
-     * @param devicePos     device position, relative to the player
-     * @param rot           device rotation
+     * @param consumer  VertexConsumer to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
+     * @param playerPos player position, relative to the camera
+     * @param devicePos device position, relative to the player
+     * @param rot       device rotation
      */
     private static void addAxes(
-        BufferBuilder bufferBuilder, Vector3fc playerPos, Vector3fc devicePos, Quaternionfc rot)
+        VertexConsumer consumer, Vector3fc playerPos, Vector3fc devicePos, Quaternionfc rot)
     {
-        addAxes(bufferBuilder, playerPos, devicePos, rot.transform(MathUtils.BACK, new Vector3f()), rot);
+        addAxes(consumer, playerPos, devicePos, rot.transform(MathUtils.BACK, new Vector3f()), rot);
     }
 
     /**
-     * adds device axes to the {@code bufferBuilder} for the given VRDevicePose
+     * adds device axes to the {@code consumer} for the given VRDevicePose
      *
-     * @param bufferBuilder BufferBuilder to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
-     * @param playerPos     player position, relative to the camera
-     * @param devicePos     device position, relative to the player
-     * @param dir           device forward direction
-     * @param rot           device rotation
+     * @param consumer  VertexConsumer to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
+     * @param playerPos player position, relative to the camera
+     * @param devicePos device position, relative to the player
+     * @param dir       device forward direction
+     * @param rot       device rotation
      */
     private static void addAxes(
-        BufferBuilder bufferBuilder, Vector3fc playerPos, Vector3fc devicePos, Vector3fc dir,
+        VertexConsumer consumer, Vector3fc playerPos, Vector3fc devicePos, Vector3fc dir,
         Quaternionfc rot)
     {
         Vector3f position = playerPos.add(devicePos, new Vector3f());
@@ -300,28 +298,28 @@ public class DebugRenderHelper {
         Vector3f up = rot.transform(MathUtils.UP, new Vector3f()).mul(scale);
         Vector3f right = rot.transform(MathUtils.RIGHT, new Vector3f()).mul(scale);
 
-        addLine(bufferBuilder, position, forward, BLUE);
-        addLine(bufferBuilder, position, up, GREEN);
-        addLine(bufferBuilder, position, right, RED);
+        addLine(consumer, position, forward, BLUE);
+        addLine(consumer, position, up, GREEN);
+        addLine(consumer, position, right, RED);
     }
 
     /**
      * adds a line from {@code position} in direction {@code dir}, with the given {@code color}
      *
-     * @param bufferBuilder BufferBuilder to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
-     * @param position      line start position
-     * @param dir           line end, relative to {@code position}
-     * @param color         line color
+     * @param consumer VertexConsumer to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
+     * @param position line start position
+     * @param dir      line end, relative to {@code position}
+     * @param color    line color
      */
-    private static void addLine(BufferBuilder bufferBuilder, Vector3fc position, Vector3fc dir, Vector3fc color)
+    private static void addLine(VertexConsumer consumer, Vector3fc position, Vector3fc dir, Vector3fc color)
     {
-        bufferBuilder.addVertex(position.x(), position.y(), position.z())
+        consumer.addVertex(position.x(), position.y(), position.z())
             .setColor(color.x(), color.y(), color.z(), 0.0F);
-        bufferBuilder.addVertex(position.x(), position.y(), position.z())
+        consumer.addVertex(position.x(), position.y(), position.z())
             .setColor(color.x(), color.y(), color.z(), 1.0F);
-        bufferBuilder.addVertex(position.x() + dir.x(), position.y() + dir.y(), position.z() + dir.z())
+        consumer.addVertex(position.x() + dir.x(), position.y() + dir.y(), position.z() + dir.z())
             .setColor(color.x(), color.y(), color.z(), 1.0F);
-        bufferBuilder.addVertex(position.x() + dir.x(), position.y() + dir.y(), position.z() + dir.z())
+        consumer.addVertex(position.x() + dir.x(), position.y() + dir.y(), position.z() + dir.z())
             .setColor(color.x(), color.y(), color.z(), 0.0F);
     }
 
@@ -418,17 +416,16 @@ public class DebugRenderHelper {
      * @param color    cube color
      */
     private static void addCube(Vector3fc position, float size, Vector3fc color) {
-        RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-        RenderSystem.setShaderTexture(0, RenderHelper.WHITE_TEXTURE);
+        RenderSystem.setShaderTexture(0, RenderHelper.getGpuTexture(RenderHelper.WHITE_TEXTURE));
 
-        BufferBuilder bufferbuilder = Tesselator.getInstance()
-            .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        RenderType renderType = RenderType.debugQuads();
+        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
         Vec3i iColor = new Vec3i((int) (color.x() * 255), (int) (color.y() * 255), (int) (color.z() * 255));
         Vec3 start = new Vec3(position.x(), position.y(), position.z()).add(MathUtils.FORWARD_D.scale(size * 0.5F));
         Vec3 end = new Vec3(position.x(), position.y(), position.z()).add(MathUtils.BACK_D.scale(size * 0.5F));
-        RenderHelper.renderBox(bufferbuilder, start, end, size, size, iColor, (byte) 255, new Matrix4f());
+        RenderHelper.renderBox(consumer, start, end, size, size, iColor, (byte) 255, new Matrix4f());
 
-        BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
+        MC.renderBuffers().bufferSource().endBatch(renderType);
     }
 }

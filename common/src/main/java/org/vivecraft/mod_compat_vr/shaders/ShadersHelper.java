@@ -1,10 +1,12 @@
 package org.vivecraft.mod_compat_vr.shaders;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.client.Minecraft;
 import org.apache.commons.lang3.tuple.Triple;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.render.RenderPass;
+import org.vivecraft.client_vr.render.VRShaders;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.common.utils.MathUtils;
 import org.vivecraft.mod_compat_vr.iris.IrisHelper;
@@ -140,5 +142,27 @@ public class ShadersHelper {
                     ClientDataHolderVR.getInstance().currentPass.ordinal() : -1));
         }
         return UNIFORMS;
+    }
+
+    /**
+     * registers the vr RenderPipelines to be mapped to the shader ones
+     */
+    public static void registerPipelines() {
+        BiConsumer<RenderPipeline, String> consumer = null;
+        if (IrisHelper.isLoaded()) {
+            consumer = IrisHelper::registerPipeline;
+        } else if (OptifineHelper.isOptifineLoaded()) {
+            consumer = null;
+        }
+        if (consumer != null) {
+            consumer.accept(VRShaders.CROSSHAIR_WORLD, "ENTITIES");
+            consumer.accept(VRShaders.CROSSHAIR_WORLD_ALWAYS, "ENTITIES");
+            consumer.accept(VRShaders.ENTITY_TRANSLUCENT_ALWAYS, "ENTITIES_TRANSLUCENT");
+            consumer.accept(VRShaders.ENTITY_CUTOUT_NO_CULL_ALWAYS, "ENTITIES");
+            consumer.accept(VRShaders.DEBUG_QUADS_ALWAYS, "BASIC");
+            consumer.accept(VRShaders.DEBUG_TRIANGLES_ALWAYS, "BASIC");
+            consumer.accept(VRShaders.DEBUG_TRIANGLE_FAN_ALWAYS, "BASIC");
+            consumer.accept(VRShaders.TEXT_NO_CULL, "ENTITIES_TRANSLUCENT");
+        }
     }
 }

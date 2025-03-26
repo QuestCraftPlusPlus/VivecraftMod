@@ -68,7 +68,7 @@ public class VehicleTracker extends Tracker {
                     return dataHolder.vrPlayer.vrdata_world_pre.getController(0).getDirection();
                 }
             }
-        } else if (entity instanceof Mob mob && mob.isControlledByLocalInstance()) {
+        } else if (entity instanceof Mob mob && mob.isLocalInstanceAuthoritative()) {
             // pigs and striders
             int c = (player.getMainHandItem().getItem() instanceof FoodOnAStickItem ||
                 player.getMainHandItem().is(ItemTags.VIVECRAFT_FOOD_STICKS)
@@ -107,14 +107,14 @@ public class VehicleTracker extends Tracker {
 
                 if (entity instanceof AbstractHorse abstracthorse && !this.dh.horseTracker.isActive(this.mc.player)) {
 
-                    if (abstracthorse.isControlledByLocalInstance() && abstracthorse.isSaddled()) {
+                    if (abstracthorse.isLocalInstanceAuthoritative() && abstracthorse.isSaddled()) {
                         return;
                     }
 
                     this.rotationTarget = abstracthorse.yBodyRot;
                 } else if (entity instanceof Mob mob) {
 
-                    if (mob.isControlledByLocalInstance()) {
+                    if (mob.isLocalInstanceAuthoritative()) {
                         return;
                     }
 

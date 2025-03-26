@@ -190,7 +190,7 @@ public class ServerNetworking {
             case HEIGHT -> vivePlayer.heightScale = ((HeightPayloadC2S) c2sPayload).heightScale();
             case TELEPORT -> {
                 TeleportPayloadC2S payload = (TeleportPayloadC2S) c2sPayload;
-                player.absMoveTo(payload.x(), payload.y(), payload.z(), player.getYRot(), player.getXRot());
+                player.absSnapTo(payload.x(), payload.y(), payload.z(), player.getYRot(), player.getXRot());
             }
             case CLIMBING -> {
                 player.fallDistance = 0.0F;

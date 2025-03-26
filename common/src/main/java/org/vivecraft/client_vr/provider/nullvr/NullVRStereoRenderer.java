@@ -1,9 +1,7 @@
 package org.vivecraft.client_vr.provider.nullvr;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.opengl.GlStateManager;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
@@ -49,19 +47,22 @@ public class NullVRStereoRenderer extends VRRenderer {
         int boundTextureId = GlStateManager._getInteger(GL11.GL_TEXTURE_BINDING_2D);
 
         this.LeftEyeTextureId = GlStateManager._genTexture();
-        RenderSystem.bindTexture(this.LeftEyeTextureId);
-        RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-        RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, width, height, 0, GL11.GL_RGBA, GL11.GL_INT,
+        int i = GlStateManager._getInteger(GL11.GL_TEXTURE_BINDING_2D);
+        GlStateManager._bindTexture(this.LeftEyeTextureId);
+        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_INT,
             null);
 
+        GlStateManager._bindTexture(i);
         this.RightEyeTextureId = GlStateManager._genTexture();
-        RenderSystem.bindTexture(this.RightEyeTextureId);
-        RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-        RenderSystem.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, width, height, 0, GL11.GL_RGBA, GL11.GL_INT,
+        i = GlStateManager._getInteger(GL11.GL_TEXTURE_BINDING_2D);
+        GlStateManager._bindTexture(this.RightEyeTextureId);
+        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_INT,
             null);
-
+        GlStateManager._bindTexture(i);
         this.lastError = RenderHelper.checkGLError("create VR textures");
 
         this.framebufferEyeLeft = new VRTextureTarget("L Eye", width, height, false, this.LeftEyeTextureId, true, false,
@@ -130,12 +131,12 @@ public class NullVRStereoRenderer extends VRRenderer {
         }
 
         if (this.LeftEyeTextureId > -1) {
-            TextureUtil.releaseTextureId(this.LeftEyeTextureId);
+            GlStateManager._deleteTexture(this.LeftEyeTextureId);
             this.LeftEyeTextureId = -1;
         }
 
         if (this.RightEyeTextureId > -1) {
-            TextureUtil.releaseTextureId(this.RightEyeTextureId);
+            GlStateManager._deleteTexture(this.RightEyeTextureId);
             this.RightEyeTextureId = -1;
         }
     }

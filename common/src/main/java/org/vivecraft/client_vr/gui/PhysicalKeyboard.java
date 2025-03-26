@@ -1,16 +1,11 @@
 package org.vivecraft.client_vr.gui;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat.Mode;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
@@ -20,7 +15,6 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL11;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
@@ -28,6 +22,7 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.provider.ControllerType;
 import org.vivecraft.client_vr.provider.InputSimulator;
 import org.vivecraft.client_vr.provider.MCVR;
+import org.vivecraft.client_vr.render.VRRenderTypes;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_vr.settings.OptionEnum;
 import org.vivecraft.client_vr.settings.VRSettings;
@@ -433,7 +428,7 @@ public class PhysicalKeyboard {
         }
     }
 
-    private void drawBox(BufferBuilder buf, AABB box, RGBAColor color, Matrix4f matrix) {
+    private void drawBox(VertexConsumer buf, AABB box, RGBAColor color, Matrix4f matrix) {
         // Alright let's draw a box
         float minX = (float) box.minX, minY = (float) box.minY, minZ = (float) box.minZ;
         float maxX = (float) box.maxX, maxY = (float) box.maxY, maxZ = (float) box.maxZ;
@@ -506,8 +501,6 @@ public class PhysicalKeyboard {
         poseStack.pushMatrix();
         Vector3f center = this.getCenterPos();
         poseStack.translate(-center.x, -center.y, -center.z);
-        RenderSystem.disableCull();
-        RenderSystem.enableBlend();
 
         if (this.easterEggActive) {
             // https://qimg.techjargaming.com/i/UkG1cWAh.png
@@ -538,25 +531,15 @@ public class PhysicalKeyboard {
         }
 
         // We need to ignore depth so we can see the back faces and text
-        RenderSystem.depthFunc(GL11.GL_ALWAYS);
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA,
-            GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
-            GlStateManager.SourceFactor.ONE,
-            GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 
         // Stuff for drawing labels
         Font font = this.mc.font;
         ArrayList<Tuple<String, Vector3f>> labels = new ArrayList<>();
         float textScale = 0.002F * this.scale;
 
-        RenderSystem.setShader(CoreShaders.POSITION_TEX_COLOR);
-
-        RenderSystem.setShaderTexture(0, RenderHelper.WHITE_TEXTURE);
-        RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
-
         // Start building vertices for key boxes
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buf = tesselator.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        RenderType renderType = VRRenderTypes.debugQuads(true);
+        VertexConsumer buf = this.mc.renderBuffers().bufferSource().getBuffer(renderType);
 
         for (KeyButton key : this.keys) {
             AABB box = key.getRenderBoundingBox();
@@ -577,11 +560,11 @@ public class PhysicalKeyboard {
         }
 
         // Draw all the key boxes
-        BufferUploader.drawWithShader(buf.buildOrThrow());
-
-        RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        RenderSystem.setShaderTexture(0, RenderHelper.getGpuTexture(RenderHelper.WHITE_TEXTURE));
+        this.mc.renderBuffers().bufferSource().endBatch(renderType);
 
         // Build all the text
+        // TODO 1.21.5 no cull text
         for (Tuple<String, Vector3f> label : labels) {
             poseStack.pushMatrix();
             poseStack.translate(label.getB().x, label.getB().y, label.getB().z);
@@ -594,10 +577,6 @@ public class PhysicalKeyboard {
         // Draw all the labels
         this.mc.renderBuffers().bufferSource().endBatch();
 
-        RenderSystem.enableBlend();
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableCull();
-        RenderSystem.defaultBlendFunc();
         poseStack.popMatrix();
     }
 

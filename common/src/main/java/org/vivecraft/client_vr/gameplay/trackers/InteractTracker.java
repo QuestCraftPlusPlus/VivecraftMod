@@ -291,10 +291,11 @@ public class InteractTracker extends Tracker {
                 boolean success = false;
                 boolean swing = true;
 
-                if (this.hotbar >= 0 && this.hotbar < 9 && this.mc.player.getInventory().selected != this.hotbar &&
+                if (this.hotbar >= 0 && this.hotbar < 9 &&
+                    this.mc.player.getInventory().getSelectedSlot() != this.hotbar &&
                     hand == InteractionHand.MAIN_HAND)
                 {
-                    this.mc.player.getInventory().selected = this.hotbar;
+                    this.mc.player.getInventory().setSelectedSlot(this.hotbar);
                     success = true;
                     swing = false;
                 } else if (this.hotbar == 9 && hand == InteractionHand.MAIN_HAND) {

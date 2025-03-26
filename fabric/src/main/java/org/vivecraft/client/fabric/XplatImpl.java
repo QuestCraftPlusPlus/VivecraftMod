@@ -100,13 +100,13 @@ public class XplatImpl implements Xplat {
             if (fluidStateIn.is(FluidTags.LAVA)) {
                 return new TextureAtlasSprite[]{
                     Minecraft.getInstance().getModelManager().getBlockModelShaper()
-                        .getBlockModel(Blocks.LAVA.defaultBlockState()).getParticleIcon(),
+                        .getBlockModel(Blocks.LAVA.defaultBlockState()).particleIcon(),
                     ModelBakery.LAVA_FLOW.sprite()
                 };
             } else {
                 return new TextureAtlasSprite[]{
                     Minecraft.getInstance().getModelManager().getBlockModelShaper()
-                        .getBlockModel(Blocks.WATER.defaultBlockState()).getParticleIcon(),
+                        .getBlockModel(Blocks.WATER.defaultBlockState()).particleIcon(),
                     ModelBakery.WATER_FLOW.sprite()
                 };
             }

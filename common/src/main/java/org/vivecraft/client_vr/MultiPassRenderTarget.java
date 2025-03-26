@@ -16,8 +16,8 @@ public class MultiPassRenderTarget extends RenderTarget {
     private final RenderTarget mainTarget;
     private final EnumMap<RenderPass, RenderTarget> vrTargets;
 
-    public MultiPassRenderTarget(RenderTarget mainTarget, EnumMap<RenderPass, RenderTarget> vrTargets) {
-        super(mainTarget.useDepth);
+    public MultiPassRenderTarget(String name, RenderTarget mainTarget, EnumMap<RenderPass, RenderTarget> vrTargets) {
+        super(name, mainTarget.useDepth);
         this.mainTarget = mainTarget;
         this.vrTargets = vrTargets;
 
@@ -26,7 +26,7 @@ public class MultiPassRenderTarget extends RenderTarget {
         this.height = mainTarget.height;
         this.viewWidth = mainTarget.viewWidth;
         this.viewHeight = mainTarget.viewHeight;
-        this.frameBufferId = mainTarget.frameBufferId;
+        //this.frameBufferId = mainTarget.frameBufferId;
         this.filterMode = mainTarget.filterMode;
     }
 
@@ -53,7 +53,7 @@ public class MultiPassRenderTarget extends RenderTarget {
     public void createBuffers(int width, int height) {
         callOnTarget(r -> r.createBuffers(width, height));
     }
-
+/*
     @Override
     public void setFilterMode(int filterMode) {
         callOnTarget(r -> r.setFilterMode(filterMode));
@@ -112,7 +112,7 @@ public class MultiPassRenderTarget extends RenderTarget {
     @Override
     public int getDepthTextureId() {
         return callOnTargetInt(RenderTarget::getDepthTextureId);
-    }
+    }*/
 
     private void callOnTarget(Consumer<RenderTarget> consumer) {
         if (RenderPassType.isVanilla()) {

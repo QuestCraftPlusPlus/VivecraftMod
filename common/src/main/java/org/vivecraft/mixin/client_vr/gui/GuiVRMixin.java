@@ -52,7 +52,6 @@ public abstract class GuiVRMixin implements GuiExtension {
     @Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true)
     private void vivecraft$cancelVignette(CallbackInfo ci) {
         if (RenderPassType.isGuiOnly()) {
-            RenderSystem.enableDepthTest();
             ci.cancel();
         }
     }
@@ -125,15 +124,14 @@ public abstract class GuiVRMixin implements GuiExtension {
     private void vivecraft$hotbarContextIndicator(CallbackInfo ci, @Local(argsOnly = true) GuiGraphics guiGraphics) {
         if (VRState.VR_RUNNING && ClientDataHolderVR.getInstance().interactTracker.hotbar >= 0 &&
             ClientDataHolderVR.getInstance().interactTracker.hotbar < 9 &&
-            this.getCameraPlayer().getInventory().selected != ClientDataHolderVR.getInstance().interactTracker.hotbar &&
+            this.getCameraPlayer().getInventory().getSelectedSlot() !=
+                ClientDataHolderVR.getInstance().interactTracker.hotbar &&
             ClientDataHolderVR.getInstance().interactTracker.isActive(this.minecraft.player))
         {
             int middle = guiGraphics.guiWidth() / 2;
-            RenderSystem.setShaderColor(0.0F, 1.0F, 0.0F, 1.0F);
             guiGraphics.blitSprite(RenderType::guiTextured, HOTBAR_SELECTION_SPRITE,
                 middle - 91 - 1 + ClientDataHolderVR.getInstance().interactTracker.hotbar * 20,
-                guiGraphics.guiHeight() - 22 - 1, 24, 23);
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                guiGraphics.guiHeight() - 22 - 1, 24, 23, 0xFF00FF00);
         }
     }
 
@@ -171,13 +169,9 @@ public abstract class GuiVRMixin implements GuiExtension {
             ClientDataHolderVR.getInstance().interactTracker.isActive(this.minecraft.player);
 
         if (changeColor) {
-            RenderSystem.setShaderColor(0.0F, 0.0F, 1.0F, 1.0F);
-        }
-
-        original.call(instance, renderTypeGetter, sprite, x, y, width, height);
-
-        if (changeColor) {
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            instance.blitSprite(renderTypeGetter, sprite, x, y, width, height, 0xFF0000FF);
+        } else {
+            original.call(instance, renderTypeGetter, sprite, x, y, width, height);
         }
     }
 
@@ -200,7 +194,7 @@ public abstract class GuiVRMixin implements GuiExtension {
             Holder<MobEffect> mobeffect = null;
 
             if (player.isSprinting()) {
-                mobeffect = MobEffects.MOVEMENT_SPEED;
+                mobeffect = MobEffects.SPEED;
             }
 
             if (player.isVisuallySwimming()) {

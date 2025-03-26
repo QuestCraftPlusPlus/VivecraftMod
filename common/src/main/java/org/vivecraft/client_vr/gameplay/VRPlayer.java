@@ -422,7 +422,7 @@ public class VRPlayer {
             Entity entity = player.getVehicle();
 
             if (entity instanceof AbstractHorse abstracthorse) {
-                if (abstracthorse.isControlledByLocalInstance() &&
+                if (abstracthorse.isLocalInstanceAuthoritative() &&
                     abstracthorse.isSaddled() &&
                     !this.dh.horseTracker.isActive(player))
                 {
@@ -431,7 +431,7 @@ public class VRPlayer {
                 }
             } else if (entity instanceof Mob mob) {
                 // pigs and striders.
-                if (mob.isControlledByLocalInstance()) {
+                if (mob.isLocalInstanceAuthoritative()) {
                     mob.yBodyRot = this.vrdata_world_pre.getBodyYaw();
                     this.dh.vehicleTracker.rotationCooldown = 10;
                 }
@@ -578,7 +578,7 @@ public class VRPlayer {
 
         // during login input can be null, and can cause a weird async crash, if not checked
         if (this.mc.player.input != null &&
-            (this.mc.player.input.forwardImpulse != 0.0F || this.mc.player.input.leftImpulse != 0.0F))
+            (this.mc.player.input.getMoveVector().y != 0.0F || this.mc.player.input.getMoveVector().x != 0.0F))
         {
             this.isFreeMoveCurrent = true;
         }

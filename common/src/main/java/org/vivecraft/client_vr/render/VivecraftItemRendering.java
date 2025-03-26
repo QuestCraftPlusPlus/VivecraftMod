@@ -54,14 +54,14 @@ public class VivecraftItemRendering {
             if (block instanceof TorchBlock) {
                 itemTransformType = VivecraftItemTransformType.Block_Stick;
             } else {
-                itemModelResolver.updateForLiving(ITEM_STACK_RENDER_STATE, itemStack, ItemDisplayContext.GUI, false,
-                    player);
+                itemModelResolver.updateForLiving(ITEM_STACK_RENDER_STATE, itemStack, ItemDisplayContext.GUI, player);
 
-                if (ITEM_STACK_RENDER_STATE.isGui3d()) {
+                // TODO 1.21.5 block items detection (signs and such)
+                //if (ITEM_STACK_RENDER_STATE.isGui3d()) {
                     itemTransformType = VivecraftItemTransformType.Block_3D;
-                } else {
+                /*} else {
                     itemTransformType = VivecraftItemTransformType.Block_Item;
-                }
+                }*/
             }
         } else if (item instanceof MapItem || itemStack.is(ItemTags.VIVECRAFT_MAPS)) {
             itemTransformType = VivecraftItemTransformType.Map;
@@ -83,7 +83,7 @@ public class VivecraftItemRendering {
             itemTransformType = VivecraftItemTransformType.Rotated_Tool;
         } else if (item instanceof MaceItem || itemStack.is(ItemTags.VIVECRAFT_MACES)) {
             itemTransformType = VivecraftItemTransformType.Mace;
-        } else if (item instanceof SwordItem || itemStack.is(ItemTags.VIVECRAFT_SWORDS)) {
+        } else if (itemStack.is(ItemTags.VIVECRAFT_SWORDS)) {
             itemTransformType = VivecraftItemTransformType.Sword;
         } else if (item instanceof ShieldItem || itemStack.is(ItemTags.VIVECRAFT_SHIELDS)) {
             itemTransformType = VivecraftItemTransformType.Shield;
@@ -301,6 +301,7 @@ public class VivecraftItemRendering {
             case Block_3D -> {
                 translateX += 0.05F;
                 translateZ -= 0.1F;
+                rotation.mul(Axis.XP.rotationDegrees(90));
                 scale = 0.3F;
             }
             case Block_Stick -> {

@@ -1,14 +1,12 @@
 package org.vivecraft.mixin.world.entity;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityEquipment;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -30,16 +28,11 @@ public class InventoryMixin {
 
     @Shadow
     @Final
-    public NonNullList<ItemStack> offhand;
+    private EntityEquipment equipment;
 
-    @ModifyReturnValue(method = "getSelected", at = @At("RETURN"))
+    @ModifyReturnValue(method = "getSelectedItem", at = @At("RETURN"))
     private ItemStack vivecraft$dualHandingItem(ItemStack original) {
         return vivecraft$activeItem(original);
-    }
-
-    @WrapOperation(method = "getDestroySpeed", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getDestroySpeed(Lnet/minecraft/world/level/block/state/BlockState;)F"))
-    private float vivecraft$dualHandingDestroySpeed(ItemStack instance, BlockState state, Operation<Float> original) {
-        return original.call(vivecraft$activeItem(instance), state);
     }
 
     @Unique
@@ -62,7 +55,7 @@ public class InventoryMixin {
 
         if (bodyPart != null) {
             if (bodyPart == BodyPart.OFF_HAND) {
-                return this.offhand.get(0);
+                return this.equipment.get(EquipmentSlot.OFFHAND);
             } else if (bodyPart != BodyPart.MAIN_HAND) {
                 // feet
                 return ItemStack.EMPTY;

@@ -7,15 +7,28 @@ import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.vivecraft.server.ServerVRPlayers;
 import org.vivecraft.server.ServerVivePlayer;
 
 @Mixin(LivingEntity.class)
-public class LivingEntityMixin {
+public abstract class LivingEntityMixin extends Entity {
+
+    @Shadow
+    public abstract ItemStack getItemBySlot(EquipmentSlot slot);
+
+    public LivingEntityMixin(EntityType<?> entityType, Level level) {
+        super(entityType, level);
+    }
+
     @WrapOperation(method = "hasLineOfSight(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/level/ClipContext$Block;Lnet/minecraft/world/level/ClipContext$Fluid;D)Z", at = @At(value = "NEW", target = "net/minecraft/world/phys/Vec3", ordinal = 0))
     private Vec3 vivecraft$modifyOwnHeadPos(double x, double y, double z, Operation<Vec3> original) {
         if ((Object) this instanceof ServerPlayer player) {

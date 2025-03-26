@@ -2,26 +2,24 @@ package org.vivecraft.client_vr.render.helpers;
 
 import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.profiling.Profiler;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
-import org.lwjgl.opengl.GL13C;
-import org.lwjgl.opengl.GL30C;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.RadialHandler;
 import org.vivecraft.client_vr.render.RenderConfigException;
 import org.vivecraft.client_vr.render.RenderPass;
+import org.vivecraft.client_vr.render.helpers.opengl.OpenGLHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_xr.render_pass.RenderPassManager;
 import org.vivecraft.client_xr.render_pass.WorldRenderPass;
-import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
 
 import java.util.List;
 
@@ -38,9 +36,9 @@ public class VRPassHelper {
      * @param renderLevel  if the level should be rendered, or just the screen
      */
     public static void renderSingleView(RenderPass eye, DeltaTracker.Timer deltaTracker, boolean renderLevel) {
-        RenderSystem.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
-        RenderSystem.clear(GL13C.GL_COLOR_BUFFER_BIT | GL13C.GL_DEPTH_BUFFER_BIT);
-        RenderSystem.enableDepthTest();
+        RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
+            MC.getMainRenderTarget().getColorTexture(), ARGB.opaque(0),
+            MC.getMainRenderTarget().getDepthTexture(), 1F);
 
         // THIS IS WHERE EVERYTHING IS RENDERED
         MC.gameRenderer.render(deltaTracker, renderLevel);
@@ -62,14 +60,10 @@ public class VRPassHelper {
                 Profiler.get().pop();
             }
 
-            if (eye == RenderPass.LEFT) {
-                DATA_HOLDER.vrRenderer.getLeftEyeTarget().bindWrite(true);
-            } else {
-                DATA_HOLDER.vrRenderer.getRightEyeTarget().bindWrite(true);
-            }
-
             // do post-processing
-            ShaderHelper.doVrPostProcess(eye, rendertarget, deltaTracker.getGameTimeDeltaPartialTick(false));
+            ShaderHelper.doVrPostProcess(eye, rendertarget,
+                eye == RenderPass.LEFT ? DATA_HOLDER.vrRenderer.framebufferEye0 :
+                    DATA_HOLDER.vrRenderer.framebufferEye1, deltaTracker.getGameTimeDeltaPartialTick(false));
 
             RenderHelper.checkGLError("post overlay" + eye);
             Profiler.get().pop();
@@ -77,15 +71,13 @@ public class VRPassHelper {
 
         if (DATA_HOLDER.currentPass == RenderPass.CAMERA) {
             Profiler.get().push("cameraCopy");
-            DATA_HOLDER.vrRenderer.cameraFramebuffer.bindWrite(true);
-            RenderSystem.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
-            RenderSystem.clear(GL13C.GL_COLOR_BUFFER_BIT | GL13C.GL_DEPTH_BUFFER_BIT);
-            DATA_HOLDER.vrRenderer.cameraRenderFramebuffer.blitToScreen(
-                DATA_HOLDER.vrRenderer.cameraFramebuffer.viewWidth,
-                DATA_HOLDER.vrRenderer.cameraFramebuffer.viewHeight);
+            DATA_HOLDER.vrRenderer.cameraRenderFramebuffer.blitAndBlendToTexture(
+                DATA_HOLDER.vrRenderer.cameraFramebuffer.getColorTexture());
             Profiler.get().pop();
         }
 
+        // TODO 1.21.5 optifine
+        /*
         if (DATA_HOLDER.currentPass == RenderPass.THIRD &&
             DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.MIXED_REALITY &&
             renderLevel && MC.level != null &&
@@ -102,6 +94,7 @@ public class VRPassHelper {
             // rebind the original buffer
             DATA_HOLDER.vrRenderer.framebufferMR.bindWrite(false);
         }
+        */
     }
 
     /**
@@ -115,11 +108,6 @@ public class VRPassHelper {
         Profiler.get().push("gameRenderer");
 
         Profiler.get().push("VR guis");
-
-        // some mods mess with the depth mask?
-        RenderSystem.depthMask(true);
-        // some mods mess with the backface culling?
-        RenderSystem.enableCull();
 
         // to render gui stuff
         GuiGraphics guiGraphics = new GuiGraphics(MC, MC.renderBuffers().bufferSource());
@@ -162,24 +150,24 @@ public class VRPassHelper {
 
         if (DATA_HOLDER.vrSettings.guiMipmaps) {
             // update mipmaps
-            MC.mainRenderTarget.bindRead();
-            GL30C.glGenerateMipmap(GL30C.GL_TEXTURE_2D);
-            MC.mainRenderTarget.unbindRead();
+            OpenGLHelper.genMipmaps(MC.mainRenderTarget.getColorTexture());
         }
 
         Profiler.get().popPush("2D Keyboard");
         if (KeyboardHandler.SHOWING && !DATA_HOLDER.vrSettings.physicalKeyboard) {
             MC.mainRenderTarget = KeyboardHandler.FRAMEBUFFER;
-            MC.mainRenderTarget.clear();
-            MC.mainRenderTarget.bindWrite(true);
+            RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
+                KeyboardHandler.FRAMEBUFFER.getColorTexture(), 0,
+                KeyboardHandler.FRAMEBUFFER.getDepthTexture(), 1F);
             RenderHelper.drawScreen(guiGraphics, deltaTracker, KeyboardHandler.UI, true);
         }
 
         Profiler.get().popPush("Radial Menu");
         if (RadialHandler.isShowing()) {
             MC.mainRenderTarget = RadialHandler.FRAMEBUFFER;
-            MC.mainRenderTarget.clear();
-            MC.mainRenderTarget.bindWrite(true);
+            RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
+                RadialHandler.FRAMEBUFFER.getColorTexture(), 0,
+                RadialHandler.FRAMEBUFFER.getDepthTexture(), 1F);
             RenderHelper.drawScreen(guiGraphics, deltaTracker, RadialHandler.UI, true);
         }
         Profiler.get().pop();
@@ -215,7 +203,6 @@ public class VRPassHelper {
 
             Profiler.get().push("Eye:" + DATA_HOLDER.currentPass);
             Profiler.get().push("setup");
-            MC.mainRenderTarget.bindWrite(true);
             Profiler.get().pop();
             VRPassHelper.renderSingleView(renderpass, deltaTracker, renderLevel);
             Profiler.get().pop();
@@ -240,7 +227,6 @@ public class VRPassHelper {
                         rendertarget = DATA_HOLDER.vrRenderer.cameraFramebuffer;
                     }
 
-                    MC.mainRenderTarget.unbindWrite();
                     ClientUtils.takeScreenshot(rendertarget);
                     MC.getWindow().updateDisplay(null);
                     DATA_HOLDER.grabScreenShot = false;
