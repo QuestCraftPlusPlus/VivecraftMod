@@ -15,7 +15,8 @@ import org.vivecraft.client_vr.VRState;
 @Mixin(IsUsingItem.class)
 public class IsUsingItemVRMixin {
 
-    @Inject(method = "get", at = @At("HEAD"), cancellable = true)
+    // loom doesn't want to remap this for some reason
+    @Inject(method = {"get", "method_65638"}, at = @At("HEAD"), cancellable = true, remap = false)
     private void vivecraft$noHornUseAnim(
         CallbackInfoReturnable<Boolean> cir, @Local(argsOnly = true) ItemStack itemStack,
         @Local(argsOnly = true) LivingEntity entity)
