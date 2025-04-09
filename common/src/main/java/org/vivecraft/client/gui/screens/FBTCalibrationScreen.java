@@ -189,7 +189,7 @@ public class FBTCalibrationScreen extends Screen {
             poseStack.mulPose(Axis.YP.rotation(Mth.PI));
 
             // arms outline
-            RenderType renderType = RenderType.debugLine(2F);
+            RenderType renderType = RenderType.debugLineStrip(2F);
             VertexConsumer builder = this.minecraft.renderBuffers().bufferSource().getBuffer(renderType);
 
             builder.addVertex(poseStack.last().pose(), 4, 24, -100)
