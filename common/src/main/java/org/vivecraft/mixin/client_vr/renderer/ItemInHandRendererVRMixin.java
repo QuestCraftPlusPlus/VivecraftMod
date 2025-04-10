@@ -34,6 +34,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.vivecraft.client.network.ClientNetworking;
 import org.vivecraft.client_vr.ClientDataHolderVR;
@@ -45,10 +46,12 @@ import org.vivecraft.client_vr.gameplay.trackers.SwingTracker;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
 import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.VRArmRenderer;
+import org.vivecraft.client_vr.render.VRRenderTypes;
 import org.vivecraft.client_vr.render.VivecraftItemRendering;
 import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
+import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
 
 @Mixin(value = ItemInHandRenderer.class, priority = 999)
 public abstract class ItemInHandRendererVRMixin {
@@ -59,6 +62,13 @@ public abstract class ItemInHandRendererVRMixin {
     @Unique
     private static final RenderType VIVECRAFT$MAP_BACKGROUND_CHECKERBOARD_NO_CULL = RenderType.entityCutoutNoCull(
         ResourceLocation.withDefaultNamespace("textures/map/map_background_checkerboard.png"), false);
+
+    @Unique
+    private static final RenderType VIVECRAFT$MAP_BACKGROUND_NO_CULL_TEXT = VRRenderTypes.textNoCull(
+        ResourceLocation.withDefaultNamespace("textures/map/map_background.png"));
+    @Unique
+    private static final RenderType VIVECRAFT$MAP_BACKGROUND_CHECKERBOARD_NO_CULL_TEXT = VRRenderTypes.textNoCull(
+        ResourceLocation.withDefaultNamespace("textures/map/map_background_checkerboard.png"));
 
     @Final
     @Shadow
@@ -96,6 +106,10 @@ public abstract class ItemInHandRendererVRMixin {
         PoseStack poseStack, MultiBufferSource buffer, int combinedLight, float equippedProgress, float swingProgress,
         HumanoidArm side);
 
+    @Shadow
+    @Final
+    private static RenderType MAP_BACKGROUND;
+
     @Inject(method = "renderPlayerArm", at = @At("HEAD"), cancellable = true)
     private void vivecraft$overrideArm(
         PoseStack poseStack, MultiBufferSource buffer, int combinedLight, float equippedProgress, float swingProgress,
@@ -121,10 +135,11 @@ public abstract class ItemInHandRendererVRMixin {
     }
 
     @Inject(method = "renderMap", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;get(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;"), cancellable = true)
-    private void vivecraft$overrideMap(
+    private void vivecraft$overrideMapShaders(
         PoseStack poseStack, MultiBufferSource buffer, int packedLight, ItemStack stack, CallbackInfo ci)
     {
-        if (VRState.VR_RUNNING) {
+        // with shaders, at least iris, we can't provide a custom text pipeline so need to use entity
+        if (VRState.VR_RUNNING && ShadersHelper.isShaderActive()) {
             MapId mapId = stack.get(DataComponents.MAP_ID);
             MapItemSavedData mapData = MapItem.getSavedData(mapId, this.minecraft.level);
             VertexConsumer consumer = buffer.getBuffer(
@@ -157,6 +172,16 @@ public abstract class ItemInHandRendererVRMixin {
                 mapRenderer.render(this.mapRenderState, poseStack, buffer, false, packedLight);
             }
             ci.cancel();
+        }
+    }
+
+    @ModifyArg(method = "renderMap", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/MultiBufferSource;getBuffer(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"))
+    private RenderType vivecraft$overrideMapVanilla(RenderType renderType) {
+        if (VRState.VR_RUNNING) {
+            return renderType == MAP_BACKGROUND ? VIVECRAFT$MAP_BACKGROUND_NO_CULL_TEXT :
+                VIVECRAFT$MAP_BACKGROUND_CHECKERBOARD_NO_CULL_TEXT;
+        } else {
+            return renderType;
         }
     }
 

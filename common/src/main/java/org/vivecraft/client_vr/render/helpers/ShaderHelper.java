@@ -3,7 +3,6 @@ package org.vivecraft.client_vr.render.helpers;
 import com.mojang.blaze3d.buffers.BufferType;
 import com.mojang.blaze3d.buffers.BufferUsage;
 import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -462,10 +461,16 @@ public class ShaderHelper {
         BufferBuilder bufferbuilder = Tesselator.getInstance()
             .begin(VertexFormat.Mode.QUADS, VRShaders.BLIT_VR_PIPELINE.getVertexFormat());
 
-        bufferbuilder.addVertex(-1.0F, -1.0F, 0.0F).setUv(xMin, yMin);
-        bufferbuilder.addVertex(1.0F, -1.0F, 0.0F).setUv(xMax, yMin);
-        bufferbuilder.addVertex(1.0F, 1.0F, 0.0F).setUv(xMax, yMax);
-        bufferbuilder.addVertex(-1.0F, 1.0F, 0.0F).setUv(xMin, yMax);
+        // position quad
+        float xMinPos = (float) left / MC.getMainRenderTarget().viewWidth * 2F - 1F;
+        float yMinPos = (float) top / MC.getMainRenderTarget().viewHeight * 2F - 1F;
+        float xMaxPos = xMinPos + (float) width / MC.getMainRenderTarget().viewWidth * 2F;
+        float yMaxPos = yMinPos + (float) height / MC.getMainRenderTarget().viewHeight * 2F;
+
+        bufferbuilder.addVertex(xMinPos, yMinPos, 0.0F).setUv(xMin, yMin);
+        bufferbuilder.addVertex(xMaxPos, yMinPos, 0.0F).setUv(xMax, yMin);
+        bufferbuilder.addVertex(xMaxPos, yMaxPos, 0.0F).setUv(xMax, yMax);
+        bufferbuilder.addVertex(xMinPos, yMaxPos, 0.0F).setUv(xMin, yMax);
 
         try (MeshData meshData = bufferbuilder.buildOrThrow()) {
             GpuBuffer gpuBuffer = VRShaders.BLIT_VR_PIPELINE.getVertexFormat()
@@ -488,8 +493,6 @@ public class ShaderHelper {
                 .createRenderPass(MC.getMainRenderTarget().getColorTexture(), OptionalInt.empty()))
             {
                 renderPass.setPipeline(VRShaders.BLIT_VR_PIPELINE);
-                // TODO 1.21.5 maybe don't hardcode opengl and change quad location instead
-                GlStateManager._viewport(left, top, width, height);
                 renderPass.setVertexBuffer(0, gpuBuffer);
 
                 renderPass.bindSampler(VRShaders.BLIT_VR_COLOR_SAMPLER, source.getColorTexture());

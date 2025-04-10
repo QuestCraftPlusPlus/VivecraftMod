@@ -295,10 +295,6 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
                 Profiler.get().pop();
             }
 
-            // TODO 1.21.5 check if this is needed still for journeymap or similar
-            // somehow without this it causes issues with the lightmap sometimes
-            //this.mainRenderTarget.unbindRead();
-
             // draw screen/gui to buffer
             // push pose so we can pop it later
             RenderSystem.getModelViewStack().pushMatrix();
