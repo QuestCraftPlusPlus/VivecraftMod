@@ -83,6 +83,8 @@
     "client_vr.renderer.entity.GuardianRendererVRMixin",
     "client_vr.renderer.entity.layers.CustomHeadLayerMixin",
     "client_vr.renderer.entity.layers.HumanoidArmorLayerMixin",
+    "client_vr.renderer.item.BlockModelWrapper$UnbakedVRMixin",
+    "client_vr.renderer.item.BlockModelWrapperVRMixin",
     "client_vr.renderer.item.properties.conditional.IsUsingItemVRMixin",
     "client_vr.tutorial.MovementTutorialStepInstanceVRMixin",
     "client_vr.tutorial.OpenInventoryTutorialStepVRMixin",

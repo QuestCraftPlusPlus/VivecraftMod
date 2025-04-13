@@ -11,7 +11,6 @@ import net.minecraft.client.renderer.MapRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.state.MapRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.component.DataComponents;
@@ -76,9 +75,6 @@ public abstract class ItemInHandRendererVRMixin {
     @Final
     @Shadow
     private EntityRenderDispatcher entityRenderDispatcher;
-    @Shadow
-    @Final
-    private ItemModelResolver itemModelResolver;
     @Shadow
     private float oMainHandHeight;
     @Shadow
@@ -241,7 +237,7 @@ public abstract class ItemInHandRendererVRMixin {
             }
 
             VivecraftItemRendering.VivecraftItemTransformType transformType = VivecraftItemRendering.getTransformType(
-                itemStack, player, this.itemModelResolver);
+                itemStack, player);
 
             boolean useLeftHandModelinLeftHand = false;
 
