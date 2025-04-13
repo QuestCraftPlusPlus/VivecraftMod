@@ -37,9 +37,7 @@ public class VivecraftItemRendering {
      * @param player    Player holding the ItemStack
      * @return ItemTransformType that specifies how the item should be rendered
      */
-    public static VivecraftItemTransformType getTransformType(
-        ItemStack itemStack, AbstractClientPlayer player)
-    {
+    public static VivecraftItemTransformType getTransformType(ItemStack itemStack, AbstractClientPlayer player) {
         VivecraftItemTransformType itemTransformType = VivecraftItemTransformType.Item;
         Item item = itemStack.getItem();
 
@@ -53,9 +51,9 @@ public class VivecraftItemRendering {
             if (block instanceof TorchBlock) {
                 itemTransformType = VivecraftItemTransformType.Block_Stick;
             } else {
-                ResourceLocation resource = itemStack.get(DataComponents.ITEM_MODEL);
-                if (resource != null) {
-                    ItemModel model = Minecraft.getInstance().getModelManager().getItemModel(resource);
+                ResourceLocation modelName = itemStack.get(DataComponents.ITEM_MODEL);
+                if (modelName != null) {
+                    ItemModel model = Minecraft.getInstance().getModelManager().getItemModel(modelName);
                     if (model instanceof BlockModelWrapperExtension blockModel && blockModel.vivecraft$isGenerated()) {
                         return VivecraftItemTransformType.Block_Item;
                     }
