@@ -182,7 +182,7 @@ public class VREffectsHelper {
             DATA_HOLDER.vrPlayer.vrdata_world_render.getController(c).getPosition()));
         // draw the overlay, and flip it vertically
         RenderHelper.drawSizedQuadWithLightmap(720.0F, 720.0F, scale, light, poseStack.last().pose(),
-            RenderType.entitySolid(SCOPE_TEXTURE), true);
+            RenderType.entityTranslucent(SCOPE_TEXTURE), true);
 
         poseStack.popPose();
     }

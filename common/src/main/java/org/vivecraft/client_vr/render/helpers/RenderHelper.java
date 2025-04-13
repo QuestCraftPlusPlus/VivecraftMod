@@ -5,7 +5,9 @@ import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.DeltaTracker;
@@ -335,7 +337,7 @@ public class RenderHelper {
         MC.gameRenderer.lightTexture().turnOnLightLayer();
         MC.gameRenderer.overlayTexture().setupOverlayColor();
 
-        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
+        BufferBuilder consumer = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
 
         // store old lights
         Vector3f light0Old = RenderSystemAccessor.getShaderLightDirections()[0];
@@ -367,7 +369,7 @@ public class RenderHelper {
             .setOverlay(OverlayTexture.NO_OVERLAY).setLight(packedLight)
             .setNormal(normal.x, normal.y, normal.z);
 
-        MC.renderBuffers().bufferSource().endBatch(renderType);
+        renderType.draw(consumer.buildOrThrow());
 
         MC.gameRenderer.lightTexture().turnOffLightLayer();
 
