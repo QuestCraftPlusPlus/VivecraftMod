@@ -52,7 +52,7 @@ import org.vivecraft.client.extensions.BufferBuilderExtension;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.extensions.StateHolderExtension;
-import org.vivecraft.client_vr.render.VRRenderTypes;
+import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.mixin.client.renderer.RenderStateShardAccessor;
 import org.vivecraft.mod_compat_vr.iris.IrisHelper;

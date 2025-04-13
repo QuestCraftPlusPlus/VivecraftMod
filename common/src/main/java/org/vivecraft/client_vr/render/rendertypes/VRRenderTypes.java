@@ -1,4 +1,4 @@
-package org.vivecraft.client_vr.render;
+package org.vivecraft.client_vr.render.rendertypes;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.TheEndPortalRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.TriState;
+import org.vivecraft.client_vr.render.VRShaders;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

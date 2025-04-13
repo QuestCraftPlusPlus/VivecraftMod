@@ -20,7 +20,7 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.trackers.BowTracker;
 import org.vivecraft.client_vr.gameplay.trackers.ClimbTracker;
 import org.vivecraft.client_vr.render.RenderPass;
-import org.vivecraft.client_vr.render.VRRenderTypes;
+import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
 import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
@@ -173,8 +173,6 @@ public class VRArmHelper {
             OptifineHelper.beginEntities();
         }
 
-        MC.gameRenderer.lightTexture().turnOnLightLayer();
-
         MultiBufferSource.BufferSource bufferSource = MC.renderBuffers().bufferSource();
         MC.gameRenderer.itemInHandRenderer.renderArmWithItem(MC.player, partialTick,
             0.0F, InteractionHand.MAIN_HAND, MC.player.getAttackAnim(partialTick), item, 0.0F,
@@ -182,8 +180,6 @@ public class VRArmHelper {
             MC.getEntityRenderDispatcher().getPackedLightCoords(MC.player, partialTick));
 
         bufferSource.endBatch();
-
-        MC.gameRenderer.lightTexture().turnOffLightLayer();
 
         if (OptifineHelper.isOptifineLoaded() && OptifineHelper.isShaderActive()) {
             // undo the thing we did before
@@ -226,8 +222,6 @@ public class VRArmHelper {
                 OptifineHelper.beginEntities();
             }
 
-            MC.gameRenderer.lightTexture().turnOnLightLayer();
-
             MultiBufferSource.BufferSource bufferSource = MC.renderBuffers().bufferSource();
             MC.gameRenderer.itemInHandRenderer.renderArmWithItem(MC.player, partialTick,
                 0.0F, InteractionHand.OFF_HAND, MC.player.getAttackAnim(partialTick), item, 0.0F,
@@ -235,8 +229,6 @@ public class VRArmHelper {
                 MC.getEntityRenderDispatcher().getPackedLightCoords(MC.player, partialTick));
 
             bufferSource.endBatch();
-
-            MC.gameRenderer.lightTexture().turnOffLightLayer();
 
             if (OptifineHelper.isOptifineLoaded() && OptifineHelper.isShaderActive()) {
                 // undo the thing we did before

@@ -5,9 +5,7 @@ import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
-import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.DeltaTracker;
@@ -35,11 +33,11 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
 import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.render.RenderPass;
-import org.vivecraft.client_vr.render.VRRenderTypes;
 import org.vivecraft.client_vr.render.helpers.opengl.OpenGLHelper;
+import org.vivecraft.client_vr.render.rendertypes.ShaderLightRenderType;
+import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.utils.MathUtils;
-import org.vivecraft.mixin.client.blaze3d.RenderSystemAccessor;
 
 public class RenderHelper {
 
@@ -334,19 +332,10 @@ public class RenderHelper {
         float sizeX = size * 0.5F;
         float sizeY = sizeX * displayHeight / displayWidth;
 
-        MC.gameRenderer.lightTexture().turnOnLightLayer();
-        MC.gameRenderer.overlayTexture().setupOverlayColor();
-
-        BufferBuilder consumer = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
-
-        // store old lights
-        Vector3f light0Old = RenderSystemAccessor.getShaderLightDirections()[0];
-        Vector3f light1Old = RenderSystemAccessor.getShaderLightDirections()[1];
-
         Vector3f normal = new Matrix3f(matrix).transform(new Vector3f(0, 0, 1)).normalize();
+        RenderType wrapped = new ShaderLightRenderType(renderType, normal);
 
-        // set lights to front
-        RenderSystem.setShaderLights(normal, normal);
+        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(wrapped);
 
         consumer.addVertex(matrix, -sizeX, -sizeY, 0)
             .setColor(color[0], color[1], color[2], color[3])
@@ -369,14 +358,7 @@ public class RenderHelper {
             .setOverlay(OverlayTexture.NO_OVERLAY).setLight(packedLight)
             .setNormal(normal.x, normal.y, normal.z);
 
-        renderType.draw(consumer.buildOrThrow());
-
-        MC.gameRenderer.lightTexture().turnOffLightLayer();
-
-        // reset lights
-        if (light0Old != null && light1Old != null) {
-            RenderSystem.setShaderLights(light0Old, light1Old);
-        }
+        MC.renderBuffers().bufferSource().endBatch(wrapped);
     }
 
     /**
