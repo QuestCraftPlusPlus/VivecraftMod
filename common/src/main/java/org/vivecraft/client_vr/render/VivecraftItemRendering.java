@@ -90,7 +90,7 @@ public class VivecraftItemRendering {
             itemTransformType = VivecraftItemTransformType.Crossbow;
         } else if (item instanceof CompassItem || item == Items.CLOCK || itemStack.is(ItemTags.VIVECRAFT_COMPASSES)) {
             itemTransformType = VivecraftItemTransformType.Compass;
-        } else if (SwingTracker.isTool(item)) {
+        } else if (SwingTracker.isTool(itemStack)) {
             itemTransformType = VivecraftItemTransformType.Tool;
 
             if (item instanceof FoodOnAStickItem || item instanceof FishingRodItem ||

@@ -89,11 +89,24 @@ public class SwingTracker extends Tracker {
     }
 
     /**
-     * @param item Item to check
-     * @return if the given {@code item} is a Tool
+     * @param itemStack ItemStack to check
+     * @return if the given {@code itemStack} is a Tool
      */
-    public static boolean isTool(Item item) {
+    public static boolean isTool(ItemStack itemStack) {
+        return isToolItem(itemStack.getItem()) ||
+            itemStack.is(ItemTags.VIVECRAFT_TOOLS) ||
+            // also check the vanilla tags, when on a server without vivecraft
+            itemStack.is(net.minecraft.tags.ItemTags.SWORDS) ||
+            itemStack.is(net.minecraft.tags.ItemTags.PICKAXES) ||
+            itemStack.is(net.minecraft.tags.ItemTags.AXES) ||
+            itemStack.is(net.minecraft.tags.ItemTags.SHOVELS) ||
+            itemStack.is(net.minecraft.tags.ItemTags.HOES);
+    }
+
+    private static boolean isToolItem(Item item) {
         return item instanceof ShovelItem ||
+            item instanceof HoeItem ||
+            item instanceof AxeItem ||
             item instanceof ArrowItem ||
             item instanceof FishingRodItem ||
             item instanceof FoodOnAStickItem ||
@@ -106,8 +119,7 @@ public class SwingTracker extends Tracker {
             item == Items.STICK ||
             item == Items.DEBUG_STICK ||
             item instanceof FlintAndSteelItem ||
-            item instanceof BrushItem ||
-            item.getDefaultInstance().is(ItemTags.VIVECRAFT_TOOLS);
+            item instanceof BrushItem;
     }
 
     @Override
@@ -145,10 +157,10 @@ public class SwingTracker extends Tracker {
                     continue;
                 }
 
-                if (!(itemstack.is(ItemTags.VIVECRAFT_SWORDS)) &&
+                if (!(itemstack.is(ItemTags.VIVECRAFT_SWORDS) || itemstack.is(net.minecraft.tags.ItemTags.SWORDS)) &&
                     !(item instanceof TridentItem || itemstack.is(ItemTags.VIVECRAFT_SPEARS)))
                 {
-                    if (isTool(item)) {
+                    if (isTool(itemstack)) {
                         isTool = true;
                     }
                 } else {
