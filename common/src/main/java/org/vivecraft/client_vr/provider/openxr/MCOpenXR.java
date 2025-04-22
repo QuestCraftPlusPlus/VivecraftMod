@@ -1169,7 +1169,7 @@ public class MCOpenXR extends MCVR {
         String s = name.substring(name.lastIndexOf('/') + 1)
             .toLowerCase()
             .replaceAll(" ", "-")
-            .replaceAll("[()]", "");
+            .replaceAll("[^-_./a-z0-9]", "");
 
         if (s.length() > 64) {s = s.substring(0, 60) + "...";}
         return s;
