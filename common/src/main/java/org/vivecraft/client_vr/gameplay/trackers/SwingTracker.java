@@ -96,7 +96,6 @@ public class SwingTracker extends Tracker {
         return isToolItem(itemStack.getItem()) ||
             itemStack.is(ItemTags.VIVECRAFT_TOOLS) ||
             // also check the vanilla tags, when on a server without vivecraft
-            itemStack.is(net.minecraft.tags.ItemTags.SWORDS) ||
             itemStack.is(net.minecraft.tags.ItemTags.PICKAXES) ||
             itemStack.is(net.minecraft.tags.ItemTags.AXES) ||
             itemStack.is(net.minecraft.tags.ItemTags.SHOVELS) ||
