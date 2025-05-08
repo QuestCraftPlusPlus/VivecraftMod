@@ -27,7 +27,7 @@ import org.vivecraft.client.extensions.RenderLayerExtension;
 import org.vivecraft.client.render.VRPlayerRenderer;
 import org.vivecraft.client.utils.RenderLayerType;
 import org.vivecraft.client.utils.ScaleHelper;
-import org.vivecraft.client_vr.VRState;
+import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 
 import java.lang.reflect.Constructor;
@@ -40,7 +40,7 @@ public abstract class PlayerRendererMixin extends LivingEntityRendererMixin<Abst
         super(context);
     }
 
-    @Inject(method = "extractRenderState(Lnet/minecraft/client/player/AbstractClientPlayer;Lnet/minecraft/client/renderer/entity/state/PlayerRenderState;F)V", at = @At("TAIL"))
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/player/AbstractClientPlayer;Lnet/minecraft/client/renderer/entity/state/PlayerRenderState;F)V", at = @At("HEAD"))
     private void vivecraft$addRotInfo(
         AbstractClientPlayer entity, PlayerRenderState reusedState, float partialTick, CallbackInfo ci)
     {
@@ -52,8 +52,8 @@ public abstract class PlayerRendererMixin extends LivingEntityRendererMixin<Abst
             ((EntityRenderStateExtension) reusedState).vivecraft$setRotInfo(null);
         }
 
-        ((EntityRenderStateExtension) reusedState).vivecraft$setMainPlayer(
-            VRState.VR_RUNNING && entity == Minecraft.getInstance().player);
+        ((EntityRenderStateExtension) reusedState).vivecraft$setFirstPersonPlayer(
+            VREffectsHelper.isFirstPersonPlayer(entity));
 
         ((EntityRenderStateExtension) reusedState).vivecraft$setTotalScale(
             ScaleHelper.getEntityEyeHeightScale(entity, partialTick));

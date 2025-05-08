@@ -726,9 +726,9 @@ public class VRPlayer {
         }
     }
 
-    public Vec3 AimedPointAtDistance(VRData source, int controller, double distance) {
-        Vec3 controllerPos = source.getController(controller).getPosition();
-        Vector3f controllerDir = source.getController(controller).getDirection();
+    public Vec3 AimedPointAtDistance(VRData.VRDevicePose source, double distance) {
+        Vec3 controllerPos = source.getPosition();
+        Vector3f controllerDir = source.getDirection();
         return controllerPos.add(controllerDir.x * distance, controllerDir.y * distance, controllerDir.z * distance);
     }
 
@@ -743,7 +743,7 @@ public class VRPlayer {
      */
     public HitResult rayTraceBlocksVR(VRData source, int controller, double hitDistance, boolean hitFluids) {
         Vec3 start = source.getController(controller).getPosition();
-        Vec3 end = this.AimedPointAtDistance(source, controller, hitDistance);
+        Vec3 end = this.AimedPointAtDistance(source.getController(controller), hitDistance);
         return this.mc.level.clip(new ClipContext(start, end, ClipContext.Block.OUTLINE,
             hitFluids ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, this.mc.player));
     }

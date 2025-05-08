@@ -42,7 +42,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
         ClientVRPlayers.RotInfo rotInfo = ((EntityRenderStateExtension) renderState).vivecraft$getRotInfo();
         if (rotInfo != null) {
             float scale = rotInfo.heightScale;
-            if (((EntityRenderStateExtension) renderState).vivecraft$isMainPlayer()) {
+            if (((EntityRenderStateExtension) renderState).vivecraft$isFirstPersonPlayer()) {
                 // remove entity scale, since the entity is already scaled by that before
                 scale *= rotInfo.worldScale / ((EntityRenderStateExtension) renderState).vivecraft$getTotalScale();
             }

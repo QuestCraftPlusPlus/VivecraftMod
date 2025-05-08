@@ -105,6 +105,8 @@ public class VivecraftVRMod {
         "key.categories.ui");
     public final KeyMapping keyToggleMovement = new KeyMapping("vivecraft.key.toggleMovement", -1,
         "key.categories.movement");
+    public final KeyMapping keyToggleWalkUpBlocks = new KeyMapping("vivecraft.key.toggleWalkUp", -1,
+        "key.categories.movement");
     public final KeyMapping keyTogglePlayerList = new KeyMapping("vivecraft.key.togglePlayerList", -1,
         "key.categories.multiplayer");
     public final HandedKeyBinding keyTrackpadTouch = new HandedKeyBinding("vivecraft.key.trackpadTouch", -1,
@@ -148,6 +150,7 @@ public class VivecraftVRMod {
             this.userKeyBindingSet.add(this.keyQuickCommand10);
             this.userKeyBindingSet.add(this.keyQuickCommand11);
             this.userKeyBindingSet.add(this.keyQuickCommand12);
+            this.userKeyBindingSet.add(this.keyToggleWalkUpBlocks);
 
             this.hiddenKeyBindingSet.add(GuiHandler.KEY_LEFT_CLICK);
             this.hiddenKeyBindingSet.add(GuiHandler.KEY_RIGHT_CLICK);

@@ -117,15 +117,17 @@ public class VRPlayerModel_WithArmsLegs extends VRPlayerModel_WithArms implement
                 // limbSwingAmount = 1;
                 float limbRotation =
                     Mth.cos(renderState.walkAnimationPos * 0.6662F) * renderState.walkAnimationSpeed;
-                this.footOffset.set(0, -0.5F, 0)
+                this.footOffset
+                    .set(0, -0.5F, 0)
                     .rotateX(limbRotation)
                     .sub(0, -0.5F, 0)
                     .mul(1F, 0.75F, 1F)
                     .rotateY(-this.bodyYaw);
                 this.kneeOffset
                     .set(0, -0.5F, 0)
-                    .rotateX(Math.abs(limbRotation))
-                    .sub(0, -0.5F, 0);
+                    .rotateX(-Math.abs(limbRotation))
+                    .sub(0, -0.5F, 0)
+                    .rotateY(-this.bodyYaw);
             } else {
                 this.footOffset.zero();
                 this.kneeOffset.zero();

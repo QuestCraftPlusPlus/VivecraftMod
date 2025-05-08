@@ -223,18 +223,29 @@ public class NullVR extends MCVR {
     public List<Triple<DeviceSource, Integer, Matrix4fc>> getTrackers() {
         List<Triple<DeviceSource, Integer, Matrix4fc>> trackers = super.getTrackers();
         int trackerCount = this.fbtMode == FBTMode.ARMS_LEGS ? 3 : this.fbtMode == FBTMode.WITH_JOINTS ? 7 : 0;
+
+        Vector3f offset = new Vector3f();
+        if (!this.dh.vrSettings.seated && this.dh.vrSettings.allowStandingOriginOffset) {
+            if (this.dh.vr.isHMDTracking()) {
+                offset.set(this.dh.vrSettings.originOffset);
+            }
+        }
+
         for (int i = 3; i < 3 + trackerCount; i++) {
             int type = -1;
             // check if we already know the role of the tracker
             for (int t = 0; t < TRACKABLE_DEVICE_COUNT; t++) {
-                if (this.deviceSource[i].is(DeviceSource.Source.NULL, i)) {
+                if (this.deviceSource[t].is(DeviceSource.Source.NULL, i)) {
                     type = t;
+                    break;
                 }
             }
             int finalI = i;
             if (trackers.stream().noneMatch(t -> t.getLeft().is(DeviceSource.Source.NULL, finalI))) {
                 trackers.add(Triple.of(new DeviceSource(DeviceSource.Source.NULL, i), type,
-                    new Matrix4f().rotation(this.deviceRotations[i]).setTranslation(this.deviceOffsets[i])));
+                    new Matrix4f().rotation(this.deviceRotations[i])
+                        .setTranslation(this.deviceOffsets[i].x + offset.x, this.deviceOffsets[i].y + offset.y,
+                            this.deviceOffsets[i].z + offset.z)));
             }
         }
         return trackers;
@@ -299,7 +310,7 @@ public class NullVR extends MCVR {
                         new Vector3f());
                     this.gunAngle = (float) Math.toDegrees(Math.acos(Math.abs(tipForward.dot(handForward))));
                     this.gunStyle = this.gunAngle > 10.0F;
-                    MirrorNotification.notify("Changed to controller: " + this.currentBodyPart, false, 1000);
+                    MirrorNotification.notify("Changed to controller: " + this.controllerType, false, 1000);
                     triggered = true;
                 } else if (key == GLFW.GLFW_KEY_KP_5) {
                     // toggle body part

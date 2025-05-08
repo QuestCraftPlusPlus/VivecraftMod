@@ -1,6 +1,7 @@
 package org.vivecraft.client_vr;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.HumanoidArm;
 import org.vivecraft.client_vr.gameplay.VRPlayer;
@@ -65,7 +66,7 @@ public class ClientDataHolderVR {
 
     public VRSettings vrSettings;
     public boolean grabScreenShot = false;
-    public String incorrectGarbageCollector = "";
+    public Screen cachedScreen = null;
     public long frameIndex = 0L;
 
     public RenderPass currentPass;

@@ -122,8 +122,7 @@ public class VRWidgetHelper {
 
         // model position relative to the view position
         Vec3 widgetPosition = DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(renderPass).getPosition();
-        Vec3 eye = RenderHelper.getSmoothCameraPosition(DATA_HOLDER.currentPass,
-            DATA_HOLDER.vrPlayer.vrdata_world_render);
+        Vec3 eye = MC.gameRenderer.getMainCamera().getPosition();
         Vector3f widgetOffset = MathUtils.subtractToVector3f(widgetPosition, eye);
 
         // orient and scale model

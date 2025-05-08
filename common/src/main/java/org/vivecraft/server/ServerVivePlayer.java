@@ -5,7 +5,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
-import org.vivecraft.common.network.*;
+import org.vivecraft.common.network.BodyPart;
+import org.vivecraft.common.network.CommonNetworkHelper;
+import org.vivecraft.common.network.VrPlayerState;
 import org.vivecraft.common.utils.MathUtils;
 
 import javax.annotation.Nullable;

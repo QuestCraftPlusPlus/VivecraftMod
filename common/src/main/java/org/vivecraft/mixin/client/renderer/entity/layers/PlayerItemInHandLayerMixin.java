@@ -6,11 +6,7 @@ import net.minecraft.client.renderer.entity.layers.PlayerItemInHandLayer;
 import net.minecraft.client.renderer.entity.state.PlayerRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.vivecraft.client.extensions.EntityRenderStateExtension;
-import org.vivecraft.client_vr.ClientDataHolderVR;
-import org.vivecraft.client_vr.render.RenderPass;
-import org.vivecraft.mod_compat_vr.immersiveportals.ImmersivePortalsHelper;
-import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
+import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 
 @Mixin(PlayerItemInHandLayer.class)
 public class PlayerItemInHandLayerMixin {
@@ -18,11 +14,6 @@ public class PlayerItemInHandLayerMixin {
     private boolean vivecraft$noSpyglassInFirstPerson(
         boolean heldOnHead, @Local(argsOnly = true) PlayerRenderState renderState)
     {
-        return heldOnHead && !(((EntityRenderStateExtension) renderState).vivecraft$isMainPlayer() &&
-            ClientDataHolderVR.getInstance().vrSettings.shouldRenderSelf &&
-            RenderPass.isFirstPerson(ClientDataHolderVR.getInstance().currentPass) &&
-            !ShadersHelper.isRenderingShadows() &&
-            !(ImmersivePortalsHelper.isLoaded() && ImmersivePortalsHelper.isRenderingPortal())
-        );
+        return heldOnHead && !VREffectsHelper.isRenderingFirstPersonPlayer(renderState);
     }
 }

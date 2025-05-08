@@ -1,6 +1,7 @@
 package org.vivecraft.mixin.client_vr;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -13,25 +14,22 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.ChatFormatting;
-import net.minecraft.ReportedException;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.screens.*;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.gui.screens.ReceivingLevelScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.server.packs.PackResources;
-import net.minecraft.server.packs.resources.ReloadableResourceManager;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -53,8 +51,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.vivecraft.client.ClientVRPlayers;
 import org.vivecraft.client.VivecraftVRMod;
 import org.vivecraft.client.gui.VivecraftClickEvent;
+import org.vivecraft.client.gui.screens.ChangeableParentScreen;
 import org.vivecraft.client.gui.screens.ErrorScreen;
-import org.vivecraft.client.gui.screens.GarbageCollectorScreen;
 import org.vivecraft.client.gui.screens.UpdateScreen;
 import org.vivecraft.client.network.ClientNetworking;
 import org.vivecraft.client.utils.TextUtils;
@@ -78,10 +76,8 @@ import org.vivecraft.client_vr.settings.VRHotkeys;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_xr.render_pass.RenderPassManager;
 import org.vivecraft.common.network.packet.c2s.VRActivePayloadC2S;
-import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
 
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Mixin(Minecraft.class)
@@ -91,9 +87,8 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     @Unique
     private boolean vivecraft$attackKeyDown;
 
-    // stores the list of resourcepacks that were loaded before a reload, to know if the menuworld should be rebuilt
     @Unique
-    private List<String> vivecraft$resourcepacks;
+    private CameraType vivecraft$lastCameraType;
 
     @Final
     @Shadow
@@ -125,19 +120,7 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
 
     @Shadow
     @Final
-    private RenderBuffers renderBuffers;
-
-    @Shadow
-    @Final
     private EntityRenderDispatcher entityRenderDispatcher;
-
-    @Shadow
-    @Final
-    private TextureManager textureManager;
-
-    @Shadow
-    @Final
-    private ReloadableResourceManager resourceManager;
 
     @Shadow
     @Final
@@ -145,9 +128,6 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
 
     @Shadow
     public abstract Entity getCameraEntity();
-
-    @Shadow
-    public abstract CompletableFuture<Void> reloadResourcePacks();
 
     @Shadow
     public abstract boolean isLocalServer();
@@ -168,57 +148,31 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     @Final
     private DeltaTracker.Timer deltaTracker;
 
-    @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V"), index = 0)
-    private Overlay vivecraft$initVivecraft(Overlay overlay) {
+    @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;clear()V"))
+    private void vivecraft$initVivecraft(RenderTarget instance, Operation<Void> original) {
         RenderPassManager.INSTANCE = new RenderPassManager((MainTarget) this.mainRenderTarget);
         VRSettings.initSettings();
         new Thread(UpdateChecker::checkForUpdates, "VivecraftUpdateThread").start();
 
-        // register a resource reload listener, to reload the menu world
-        this.resourceManager.registerReloadListener((ResourceManagerReloadListener) resourceManager -> {
-            List<String> newPacks = resourceManager.listPacks().map(PackResources::packId).toList();
-
-            if (this.vivecraft$resourcepacks == null) {
-                // first load
-                this.vivecraft$resourcepacks = this.resourceManager.listPacks().map(PackResources::packId).toList();
-
-                if (OptifineHelper.isOptifineLoaded()) {
-                    // with optifine this texture somehow fails to load, so manually reload it
-                    try {
-                        this.textureManager.getTexture(Gui.CROSSHAIR_SPRITE);
-                    } catch (ReportedException e) {
-                        // if there was an error, just reload everything
-                        reloadResourcePacks();
-                    }
-                }
-            } else if (!this.vivecraft$resourcepacks.equals(newPacks) &&
-                ClientDataHolderVR.getInstance().menuWorldRenderer != null &&
-                ClientDataHolderVR.getInstance().menuWorldRenderer.isReady())
-            {
-                this.vivecraft$resourcepacks = newPacks;
-                try {
-                    ClientDataHolderVR.getInstance().menuWorldRenderer.destroy();
-                    ClientDataHolderVR.getInstance().menuWorldRenderer.prepare();
-                } catch (Exception e) {
-                    VRSettings.LOGGER.error("Vivecraft: error reloading Menuworld:", e);
-                }
-            }
-        });
-        return overlay;
+        original.call(instance);
     }
 
     @Inject(method = "onGameLoadFinished", at = @At("TAIL"))
     private void vivecraft$showGarbageCollectorScreen(CallbackInfo ci) {
         // set the Garbage collector screen here, when it got reset after loading, but don't set it when using quickplay, because it would be removed after loading has finished
-        if (VRState.VR_INITIALIZED && !ClientDataHolderVR.getInstance().incorrectGarbageCollector.isEmpty() &&
+        if (ClientDataHolderVR.getInstance().cachedScreen != null &&
             !(this.screen instanceof LevelLoadingScreen ||
                 this.screen instanceof ReceivingLevelScreen ||
-                this.screen instanceof ConnectScreen ||
-                this.screen instanceof GarbageCollectorScreen
+                this.screen instanceof ConnectScreen
             ))
         {
-            setScreen(new GarbageCollectorScreen(ClientDataHolderVR.getInstance().incorrectGarbageCollector));
-            ClientDataHolderVR.getInstance().incorrectGarbageCollector = "";
+            if (this.screen.getClass() != ClientDataHolderVR.getInstance().cachedScreen.getClass()) {
+                if (ClientDataHolderVR.getInstance().cachedScreen instanceof ChangeableParentScreen child) {
+                    child.setParent(this.screen);
+                }
+                setScreen(ClientDataHolderVR.getInstance().cachedScreen);
+            }
+            ClientDataHolderVR.getInstance().cachedScreen = null;
         }
     }
 
@@ -340,6 +294,9 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
             RenderSystem.defaultBlendFunc();
             this.mainRenderTarget.clear();
             this.mainRenderTarget.bindWrite(true);
+
+            // somehow without this it causes issues with the lightmap sometimes
+            this.mainRenderTarget.unbindRead();
 
             // draw screen/gui to buffer
             // push pose so we can pop it later
@@ -481,19 +438,22 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                             Component.translatable("vivecraft.messages.click")))));
             }
+
+            // cached screen screen
+            if (ClientDataHolderVR.getInstance().cachedScreen != null) {
+                if (this.screen.getClass() != ClientDataHolderVR.getInstance().cachedScreen.getClass()) {
+                    // set cached screens here, in case Quickplay is used, this shouldn't be triggered in other cases, since the cached screen gets cleared if it's the same screen
+                    if (ClientDataHolderVR.getInstance().cachedScreen instanceof ChangeableParentScreen child) {
+                        child.setParent(this.screen);
+                    }
+                    setScreen(ClientDataHolderVR.getInstance().cachedScreen);
+                }
+                ClientDataHolderVR.getInstance().cachedScreen = null;
+            }
         }
 
         // VR enabled only chat notifications
         if (VRState.VR_INITIALIZED && this.level != null && ClientDataHolderVR.getInstance().vrPlayer != null) {
-            // garbage collector screen
-            if (!ClientDataHolderVR.getInstance().incorrectGarbageCollector.isEmpty()) {
-                if (!(this.screen instanceof GarbageCollectorScreen)) {
-                    // set the Garbage collector screen here, quickplay is used, this shouldn't be triggered in other cases, since the GarbageCollectorScreen resets the string on closing
-                    Minecraft.getInstance().setScreen(
-                        new GarbageCollectorScreen(ClientDataHolderVR.getInstance().incorrectGarbageCollector));
-                }
-                ClientDataHolderVR.getInstance().incorrectGarbageCollector = "";
-            }
             // server warnings
             if (ClientDataHolderVR.getInstance().vrPlayer.chatWarningTimer >= 0 &&
                 --ClientDataHolderVR.getInstance().vrPlayer.chatWarningTimer == 0)
@@ -763,6 +723,11 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
         }
     }
 
+    @ModifyReturnValue(method = "isWindowActive", at = @At(value = "RETURN"))
+    private boolean vivecraft$windowAlwaysActive(boolean windowActive) {
+        return windowActive || VRState.VR_RUNNING;
+    }
+
     /**
      * switches the VR state
      *
@@ -772,6 +737,10 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     private void vivecraft$switchVRState(boolean vrActive) {
         VRState.VR_RUNNING = vrActive;
         if (vrActive) {
+            // force first person camera in VR
+            this.vivecraft$lastCameraType = this.options.getCameraType();
+            this.options.setCameraType(CameraType.FIRST_PERSON);
+
             if (this.player != null) {
                 // snap room origin to the player
                 ClientDataHolderVR.getInstance().vrPlayer.snapRoomOriginToPlayerEntity(this.player, false, false);
@@ -787,6 +756,11 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
             GuiHandler.GUI_POS_ROOM = null;
             GuiHandler.GUI_ROTATION_ROOM = null;
             GuiHandler.GUI_SCALE = 1.0F;
+
+            // reset camera
+            if (this.vivecraft$lastCameraType != null) {
+                this.options.setCameraType(this.vivecraft$lastCameraType);
+            }
 
             if (this.player != null) {
                 // remove vr player instance

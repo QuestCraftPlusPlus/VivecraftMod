@@ -18,6 +18,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.joml.*;
 import org.lwjgl.glfw.GLFW;
 import org.vivecraft.client.VivecraftVRMod;
+import org.vivecraft.client.utils.LangHelper;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.QuaternionfHistory;
 import org.vivecraft.client_vr.VRData;
@@ -645,7 +646,7 @@ public abstract class MCVR {
 
         // conjugate, because camera matrices need to be transposed
         this.hmdRotHistory.add(new Quaternionf().setFromNormalized(this.hmdRotation).conjugate()
-            .rotateY((float) -Math.toRadians(this.dh.vrSettings.worldRotation)));
+            .rotateY(Mth.DEG_TO_RAD * -this.dh.vrSettings.worldRotation));
 
 
         // controllers
@@ -682,69 +683,67 @@ public abstract class MCVR {
                 this.mc.mouseHandler.isMouseGrabbed())
             {
                 Matrix4f temp = new Matrix4f();
-                if (this.mc.isWindowActive()) {
-                    final float hRange = 110.0F;
-                    final float vRange = 180.0F;
+                final float hRange = 110.0F;
+                final float vRange = 180.0F;
 
-                    int screenWidth = this.mc.getWindow().getScreenWidth();
-                    int screenHeight = this.mc.getWindow().getScreenHeight();
+                int screenWidth = this.mc.getWindow().getScreenWidth();
+                int screenHeight = this.mc.getWindow().getScreenHeight();
 
-                    if (screenHeight % 2 != 0) {
-                        // fix drifting vertical mouse.
-                        screenHeight--;
-                    }
-
-                    float hPos = (float) this.mc.mouseHandler.xpos() / (float) screenWidth * hRange - (hRange * 0.5F);
-                    float vPos = (float) -this.mc.mouseHandler.ypos() / (float) screenHeight * vRange + (vRange * 0.5F);
-
-                    float rotStart = this.dh.vrSettings.keyholeX;
-                    float rotSpeed = 20.0F * this.dh.vrSettings.xSensitivity;
-                    int leftEdge = (int) ((-rotStart + hRange * 0.5F) * (float) screenWidth / hRange) + 1;
-                    int rightEdge = (int) ((rotStart + hRange * 0.5F) * (float) screenWidth / hRange) - 1;
-
-                    // Scaled 0...1 from rotStart to FOV edge
-                    float rotMul = (Math.abs(hPos) - rotStart) / (hRange * 0.5F - rotStart);
-                    double xPos = this.mc.mouseHandler.xpos();
-
-                    Vector3f hmdDir = this.getHmdVector();
-
-                    if (hPos < -rotStart) {
-                        this.seatedRot += rotSpeed * rotMul;
-                        this.seatedRot %= 360.0F;
-                        this.hmdForwardYaw = (float) Math.toDegrees(Math.atan2(-hmdDir.x, hmdDir.z));
-                        xPos = leftEdge;
-                        hPos = -rotStart;
-                    } else if (hPos > rotStart) {
-                        this.seatedRot -= rotSpeed * rotMul;
-                        this.seatedRot %= 360.0F;
-                        this.hmdForwardYaw = (float) Math.toDegrees(Math.atan2(-hmdDir.x, hmdDir.z));
-                        xPos = rightEdge;
-                        hPos = rotStart;
-                    }
-
-                    float ySpeed = 0.5F * this.dh.vrSettings.ySensitivity;
-
-                    this.aimPitch = Mth.clamp(this.aimPitch + vPos * ySpeed, -89.9F, 89.9F);
-
-                    double screenX = xPos *
-                        (((WindowExtension) (Object) this.mc.getWindow()).vivecraft$getActualScreenWidth() /
-                            (double) screenWidth
-                        );
-                    double screenY = (screenHeight * 0.5F) *
-                        (((WindowExtension) (Object) this.mc.getWindow()).vivecraft$getActualScreenHeight() /
-                            (double) this.mc.getWindow().getScreenHeight()
-                        );
-
-                    InputSimulator.setMousePos(screenX, screenY);
-                    GLFW.glfwSetCursorPos(this.mc.getWindow().getWindow(), screenX, screenY);
-
-                    temp.rotationY(Mth.DEG_TO_RAD * (-180.0F - hPos - this.hmdForwardYaw));
-                    temp.rotateX(Mth.DEG_TO_RAD * this.aimPitch);
-                } else {
-                    this.aimPitch = 0.0F;
+                if (screenHeight % 2 != 0) {
+                    // fix drifting vertical mouse.
+                    screenHeight--;
                 }
 
-                this.handRotation[c].set(this.controllerRotation[c].set3x3(temp));
+                float hPos = (float) this.mc.mouseHandler.xpos() / (float) screenWidth * hRange - (hRange * 0.5F);
+                float vPos = (float) -this.mc.mouseHandler.ypos() / (float) screenHeight * vRange + (vRange * 0.5F);
+
+                float rotStart = this.dh.vrSettings.keyholeX;
+                float rotSpeed = 20.0F * this.dh.vrSettings.xSensitivity;
+                int leftEdge = (int) ((-rotStart + hRange * 0.5F) * (float) screenWidth / hRange) + 1;
+                int rightEdge = (int) ((rotStart + hRange * 0.5F) * (float) screenWidth / hRange) - 1;
+
+                // Scaled 0...1 from rotStart to FOV edge
+                float rotMul = (Math.abs(hPos) - rotStart) / (hRange * 0.5F - rotStart);
+                double xPos = this.mc.mouseHandler.xpos();
+
+                Vector3f hmdDir = this.getHmdVector();
+
+                if (hPos < -rotStart) {
+                    this.seatedRot += rotSpeed * rotMul;
+                    this.seatedRot %= 360.0F;
+                    this.hmdForwardYaw = (float) Math.toDegrees(Math.atan2(-hmdDir.x, hmdDir.z));
+                    xPos = leftEdge;
+                    hPos = -rotStart;
+                } else if (hPos > rotStart) {
+                    this.seatedRot -= rotSpeed * rotMul;
+                    this.seatedRot %= 360.0F;
+                    this.hmdForwardYaw = (float) Math.toDegrees(Math.atan2(-hmdDir.x, hmdDir.z));
+                    xPos = rightEdge;
+                    hPos = rotStart;
+                }
+
+                float ySpeed = 0.5F * this.dh.vrSettings.ySensitivity;
+
+                this.aimPitch = Mth.clamp(this.aimPitch + vPos * ySpeed, -89.9F, 89.9F);
+
+                double screenX = xPos *
+                    (((WindowExtension) (Object) this.mc.getWindow()).vivecraft$getActualScreenWidth() /
+                        (double) screenWidth
+                    );
+                double screenY = (screenHeight * 0.5F) *
+                    (((WindowExtension) (Object) this.mc.getWindow()).vivecraft$getActualScreenHeight() /
+                        (double) this.mc.getWindow().getScreenHeight()
+                    );
+
+                InputSimulator.setMousePos(screenX, screenY);
+                GLFW.glfwSetCursorPos(this.mc.getWindow().getWindow(), screenX, screenY);
+
+                if (this.dh.vrSettings.aimDevice == VRSettings.AimDevice.CONTROLLER) {
+                    temp.rotationY(Mth.DEG_TO_RAD * (-180.0F - hPos - this.hmdForwardYaw));
+                    temp.rotateX(Mth.DEG_TO_RAD * this.aimPitch);
+
+                    this.handRotation[c].set(this.controllerRotation[c].set3x3(temp));
+                }
             } else if (c == MAIN_CONTROLLER) {
                 this.aimPitch = 0.0F;
             }
@@ -896,7 +895,7 @@ public abstract class MCVR {
             ax += Math.abs(this.getInputAction(MOD.keyRotateRight).getAxis1DUseTracked());
 
             if (ax != 0.0F) {
-                float analogRotSpeed = 10.0F * ax;
+                float analogRotSpeed = this.dh.vrSettings.worldRotationXSensitivity * 10.0F * ax;
                 this.dh.vrSettings.worldRotation -= analogRotSpeed;
                 this.dh.vrSettings.worldRotation %= 360.0F;
             }
@@ -1100,6 +1099,13 @@ public abstract class MCVR {
             this.dh.grabScreenShot = true;
         }
 
+        // Walk up blocks
+        if (MOD.keyToggleWalkUpBlocks.consumeClick()) {
+            this.dh.vrSettings.walkUpBlocks = !this.dh.vrSettings.walkUpBlocks;
+            this.mc.gui.getChat().addMessage(Component.translatable("vivecraft.messages.walkupblocks",
+                Component.translatable(this.dh.vrSettings.walkUpBlocks ? LangHelper.ON_KEY : LangHelper.OFF_KEY)));
+        }
+
         GuiHandler.processBindingsGui();
         RadialHandler.processBindings();
         KeyboardHandler.processBindings();
@@ -1275,25 +1281,25 @@ public abstract class MCVR {
         if (startIndex >= 0) {
             this.usingUnlabeledTrackers = true;
 
-            // unassigned trackers, assign them by distance
+            // only check non identified trackers
+            List<Integer> indices = new ArrayList<>();
             for (int t = startIndex + 3; t < endIndex + 3; t++) {
+                if (this.deviceSource[t].isValid()) {
+                    int finalT = t;
+                    trackers.removeIf((triple -> triple.getLeft().equals(this.deviceSource[finalT])));
+                } else {
+                    indices.add(t);
+                }
+            }
+
+            // unassigned trackers, assign them by distance
+            for (int t : indices) {
                 int closestIndex = -1;
                 float closestDistance = Float.MAX_VALUE;
 
                 // find the closest tracker to the reference point
                 for (int i = 0; i < trackers.size(); i++) {
-                    // int trackerIndex = trackers.get(i);
                     Triple<DeviceSource, Integer, Matrix4fc> tracker = trackers.get(i);
-
-                    // if regular fbt is already detected, skip those trackers
-                    if (hasFBT()) {
-                        if (this.deviceSource[WAIST_TRACKER].equals(tracker.getLeft()) ||
-                            this.deviceSource[LEFT_FOOT_TRACKER].equals(tracker.getLeft()) ||
-                            this.deviceSource[RIGHT_FOOT_TRACKER].equals(tracker.getLeft()))
-                        {
-                            continue;
-                        }
-                    }
 
                     tracker.getRight().getTranslation(tempV)
                         .sub(posAvg.x, 0F, posAvg.z) // center around headset
@@ -1351,9 +1357,18 @@ public abstract class MCVR {
      */
     public List<Triple<DeviceSource, Integer, Matrix4fc>> getTrackers() {
         List<Triple<DeviceSource, Integer, Matrix4fc>> poses = new ArrayList<>();
+
+        Vector3f offset = new Vector3f();
+        if (!this.dh.vrSettings.seated && this.dh.vrSettings.allowStandingOriginOffset) {
+            if (this.dh.vr.isHMDTracking()) {
+                offset.set(this.dh.vrSettings.originOffset);
+            }
+        }
+
         for (int i = 3; i < TRACKABLE_DEVICE_COUNT; i++) {
             if (this.deviceSource[i].isValid()) {
-                poses.add(Triple.of(this.deviceSource[i], i, this.controllerPose[i]));
+                poses.add(Triple.of(this.deviceSource[i], i,
+                    MathUtils.addTranslation(new Matrix4f(this.controllerPose[i]), offset)));
             }
         }
 
@@ -1364,7 +1379,8 @@ public abstract class MCVR {
                 if (tracker.isTracking() &&
                     poses.stream().noneMatch(t -> t.getLeft().is(DeviceSource.Source.OSC, finalI)))
                 {
-                    poses.add(Triple.of(new DeviceSource(DeviceSource.Source.OSC, i), -1, tracker.pose));
+                    poses.add(Triple.of(new DeviceSource(DeviceSource.Source.OSC, i), -1,
+                        MathUtils.addTranslation(new Matrix4f(tracker.pose), offset)));
                 }
             }
         }

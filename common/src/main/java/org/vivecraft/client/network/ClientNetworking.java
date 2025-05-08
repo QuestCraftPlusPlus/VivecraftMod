@@ -21,8 +21,8 @@ import org.vivecraft.client_vr.settings.AutoCalibration;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.CommonDataHolder;
 import org.vivecraft.common.VRServerPerms;
-import org.vivecraft.common.network.CommonNetworkHelper;
 import org.vivecraft.common.network.BodyPart;
+import org.vivecraft.common.network.CommonNetworkHelper;
 import org.vivecraft.common.network.VrPlayerState;
 import org.vivecraft.common.network.packet.c2s.*;
 import org.vivecraft.common.network.packet.s2c.*;
@@ -92,7 +92,9 @@ public class ClientNetworking {
     }
 
     public static void sendVRPlayerPositions(VRPlayer vrPlayer) {
-        if (!SERVER_WANTS_DATA || Minecraft.getInstance().getConnection() == null) {
+        if (!SERVER_WANTS_DATA || Minecraft.getInstance().getConnection() == null ||
+            Minecraft.getInstance().getCameraEntity() != Minecraft.getInstance().player)
+        {
             return;
         }
 

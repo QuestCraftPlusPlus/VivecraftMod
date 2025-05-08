@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.vivecraft.server.ServerVRPlayers;
 import org.vivecraft.server.ServerVivePlayer;
+import org.vivecraft.server.config.ServerConfig;
 
 @Mixin(Projectile.class)
 public class ProjectileMixin {
@@ -37,6 +38,17 @@ public class ProjectileMixin {
             }
         }
         return velocity;
+    }
+
+    @ModifyVariable(method = "shootFromRotation", at = @At("HEAD"), ordinal = 4, argsOnly = true)
+    private float vivecraft$modifyInaccuracy(float inaccuracy, Entity shooter) {
+        if (shooter instanceof ServerPlayer player) {
+            ServerVivePlayer serverVivePlayer = ServerVRPlayers.getVivePlayer(player);
+            if (serverVivePlayer != null && serverVivePlayer.isVR()) {
+                return inaccuracy * ServerConfig.PROJECTILE_INACCURACY_MULTIPLIER.get().floatValue();
+            }
+        }
+        return inaccuracy;
     }
 
     @ModifyVariable(method = "shootFromRotation", at = @At("HEAD"), ordinal = 0, argsOnly = true)

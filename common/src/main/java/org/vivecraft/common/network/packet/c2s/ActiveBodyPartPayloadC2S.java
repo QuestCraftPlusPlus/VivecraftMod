@@ -2,8 +2,8 @@ package org.vivecraft.common.network.packet.c2s;
 
 import net.minecraft.network.FriendlyByteBuf;
 import org.vivecraft.client.network.ClientNetworking;
-import org.vivecraft.common.network.CommonNetworkHelper;
 import org.vivecraft.common.network.BodyPart;
+import org.vivecraft.common.network.CommonNetworkHelper;
 import org.vivecraft.common.network.FBTMode;
 import org.vivecraft.common.network.packet.PayloadIdentifier;
 

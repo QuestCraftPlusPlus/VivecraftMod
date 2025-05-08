@@ -68,7 +68,7 @@ public class CameraTracker extends Tracker {
         }
 
         // chunk renderer gets angry if we're really far away, force hide when >3/4 render distance
-        if (this.dh.vrPlayer.vrdata_world_render.getEye(RenderPass.CENTER).getPosition().distanceTo(this.position) >
+        if (this.dh.vrPlayer.vrdata_world_render.hmd.getPosition().distanceTo(this.position) >
             this.mc.options.getEffectiveRenderDistance() * 12)
         {
             this.visible = false;

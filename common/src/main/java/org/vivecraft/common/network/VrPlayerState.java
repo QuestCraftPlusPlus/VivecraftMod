@@ -100,7 +100,7 @@ public record VrPlayerState(boolean seated, Pose hmd, boolean leftHanded, Pose m
      */
     private static Pose hmdPose(VRPlayer vrPlayer) {
         Vector3f position = MathUtils.subtractToVector3f(
-            vrPlayer.vrdata_world_post.getEye(RenderPass.CENTER).getPosition(),
+            vrPlayer.vrdata_world_post.hmd.getPosition(),
             Minecraft.getInstance().player.position());
 
         Quaternionf orientation = vrPlayer.vrdata_world_post.hmd.getMatrix().getNormalizedRotation(new Quaternionf());
@@ -188,12 +188,13 @@ public record VrPlayerState(boolean seated, Pose hmd, boolean leftHanded, Pose m
 
     /**
      * gets the Pose for the given body part
+     *
      * @param bodyPart BodyPart to get the pose for
      * @return Pose of the {@code bodyPart}, or {@code null} if the body part is not valid for the current FBT mode
      */
     @Nullable
     public Pose getBodyPartPose(BodyPart bodyPart) {
-        return switch(bodyPart) {
+        return switch (bodyPart) {
             case MAIN_HAND -> this.mainHand;
             case OFF_HAND -> this.offHand;
             case LEFT_FOOT -> this.leftFoot;

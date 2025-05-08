@@ -151,10 +151,8 @@ public class ClimbTracker extends Tracker {
             return false;
         } else if (player.isPassenger()) {
             return false;
-        } else if (!hasClimbeyClimbEquipped(player) && (player.zza != 0 || player.xxa != 0)) {
-            return false;
         } else {
-            return true;
+            return hasClimbeyClimbEquipped(player) || (player.zza == 0 && player.xxa == 0);
         }
     }
 

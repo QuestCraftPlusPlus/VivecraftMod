@@ -154,6 +154,14 @@ public abstract class PauseScreenVRMixin extends Screen {
     private LayoutElement vivecraft$hideFeedback(
         GridLayout.RowHelper rowHelper, LayoutElement child, Operation<LayoutElement> original)
     {
+        ((Button) child).visible = !VRState.VR_ENABLED || !ClientDataHolderVR.getInstance().vrSettings.modifyPauseMenu;
+        return original.call(rowHelper, child);
+    }
+
+    @WrapOperation(method = "createPauseMenu", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/layouts/GridLayout$RowHelper;addChild(Lnet/minecraft/client/gui/layouts/LayoutElement;)Lnet/minecraft/client/gui/layouts/LayoutElement;", ordinal = 3))
+    private LayoutElement vivecraft$hideServerLinks(
+        GridLayout.RowHelper rowHelper, LayoutElement child, Operation<LayoutElement> original)
+    {
         ((Button) child).visible = !VRState.VR_ENABLED ||
             (ModMenuHelper.shouldOffsetButtons() && !this.minecraft.player.connection.serverLinks().isEmpty()) ||
             !ClientDataHolderVR.getInstance().vrSettings.modifyPauseMenu;

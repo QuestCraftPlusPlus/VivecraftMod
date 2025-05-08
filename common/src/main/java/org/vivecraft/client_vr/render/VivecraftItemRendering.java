@@ -79,6 +79,8 @@ public class VivecraftItemRendering {
             }
         } else if (itemStack.getUseAnimation() == ItemUseAnimation.TOOT_HORN) {
             itemTransformType = VivecraftItemTransformType.Horn;
+        } else if (itemStack.is(ItemTags.VIVECRAFT_ROTATED_TOOLS)) {
+            itemTransformType = VivecraftItemTransformType.Rotated_Tool;
         } else if (item instanceof MaceItem || itemStack.is(ItemTags.VIVECRAFT_MACES)) {
             itemTransformType = VivecraftItemTransformType.Mace;
         } else if (item instanceof SwordItem || itemStack.is(ItemTags.VIVECRAFT_SWORDS)) {
@@ -419,6 +421,11 @@ public class VivecraftItemRendering {
                 translateZ -= 0.15F;
                 scale = 0.8F;
             }
+            case Rotated_Tool -> {
+                rotation.mul(Axis.XP.rotationDegrees(90.0F));
+                translateY += -0.125F + gunAngle / 40.0F * 0.1F;
+                translateZ -= 0.1F;
+            }
             case Tool -> {
                 if (itemStack.getItem() instanceof ArrowItem || itemStack.is(ItemTags.VIVECRAFT_ARROWS)) {
                     preRotation = Axis.ZP.rotationDegrees(-180.0F);
@@ -470,6 +477,7 @@ public class VivecraftItemRendering {
         Telescope,
         Compass,
         Horn,
-        Mace
+        Mace,
+        Rotated_Tool
     }
 }

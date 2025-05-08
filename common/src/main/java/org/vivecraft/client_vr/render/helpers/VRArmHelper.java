@@ -419,8 +419,7 @@ public class VRArmHelper {
 
             double segmentProgress = 1.0D / (double) segments;
 
-            Vec3 cameraPosition = RenderHelper.getSmoothCameraPosition(DATA_HOLDER.currentPass,
-                DATA_HOLDER.vrPlayer.getVRDataWorld());
+            Vec3 cameraPosition = MC.gameRenderer.getMainCamera().getPosition();
 
             // arc
             for (int i = 0; i < segments; i++) {

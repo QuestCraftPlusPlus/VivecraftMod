@@ -149,6 +149,7 @@ public class IrisPipelineManagerVRMixin implements PipelineManagerExtension {
                 }
             }
         }
+        IrisHelper.swapSSBOs(this.pipeline, ClientDataHolderVR.getInstance().currentPass);
     }
 
     @Group(name = "returnCurrentVRPipeline", min = 1, max = 1)
@@ -158,7 +159,10 @@ public class IrisPipelineManagerVRMixin implements PipelineManagerExtension {
     {
         if (!RenderPassType.isVanilla()) {
             this.pipeline = vivecraft$getCurrentVRPipeline(newDimension);
+            IrisHelper.swapSSBOs(this.pipeline, ClientDataHolderVR.getInstance().currentPass);
             cir.setReturnValue(this.pipeline);
+        } else {
+            IrisHelper.swapSSBOs(this.pipeline, ClientDataHolderVR.getInstance().currentPass);
         }
     }
 

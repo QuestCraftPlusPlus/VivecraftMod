@@ -7,16 +7,22 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.vivecraft.client.gui.widgets.TextScrollWidget;
+import org.vivecraft.client_vr.ClientDataHolderVR;
 
-public class ErrorScreen extends Screen {
+public class ErrorScreen extends Screen implements ChangeableParentScreen {
 
-    private final Screen lastScreen;
     private final Component error;
+    private Screen lastScreen;
 
     public ErrorScreen(Component title, Component error) {
         super(title);
         this.lastScreen = Minecraft.getInstance().screen;
         this.error = error;
+    }
+
+    @Override
+    public void setParent(Screen parent) {
+        this.lastScreen = parent;
     }
 
     @Override
@@ -26,7 +32,7 @@ public class ErrorScreen extends Screen {
             new TextScrollWidget(this.width / 2 - 155, 30, 310, this.height - 30 - 36, this.error));
 
         this.addRenderableWidget(new Button.Builder(Component.translatable("gui.back"), (p) ->
-            Minecraft.getInstance().setScreen(this.lastScreen))
+            onClose())
             .pos(this.width / 2 + 5, this.height - 32)
             .size(150, 20)
             .build());
@@ -42,5 +48,11 @@ public class ErrorScreen extends Screen {
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 15, 0xFFFFFF);
+    }
+
+    @Override
+    public void onClose() {
+        ClientDataHolderVR.getInstance().cachedScreen = null;
+        this.minecraft.setScreen(this.lastScreen);
     }
 }

@@ -29,14 +29,14 @@ import org.vivecraft.client_vr.Vector3fHistory;
 import org.vivecraft.client_vr.provider.ControllerType;
 import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.settings.VRSettings;
-import org.vivecraft.common.network.FBTMode;
 import org.vivecraft.common.network.BodyPart;
+import org.vivecraft.common.network.FBTMode;
 import org.vivecraft.common.utils.MathUtils;
 import org.vivecraft.data.BlockTags;
 import org.vivecraft.data.ItemTags;
-import org.vivecraft.mod_compat_vr.bettercombat.BetterCombatHelper;
 import org.vivecraft.mod_compat_vr.epicfight.EpicFightHelper;
 
+import java.util.Collections;
 import java.util.List;
 
 public class SwingTracker extends Tracker {
@@ -45,6 +45,9 @@ public class SwingTracker extends Tracker {
 
     private final Vec3[] lastWeaponEndAir = new Vec3[]{Vec3.ZERO, Vec3.ZERO, Vec3.ZERO, Vec3.ZERO};
     private final boolean[] lastWeaponSolid = new boolean[4];
+
+    private final List<Entity>[] lastHitEntities = new List[]{Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList()};
+
     public final Vec3[] miningPoint = new Vec3[4];
     public final Vec3[] attackingPoint = new Vec3[4];
     public final Vector3fHistory[] tipHistory = new Vector3fHistory[]{new Vector3fHistory(), new Vector3fHistory(), new Vector3fHistory(), new Vector3fHistory()};
@@ -135,6 +138,13 @@ public class SwingTracker extends Tracker {
                 boolean isTool = false;
                 boolean isSword = false;
 
+                if (this.dh.vrSettings.onlySwordCollision &&
+                    !(item instanceof SwordItem || itemstack.is(ItemTags.VIVECRAFT_SWORDS)))
+                {
+                    // only swords can hit
+                    continue;
+                }
+
                 if (!(item instanceof SwordItem || itemstack.is(ItemTags.VIVECRAFT_SWORDS)) &&
                     !(item instanceof TridentItem || itemstack.is(ItemTags.VIVECRAFT_SPEARS)))
                 {
@@ -151,10 +161,6 @@ public class SwingTracker extends Tracker {
 
                 if (isHand) {
                     double playerEntityReach = player.entityInteractionRange();
-                    if (BetterCombatHelper.isLoaded()) {
-                        // better combat overrides the player reach
-                        playerEntityReach = BetterCombatHelper.getItemRange(playerEntityReach, itemstack);
-                    }
 
                     // subtract arm length and clamp it to 6 meters
                     playerEntityReach = Math.min(playerEntityReach, 6.0) - 0.5;
@@ -214,15 +220,20 @@ public class SwingTracker extends Tracker {
                 AABB weaponTipBB = new AABB(handPos, weaponTip);
 
                 List<Entity> mobs = this.mc.level.getEntities(this.mc.player, weaponTipBB);
-                mobs.removeIf((e) -> e instanceof Player);
+                if (this.dh.vrSettings.reducedPlayerReach) {
+                    // shorter range for players to try to prevent accidental hits
+                    mobs.removeIf((e) -> e instanceof Player);
 
-                // shorter range for players to try to prevent accidental hits
-                List<Entity> players = this.mc.level.getEntities(this.mc.player, weaponBB);
-                players.removeIf((e) -> !(e instanceof Player));
-                mobs.addAll(players);
+                    List<Entity> players = this.mc.level.getEntities(this.mc.player, weaponBB);
+                    players.removeIf((e) -> !(e instanceof Player));
+                    mobs.addAll(players);
+                }
 
                 for (Entity entity : mobs) {
-                    if (entity.isPickable() && entity != this.mc.getCameraEntity().getVehicle()) {
+                    if (entity.isPickable() &&
+                        entity != this.mc.getCameraEntity().getVehicle() && // don't hit ridden entity
+                        !this.lastHitEntities[i].contains(entity)) // don't hit entities multiple times per swing
+                    {
                         if (entityAct) {
                             // Minecraft.getInstance().physicalGuiManager.preClickAction();
 
@@ -240,6 +251,14 @@ public class SwingTracker extends Tracker {
                         inAnEntity = true;
                     }
                 }
+
+                if (speed > speedTreshhold) {
+                    this.lastHitEntities[i] = mobs;
+                } else {
+                    // since we couldn't act, we also didn't hit anything
+                    this.lastHitEntities[i] = Collections.emptyList();
+                }
+
                 // no hitting while climbey climbing
                 if (isHand && this.dh.climbTracker.isClimbeyClimb() && (!isTool ||
                     (c == 0 && VivecraftVRMod.INSTANCE.keyClimbeyGrab.isDown(ControllerType.RIGHT)) ||
@@ -452,13 +471,12 @@ public class SwingTracker extends Tracker {
                 ))
             {
                 return true;
-            } else if (direction.x < -t &&
-                ((d == Direction.WEST && !open) ||
-                    (d == Direction.SOUTH && open && hinge == DoorHingeSide.LEFT) ||
-                    (d == Direction.NORTH && open && hinge == DoorHingeSide.RIGHT)
-                ))
-            {
-                return true;
+            } else {
+                return direction.x < -t &&
+                    ((d == Direction.WEST && !open) ||
+                        (d == Direction.SOUTH && open && hinge == DoorHingeSide.LEFT) ||
+                        (d == Direction.NORTH && open && hinge == DoorHingeSide.RIGHT)
+                    );
             }
         } else if (state.is(net.minecraft.tags.BlockTags.TRAPDOORS) || state.getBlock() instanceof TrapDoorBlock) {
             Direction d = state.getValue(TrapDoorBlock.FACING);

@@ -13,7 +13,7 @@ public class EntityRenderStateMixin implements EntityRenderStateExtension {
     private ClientVRPlayers.RotInfo vivecraft$rotInfo;
 
     @Unique
-    private boolean vivecraft$isMainPlayer;
+    private boolean vivecraft$isFirstPersonPlayer;
 
     @Unique
     private float vivecraft$totalScale;
@@ -29,13 +29,13 @@ public class EntityRenderStateMixin implements EntityRenderStateExtension {
     }
 
     @Override
-    public boolean vivecraft$isMainPlayer() {
-        return this.vivecraft$isMainPlayer;
+    public boolean vivecraft$isFirstPersonPlayer() {
+        return this.vivecraft$isFirstPersonPlayer;
     }
 
     @Override
-    public void vivecraft$setMainPlayer(boolean mainPlayer) {
-        this.vivecraft$isMainPlayer = mainPlayer;
+    public void vivecraft$setFirstPersonPlayer(boolean firstPersonPlayer) {
+        this.vivecraft$isFirstPersonPlayer = firstPersonPlayer;
     }
 
     @Override

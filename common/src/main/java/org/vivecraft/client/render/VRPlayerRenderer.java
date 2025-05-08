@@ -110,7 +110,7 @@ public class VRPlayerRenderer extends PlayerRenderer {
     public Vec3 getRenderOffset(PlayerRenderState renderState) {
         // idk why we do this anymore
         // this changes the offset to only apply when swimming, instead of crouching
-        if (((EntityRenderStateExtension) renderState).vivecraft$isMainPlayer()) {
+        if (((EntityRenderStateExtension) renderState).vivecraft$isFirstPersonPlayer()) {
             return renderState.isVisuallySwimming ?
                 new Vec3(0.0F, -0.125F * ClientDataHolderVR.getInstance().vrPlayer.worldScale, 0.0F) : Vec3.ZERO;
         } else {
@@ -124,7 +124,7 @@ public class VRPlayerRenderer extends PlayerRenderer {
     {
         ClientVRPlayers.RotInfo rotInfo = ((EntityRenderStateExtension) renderState).vivecraft$getRotInfo();
         if (ClientDataHolderVR.getInstance().currentPass != RenderPass.GUI && rotInfo != null) {
-            if (((EntityRenderStateExtension) renderState).vivecraft$isMainPlayer()) {
+            if (((EntityRenderStateExtension) renderState).vivecraft$isFirstPersonPlayer()) {
                 rotationYaw = ClientDataHolderVR.getInstance().vrPlayer.getVRDataWorld().getBodyYaw();
             } else {
                 rotationYaw = Mth.RAD_TO_DEG * rotInfo.getBodyYawRad();

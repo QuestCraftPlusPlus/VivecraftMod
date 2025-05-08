@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LevelTargetBundle;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.ModelBakery;
@@ -22,6 +23,7 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.Profiler;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -32,6 +34,7 @@ import org.joml.*;
 import org.lwjgl.opengl.GL11C;
 import org.vivecraft.client.VivecraftVRMod;
 import org.vivecraft.client.Xevents;
+import org.vivecraft.client.extensions.EntityRenderStateExtension;
 import org.vivecraft.client.gui.VivecraftClickEvent;
 import org.vivecraft.client.gui.settings.GuiOtherHUDSettings;
 import org.vivecraft.client.gui.settings.GuiRenderOpticsSettings;
@@ -39,6 +42,7 @@ import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client.utils.StencilHelper;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.MethodHolder;
+import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.extensions.GameRendererExtension;
 import org.vivecraft.client_vr.extensions.LevelTargetBundleExtension;
 import org.vivecraft.client_vr.extensions.PlayerExtension;
@@ -100,6 +104,46 @@ public class VREffectsHelper {
             Optional<BlockPos> optional = stream.findFirst();
             return optional.map(blockPos -> Triple.of(1.0F, MC.level.getBlockState(blockPos), blockPos)).orElse(null);
         }
+    }
+
+    /**
+     * checks if the given entity is the active VR player and the camera entity
+     *
+     * @param entity Entity to check if it is the first person Player
+     * @return if the given entity is the active VR player and the camera entity
+     */
+    public static boolean isFirstPersonPlayer(Entity entity) {
+        return VRState.VR_RUNNING && entity == MC.player && entity == MC.getCameraEntity();
+    }
+
+    /**
+     * checks if the given {@code entity} is the main player entity and if it should be rendered
+     *
+     * @param entity Entity to check
+     * @return if the {@code entity} is the main player and is rendering in first person
+     */
+    public static boolean isRenderingFirstPersonPlayer(Entity entity) {
+        return isFirstPersonPlayer(entity) && isFirstPersonEntityPass();
+    }
+
+    /**
+     * checks if the given {@code renderState} is from the main player entity and if it should be rendered
+     *
+     * @param renderState EntityRenderState to check
+     * @return if the {@code renderState} belongs to the main player and is rendering in first person
+     */
+    public static boolean isRenderingFirstPersonPlayer(EntityRenderState renderState) {
+        return ((EntityRenderStateExtension) renderState).vivecraft$isFirstPersonPlayer() && isFirstPersonEntityPass();
+    }
+
+    /**
+     * @return if the current pass is first person and should render the main player entity
+     */
+    public static boolean isFirstPersonEntityPass() {
+        return DATA_HOLDER.vrSettings.shouldRenderSelf &&
+            RenderPass.isFirstPerson(DATA_HOLDER.currentPass) &&
+            !ShadersHelper.isRenderingShadows() &&
+            !(ImmersivePortalsHelper.isLoaded() && ImmersivePortalsHelper.isRenderingPortal());
     }
 
     /**
@@ -554,7 +598,6 @@ public class VREffectsHelper {
 
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             RenderSystem.defaultBlendFunc();
-
         } finally {
             // reset stacks
             poseStack.popMatrix();
@@ -679,13 +722,12 @@ public class VREffectsHelper {
         if (RenderPass.isThirdPerson(DATA_HOLDER.currentPass)) {
             return true;
         } else {
-            Vec3 pos = DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(DATA_HOLDER.currentPass).getPosition();
             return DATA_HOLDER.vrSettings.hudOcclusion &&
                 !MethodHolder.isInMenuRoom() &&
                 MC.screen == null &&
                 !KeyboardHandler.SHOWING &&
                 !RadialHandler.isShowing() &&
-                !isInsideOpaqueBlock(pos);
+                !isInsideOpaqueBlock(MC.gameRenderer.getMainCamera().getPosition());
         }
     }
 
@@ -744,8 +786,7 @@ public class VREffectsHelper {
             // disable culling to show it from below and above
             RenderSystem.disableCull();
 
-            Vec3 cameraPos = RenderHelper.getSmoothCameraPosition(DATA_HOLDER.currentPass,
-                DATA_HOLDER.vrPlayer.vrdata_world_render);
+            Vec3 cameraPos = MC.gameRenderer.getMainCamera().getPosition();
 
             Vec3 interpolatedPlayerPos = ((GameRendererExtension) MC.gameRenderer).vivecraft$getRvePos(partialTick);
 
@@ -882,8 +923,7 @@ public class VREffectsHelper {
         removeNausea(partialTick);
 
         Profiler.get().push("applyPhysicalKeyboardModelView");
-        Vec3 eye = RenderHelper.getSmoothCameraPosition(DATA_HOLDER.currentPass,
-            DATA_HOLDER.vrPlayer.vrdata_world_render);
+        Vec3 eye = DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(DATA_HOLDER.currentPass).getPosition();
 
         // convert previously calculated coords to world coords
         Vec3 keyboardPos = VRPlayer.roomToWorldPos(KeyboardHandler.POS_ROOM, DATA_HOLDER.vrPlayer.vrdata_world_render);
@@ -1034,8 +1074,7 @@ public class VREffectsHelper {
             depthAlways = true;
 
             poseStack.pushMatrix();
-            Vec3 eye = RenderHelper.getSmoothCameraPosition(DATA_HOLDER.currentPass,
-                DATA_HOLDER.vrPlayer.vrdata_world_render);
+            Vec3 eye = DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(DATA_HOLDER.currentPass).getPosition();
             poseStack.translate((float) (DATA_HOLDER.vrPlayer.vrdata_world_render.origin.x - eye.x),
                 (float) (DATA_HOLDER.vrPlayer.vrdata_world_render.origin.y - eye.y),
                 (float) (DATA_HOLDER.vrPlayer.vrdata_world_render.origin.z - eye.z));
@@ -1092,8 +1131,7 @@ public class VREffectsHelper {
 
         Matrix4f modelView = new Matrix4f();
 
-        Vec3 eye = RenderHelper.getSmoothCameraPosition(DATA_HOLDER.currentPass,
-            DATA_HOLDER.vrPlayer.vrdata_world_render);
+        Vec3 eye = DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(DATA_HOLDER.currentPass).getPosition();
 
         Vec3 worldPos = VRPlayer.roomToWorldPos(pos, DATA_HOLDER.vrPlayer.vrdata_world_render);
 
@@ -1146,18 +1184,17 @@ public class VREffectsHelper {
         RenderSystem.setShaderColor(0.0F, 0.0F, 0.0F, 1.0f);
 
         RenderSystem.depthFunc(GL11C.GL_ALWAYS);
+        RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
         RenderSystem.enableBlend();
         RenderSystem.disableCull();
         BufferBuilder bufferbuilder = Tesselator.getInstance()
             .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
         // render a big quad 2 meters in front
-        // identity matrix
-        Matrix4f mat = new Matrix4f();
-        bufferbuilder.addVertex(mat, -100.F, -100.F, -2.0F);
-        bufferbuilder.addVertex(mat, 100.F, -100.F, -2.0F);
-        bufferbuilder.addVertex(mat, 100.F, 100.F, -2.0F);
-        bufferbuilder.addVertex(mat, -100.F, 100.F, -2.0F);
+        bufferbuilder.addVertex(-100.F, -100.F, -2.0F);
+        bufferbuilder.addVertex(100.F, -100.F, -2.0F);
+        bufferbuilder.addVertex(100.F, 100.F, -2.0F);
+        bufferbuilder.addVertex(-100.F, 100.F, -2.0F);
         BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
         RenderSystem.depthFunc(GL11C.GL_LEQUAL);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -1222,14 +1259,15 @@ public class VREffectsHelper {
 
         Vec3 crosshairRenderPos = ((GameRendererExtension) MC.gameRenderer).vivecraft$getCrossVec();
         Vec3 crossDistance = crosshairRenderPos.subtract(
-            DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0).getPosition());
+            DATA_HOLDER.vrPlayer.vrdata_world_render.getAim().getPosition());
 
         // scooch closer a bit for light calc.
         crosshairRenderPos = crosshairRenderPos.add(crossDistance.normalize().scale(-0.01D));
 
         Matrix4f modelView = new Matrix4f();
 
-        Vector3f translate = MathUtils.subtractToVector3f(crosshairRenderPos, MC.getCameraEntity().position());
+        Vector3f translate = MathUtils.subtractToVector3f(crosshairRenderPos,
+            MC.gameRenderer.getMainCamera().getPosition());
         modelView.translate(translate.x, translate.y, translate.z);
 
         if (MC.hitResult != null && MC.hitResult.getType() == HitResult.Type.BLOCK) {
@@ -1239,12 +1277,12 @@ public class VREffectsHelper {
             switch (blockhitresult.getDirection()) {
                 case DOWN -> {
                     modelView.rotate(
-                        Axis.YP.rotationDegrees(DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0).getYaw()));
+                        Axis.YP.rotationDegrees(DATA_HOLDER.vrPlayer.vrdata_world_render.getAim().getYaw()));
                     modelView.rotate(Axis.XP.rotationDegrees(-90.0F));
                 }
                 case UP -> {
                     modelView.rotate(
-                        Axis.YP.rotationDegrees(-DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0).getYaw()));
+                        Axis.YP.rotationDegrees(-DATA_HOLDER.vrPlayer.vrdata_world_render.getAim().getYaw()));
                     modelView.rotate(Axis.XP.rotationDegrees(90.0F));
                 }
                 case WEST -> modelView.rotate(Axis.YP.rotationDegrees(90.0F));
@@ -1254,9 +1292,9 @@ public class VREffectsHelper {
         } else {
             // if there is no block hit, make it face the controller
             modelView.rotate(
-                Axis.YP.rotationDegrees(-DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0).getYaw()));
+                Axis.YP.rotationDegrees(-DATA_HOLDER.vrPlayer.vrdata_world_render.getAim().getYaw()));
             modelView.rotate(
-                Axis.XP.rotationDegrees(-DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0).getPitch()));
+                Axis.XP.rotationDegrees(-DATA_HOLDER.vrPlayer.vrdata_world_render.getAim().getPitch()));
         }
 
         float scale = (float) (0.125F * DATA_HOLDER.vrSettings.crosshairScale *

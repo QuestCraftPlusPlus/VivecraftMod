@@ -409,7 +409,17 @@ public class MCOpenVR extends MCVR {
             this.isError())
         {
             if (this.isError()) {
-                throw new RuntimeException(VR_GetVRInitErrorAsEnglishDescription(this.getError()));
+                int error = this.getError();
+                String errorString = VR_GetVRInitErrorAsEnglishDescription(error);
+                if (error == EVRInitError_VRInitError_Init_InstallationNotFound ||
+                    error == EVRInitError_VRInitError_Init_PathRegistryNotFound)
+                {
+                    errorString += "\n\n" + I18n.get("vivecraft.messages.steamvrnotfound");
+                    if (this.mc.gameDirectory.getPath().contains("/.var/app/")) {
+                        errorString += "\n\n" + I18n.get("vivecraft.messages.steamvrrunningflatpak");
+                    }
+                }
+                throw new RuntimeException(errorString);
             } else {
                 throw new RuntimeException(I18n.get("vivecraft.messages.outdatedsteamvr"));
             }
@@ -549,7 +559,8 @@ public class MCOpenVR extends MCVR {
         // binding
         // Sort the bindings, so they're easy to look through in SteamVR
         List<VRInputAction> sortedActions = new ArrayList<>(this.inputActions.values());
-        sortedActions.sort(Comparator.comparing((action) -> action.keyBinding));
+        sortedActions.sort(
+            Comparator.comparing((VRInputAction a) -> a.keyBinding).thenComparing(a -> a.keyBinding.getName()));
 
         List<Map<String, Object>> actions = new ArrayList<>();
 
@@ -1612,18 +1623,28 @@ public class MCOpenVR extends MCVR {
     public List<Triple<DeviceSource, Integer, Matrix4fc>> getTrackers() {
         List<Triple<DeviceSource, Integer, Matrix4fc>> trackers = super.getTrackers();
         List<Integer> ovrTrackers = getTrackerIds();
+
+        Vector3f offset = new Vector3f();
+        if (!this.dh.vrSettings.seated && this.dh.vrSettings.allowStandingOriginOffset) {
+            if (this.dh.vr.isHMDTracking()) {
+                offset.set(this.dh.vrSettings.originOffset);
+            }
+        }
+
         for (int tracker : ovrTrackers) {
             int type = -1;
             // check if we already know the role of the tracker
             for (int i = 0; i < TRACKABLE_DEVICE_COUNT; i++) {
                 if (this.deviceSource[i].is(DeviceSource.Source.OPENVR, tracker)) {
                     type = i;
+                    break;
                 }
             }
             // super already adds the assigned trackers
             if (trackers.stream().noneMatch(t -> t.getLeft().is(DeviceSource.Source.OPENVR, tracker))) {
                 trackers.add(
-                    Triple.of(new DeviceSource(DeviceSource.Source.OPENVR, tracker), type, this.poseMatrices[tracker]));
+                    Triple.of(new DeviceSource(DeviceSource.Source.OPENVR, tracker), type,
+                        MathUtils.addTranslation(new Matrix4f(this.poseMatrices[tracker]), offset)));
             }
         }
         return trackers;

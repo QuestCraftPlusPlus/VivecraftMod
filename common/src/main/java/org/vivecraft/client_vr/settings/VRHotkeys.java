@@ -9,7 +9,6 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
-import org.vivecraft.client.utils.LangHelper;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.MethodHolder;
 import org.vivecraft.client_vr.VRData;
@@ -56,14 +55,6 @@ public class VRHotkeys {
                     if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
                         dataHolder.vrSettings.storeDebugAim = true;
                         minecraft.gui.getChat().addMessage(Component.translatable("vivecraft.messages.showaim"));
-                        gotKey = true;
-                    }
-
-                    // Walk up blocks
-                    if (key == GLFW.GLFW_KEY_B) {
-                        dataHolder.vrSettings.walkUpBlocks = !dataHolder.vrSettings.walkUpBlocks;
-                        minecraft.gui.getChat().addMessage(Component.translatable("vivecraft.messages.walkupblocks",
-                            dataHolder.vrSettings.walkUpBlocks ? LangHelper.getYes() : LangHelper.getNo()));
                         gotKey = true;
                     }
 

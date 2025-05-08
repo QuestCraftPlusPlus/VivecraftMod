@@ -12,7 +12,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderProgram;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Vec3i;
@@ -32,10 +31,10 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
 import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.render.RenderPass;
+import org.vivecraft.client_vr.render.VRShaders;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.utils.MathUtils;
 import org.vivecraft.mixin.client.blaze3d.RenderSystemAccessor;
-import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
 
 public class RenderHelper {
 
@@ -60,12 +59,7 @@ public class RenderHelper {
      * @param renderPass RenderPass to get the rotation matrix for
      */
     public static Matrix4f getVRModelView(RenderPass renderPass) {
-        if (renderPass == RenderPass.CENTER && DATA_HOLDER.vrSettings.displayMirrorCenterSmooth > 0.0F) {
-            return new Matrix4f().rotation(MCVR.get().hmdRotHistory
-                .averageRotation(DATA_HOLDER.vrSettings.displayMirrorCenterSmooth));
-        } else {
-            return DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(renderPass).getMatrix().transpose();
-        }
+        return DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(renderPass).getMatrix().transpose();
     }
 
     /**
@@ -92,25 +86,6 @@ public class RenderHelper {
     }
 
     /**
-     * Gets the camera position of the given RenderPass.
-     * If the RenderPass is CENTER the position is smoothed over time if that setting is on
-     *
-     * @param renderPass pass to get the camera position for
-     * @param vrData     vrData to get it from
-     * @return camera position
-     */
-    public static Vec3 getSmoothCameraPosition(RenderPass renderPass, VRData vrData) {
-        if (DATA_HOLDER.currentPass == RenderPass.CENTER && DATA_HOLDER.vrSettings.displayMirrorCenterSmooth > 0.0F) {
-            Vector3f pos = MCVR.get().hmdHistory.averagePosition(DATA_HOLDER.vrSettings.displayMirrorCenterSmooth)
-                .mul(vrData.worldScale)
-                .rotateY(vrData.rotation_radians);
-            return new Vec3(pos.x + vrData.origin.x, pos.y + vrData.origin.y, pos.z + vrData.origin.z);
-        } else {
-            return vrData.getEye(renderPass).getPosition();
-        }
-    }
-
-    /**
      * Applies the offset for the LEFT and RIGHT RenderPass from the headset position
      * Other RenderPasses do nothing
      *
@@ -120,8 +95,7 @@ public class RenderHelper {
     public static void applyStereo(RenderPass renderPass, PoseStack poseStack) {
         if (renderPass == RenderPass.LEFT || renderPass == RenderPass.RIGHT) {
             Vec3 eye = DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(renderPass).getPosition()
-                .subtract(DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(RenderPass.CENTER)
-                    .getPosition());
+                .subtract(DATA_HOLDER.vrPlayer.vrdata_world_render.hmd.getPosition());
             poseStack.translate(-eye.x, -eye.y, -eye.z);
         }
     }
@@ -186,7 +160,7 @@ public class RenderHelper {
     public static void setupRenderingAtController(int c, Matrix4f matrix) {
         Vec3 aimSource = getControllerRenderPos(c);
         aimSource = aimSource.subtract(
-            getSmoothCameraPosition(DATA_HOLDER.currentPass, DATA_HOLDER.vrPlayer.getVRDataWorld()));
+            DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(DATA_HOLDER.currentPass).getPosition());
         // move from head to hand origin.
         matrix.translate((float) aimSource.x, (float) aimSource.y, (float) aimSource.z);
 
@@ -283,6 +257,10 @@ public class RenderHelper {
 
         double guiScale = maxGuiScale ? GuiHandler.GUI_SCALE_FACTOR_MAX : MC.getWindow().getGuiScale();
 
+        // set gui scale to make the scissor work, that checks the window gui scale
+        int backupGuiScale = GuiHandler.GUI_SCALE_FACTOR;
+        GuiHandler.GUI_SCALE_FACTOR = (int) guiScale;
+
         Matrix4f guiProjection = (new Matrix4f()).setOrtho(
             0.0F, (float) (MC.getMainRenderTarget().width / guiScale),
             (float) (MC.getMainRenderTarget().height / guiScale), 0.0F,
@@ -303,6 +281,9 @@ public class RenderHelper {
             GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
             GlStateManager.SourceFactor.ONE,
             GlStateManager.DestFactor.ONE);
+
+        // reset gui scale
+        GuiHandler.GUI_SCALE_FACTOR = backupGuiScale;
 
         poseStack.popMatrix();
 
@@ -325,7 +306,7 @@ public class RenderHelper {
         float size = 15.0F * Math.max(ClientDataHolderVR.getInstance().vrSettings.menuCrosshairScale,
             1.0F / (float) MC.getWindow().getGuiScale());
 
-        guiGraphics.blitSprite(RenderType::crosshair, Gui.CROSSHAIR_SPRITE, (int) (mouseX - size * 0.5F + 1),
+        guiGraphics.blitSprite(VRShaders.MENU_CROSSHAIR, Gui.CROSSHAIR_SPRITE, (int) (mouseX - size * 0.5F + 1),
             (int) (mouseY - size * 0.5F + 1), (int) size, (int) size);
     }
 
@@ -447,12 +428,7 @@ public class RenderHelper {
         Vector3f light0Old = RenderSystemAccessor.getShaderLightDirections()[0];
         Vector3f light1Old = RenderSystemAccessor.getShaderLightDirections()[1];
 
-        Vector3f normal = new Vector3f(0, 0, 1);
-
-        // weird iris behaviour
-        if (ShadersHelper.isShaderActive()) {
-            normal = new Matrix3f(matrix).transform(normal);
-        }
+        Vector3f normal = new Matrix3f(matrix).transform(new Vector3f(0, 0, 1)).normalize();
 
         // set lights to front
         RenderSystem.setShaderLights(normal, normal);
@@ -462,22 +438,22 @@ public class RenderHelper {
             .setColor(color[0], color[1], color[2], color[3])
             .setUv(0.0F, flipY ? 1.0F : 0.0F)
             .setOverlay(OverlayTexture.NO_OVERLAY).setLight(packedLight)
-            .setNormal(0, 0, 1);
+            .setNormal(normal.x, normal.y, normal.z);
         bufferbuilder.addVertex(matrix, sizeX, -sizeY, 0)
             .setColor(color[0], color[1], color[2], color[3])
             .setUv(1.0F, flipY ? 1.0F : 0.0F)
             .setOverlay(OverlayTexture.NO_OVERLAY).setLight(packedLight)
-            .setNormal(0, 0, 1);
+            .setNormal(normal.x, normal.y, normal.z);
         bufferbuilder.addVertex(matrix, sizeX, sizeY, 0)
             .setColor(color[0], color[1], color[2], color[3])
             .setUv(1.0F, flipY ? 0.0F : 1.0F)
             .setOverlay(OverlayTexture.NO_OVERLAY).setLight(packedLight)
-            .setNormal(0, 0, 1);
+            .setNormal(normal.x, normal.y, normal.z);
         bufferbuilder.addVertex(matrix, -sizeX, sizeY, 0)
             .setColor(color[0], color[1], color[2], color[3])
             .setUv(0.0F, flipY ? 0.0F : 1.0F)
             .setOverlay(OverlayTexture.NO_OVERLAY).setLight(packedLight)
-            .setNormal(0, 0, 1);
+            .setNormal(normal.x, normal.y, normal.z);
         BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
 
         MC.gameRenderer.lightTexture().turnOffLightLayer();

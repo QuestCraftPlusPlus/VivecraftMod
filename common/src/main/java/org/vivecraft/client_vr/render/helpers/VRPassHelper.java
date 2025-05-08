@@ -153,7 +153,12 @@ public class VRPassHelper {
         }
 
         // pop pose that we pushed before the gui
-        RenderSystem.getModelViewStack().popMatrix();
+        // when using quickplay, the inject that does the push somehow gets skipped so need to catch if the stack is empty
+        try {
+            RenderSystem.getModelViewStack().popMatrix();
+        } catch (IllegalStateException ignore) {
+            VRSettings.LOGGER.error("Vivecraft: ModelViewStack was empty!");
+        }
 
         if (DATA_HOLDER.vrSettings.guiMipmaps) {
             // update mipmaps
@@ -184,7 +189,7 @@ public class VRPassHelper {
         Profiler.get().pop();
 
         // render the different vr passes
-        List<RenderPass> list = DATA_HOLDER.vrRenderer.getRenderPasses();
+        List<RenderPass> list = DATA_HOLDER.vrRenderer.getRenderPasses(false);
         DATA_HOLDER.isFirstPass = true;
         for (RenderPass renderpass : list) {
             DATA_HOLDER.currentPass = renderpass;

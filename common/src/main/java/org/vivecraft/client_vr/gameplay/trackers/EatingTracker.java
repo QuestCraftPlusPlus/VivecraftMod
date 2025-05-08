@@ -68,7 +68,7 @@ public class EatingTracker extends Tracker {
     public void doProcess(LocalPlayer player) {
         VRData room_pre = this.dh.vrPlayer.vrdata_room_pre;
         Vector3f hmdPos = room_pre.hmd.getPositionF();
-        Vector3f mouthPos = room_pre.getController(0).getCustomVector(new Vector3f(0.0F, -MOUTH_TO_EYE_DISTANCE, 0.0F))
+        Vector3f mouthPos = room_pre.hmd.getCustomVector(new Vector3f(0.0F, -MOUTH_TO_EYE_DISTANCE, 0.0F))
             .add(hmdPos);
 
         for (int c = 0; c < 2; c++) {

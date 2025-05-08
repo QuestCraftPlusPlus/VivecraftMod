@@ -10,11 +10,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.vivecraft.client.extensions.EntityRenderStateExtension;
 import org.vivecraft.client_vr.ClientDataHolderVR;
-import org.vivecraft.client_vr.render.RenderPass;
-import org.vivecraft.mod_compat_vr.immersiveportals.ImmersivePortalsHelper;
-import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
+import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 
 @Mixin(ItemInHandLayer.class)
 public abstract class ItemInHandLayerMixin extends RenderLayer {
@@ -28,12 +25,7 @@ public abstract class ItemInHandLayerMixin extends RenderLayer {
         CallbackInfo ci, @Local(argsOnly = true) ArmedEntityRenderState renderState,
         @Local(argsOnly = true) PoseStack poseStack)
     {
-        if (((EntityRenderStateExtension) renderState).vivecraft$isMainPlayer() &&
-            ClientDataHolderVR.getInstance().vrSettings.shouldRenderSelf &&
-            RenderPass.isFirstPerson(ClientDataHolderVR.getInstance().currentPass) &&
-            !ShadersHelper.isRenderingShadows() &&
-            !(ImmersivePortalsHelper.isLoaded() && ImmersivePortalsHelper.isRenderingPortal()))
-        {
+        if (VREffectsHelper.isRenderingFirstPersonPlayer(renderState)) {
             // make the item scale equal in all directions
             poseStack.translate(0.0F, 0.65F, 0.0F);
             poseStack.scale(1F, ClientDataHolderVR.getInstance().vrSettings.playerModelArmsScale, 1f);

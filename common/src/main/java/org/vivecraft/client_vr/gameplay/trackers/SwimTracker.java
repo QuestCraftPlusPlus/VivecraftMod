@@ -33,12 +33,9 @@ public class SwimTracker extends Tracker {
             return false;
         } else if (!player.isInWater() && !player.isInLava()) {
             return false;
-        } else if (player.zza > 0.0F) {
-            return false;
-        } else if (player.xxa > 0.0F) {
-            return false;
+        } else {
+            return (player.zza == 0 && player.xxa == 0);
         }
-        return true;
     }
 
     @Override

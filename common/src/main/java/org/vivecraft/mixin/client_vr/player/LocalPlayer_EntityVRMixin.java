@@ -81,6 +81,12 @@ public abstract class LocalPlayer_EntityVRMixin {
     /**
      * dummy to be overridden in {@link LocalPlayerVRMixin}
      */
+    @Inject(method = "moveRelative", at = @At("TAIL"))
+    protected void vivecraft$afterMoveRelative(CallbackInfo ci) {}
+
+    /**
+     * dummy to be overridden in {@link LocalPlayerVRMixin}
+     */
     @WrapMethod(method = "setPos(DDD)V")
     protected void vivecraft$wrapSetPos(double x, double y, double z, Operation<Void> original) {
         original.call(x, y, z);

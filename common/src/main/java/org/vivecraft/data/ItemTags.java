@@ -41,6 +41,8 @@ public class ItemTags {
 
     public static final TagKey<Item> VIVECRAFT_TOOLS = tag("tools");
 
+    public static final TagKey<Item> VIVECRAFT_ROTATED_TOOLS = tag("rotated_tools");
+
     public static final TagKey<Item> VIVECRAFT_BOW_EXCLUSION = tag("bow_exclusion");
 
     private static TagKey<Item> tag(String name) {

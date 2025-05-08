@@ -339,7 +339,7 @@ public class ServerUtil {
      */
     public static void debugParticleAxes(ServerVivePlayer vivePlayer) {
         if (vivePlayer.isVR() && vivePlayer.vrPlayerState != null) {
-            for(BodyPart bodyPart : BodyPart.values()) {
+            for (BodyPart bodyPart : BodyPart.values()) {
                 if (bodyPart.isValid(vivePlayer.vrPlayerState.fbtMode())) {
                     debugParticleAxes(
                         vivePlayer.player.serverLevel(),

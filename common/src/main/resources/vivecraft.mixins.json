@@ -20,6 +20,7 @@
     "client.player.AbstractClientPlayerMixin",
     "client.renderer.ItemBlockRenderTypesMixin",
     "client.renderer.RenderStateShardAccessor",
+    "client.renderer.ShaderManagerMixin",
     "client.renderer.block.LiquidBlockRendererMixin",
     "client.renderer.entity.EntityRenderDispatcherMixin",
     "client.renderer.entity.ItemRendererVRMixin",

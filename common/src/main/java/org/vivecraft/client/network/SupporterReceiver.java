@@ -62,7 +62,7 @@ public class SupporterReceiver {
     }
 
     public static void addPlayerInfo(Player p) {
-        if (!DOWNLOAD_FAILED) {
+        if (!DOWNLOAD_FAILED && p.getGameProfile().getName() != null) {
             synchronized (LOCK) {
                 if (CACHE == null) {
                     QUEUED_PLAYERS.add(p);

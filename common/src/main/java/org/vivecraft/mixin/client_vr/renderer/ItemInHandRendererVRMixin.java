@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.component.PatchedDataComponentMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -108,6 +109,9 @@ public abstract class ItemInHandRendererVRMixin {
 
         boolean mainHand = hand == InteractionHand.MAIN_HAND;
         HumanoidArm side = mainHand ? player.getMainArm() : player.getMainArm().getOpposite();
+        if (dh.vrSettings.reverseHands) {
+            side = side.getOpposite();
+        }
         // we need to get this here, because the supplied value is invalid when we call it
         float equippedProgress = this.vivecraft$getEquipProgress(hand, partialTick);
 
@@ -156,15 +160,12 @@ public abstract class ItemInHandRendererVRMixin {
 
             boolean useLeftHandModelinLeftHand = false;
 
-            // swap hand for claws, since it's backwards else wise
-            if (ClimbTracker.isClaws(itemStack) && dh.vrSettings.reverseHands) {
-                mainHand = !mainHand;
-            }
-
             ItemDisplayContext itemDisplayContext;
 
-            // third person transforms for custom model data items, but not spear, shield and crossbow
-            boolean hasCMD = itemStack.has(DataComponents.CUSTOM_MODEL_DATA) &&
+            // third person transforms for custom model data items/item model overrides, but not spear, shield and crossbow
+            boolean hasItemOverride = itemStack.getComponents() instanceof PatchedDataComponentMap patched &&
+                patched.hasNonDefault(DataComponents.ITEM_MODEL);
+            boolean hasCMD = (hasItemOverride || itemStack.has(DataComponents.CUSTOM_MODEL_DATA)) &&
                 transformType != VivecraftItemRendering.VivecraftItemTransformType.Crossbow &&
                 transformType != VivecraftItemRendering.VivecraftItemTransformType.Spear &&
                 transformType != VivecraftItemRendering.VivecraftItemTransformType.Shield;
@@ -175,6 +176,10 @@ public abstract class ItemInHandRendererVRMixin {
                 (ClientNetworking.isThirdPersonItems() || (hasCMD && ClientNetworking.isThirdPersonItemsCustom()))
             ))
             {
+                // swap hand, since it's backwards else wise
+                if (dh.vrSettings.reverseHands) {
+                    mainHand = !mainHand;
+                }
                 useLeftHandModelinLeftHand = true; // test
                 VivecraftItemRendering.applyThirdPersonItemTransforms(poseStack, transformType, mainHand, player,
                     equippedProgress, partialTick, itemStack, hand);
@@ -245,7 +250,8 @@ public abstract class ItemInHandRendererVRMixin {
     {
         LocalPlayer player = this.minecraft.player;
         boolean rightHand = side == HumanoidArm.RIGHT;
-        boolean mainHand = side == player.getMainArm();
+        boolean mainHand =
+            side == (ClientDataHolderVR.getInstance().vrSettings.reverseHands ? HumanoidArm.LEFT : HumanoidArm.RIGHT);
         float offsetDirection = rightHand ? 1.0F : -1.0F;
 
         RenderSystem.setShaderTexture(0, player.getSkin().texture());
@@ -270,13 +276,12 @@ public abstract class ItemInHandRendererVRMixin {
              z offset: (arm y origin + arm y offset + arm y dimension) / 16
              slim
              x offset: (5 + -1 + 3*0.5) / 16 = 0.34375
-             z offset: (-2 + 2.5 + 12) / 16 = 0.78125
              regular
              x offset: (5 - 1 + 4*0.5) / 16 = 0.375
              z offset: (-2 + 2 + 12) / 16 = 0.75
             */
 
-        poseStack.translate((slim ? -0.34375F : -0.375F) * offsetDirection, 0.0F, slim ? 0.78125F : 0.75F);
+        poseStack.translate((slim ? -0.34375F : -0.375F) * offsetDirection, 0.0F, 0.75F);
         poseStack.mulPose(Axis.XP.rotationDegrees(-90));
         poseStack.mulPose(Axis.YP.rotationDegrees(180));
 

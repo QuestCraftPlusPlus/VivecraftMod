@@ -19,6 +19,7 @@ import org.vivecraft.client.utils.ModelUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.render.RenderPass;
+import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.network.FBTMode;
 import org.vivecraft.common.utils.MathUtils;
@@ -82,7 +83,7 @@ public class VRPlayerModel extends PlayerModel {
             return;
         }
 
-        boolean isMainPlayer = ((EntityRenderStateExtension) renderState).vivecraft$isMainPlayer();
+        boolean isMainPlayer = ((EntityRenderStateExtension) renderState).vivecraft$isFirstPersonPlayer();
 
         if (isMainPlayer) {
             if (ClientDataHolderVR.getInstance().currentPass == RenderPass.CAMERA &&
@@ -93,11 +94,7 @@ public class VRPlayerModel extends PlayerModel {
                 hideHand(model, HumanoidArm.LEFT, true);
                 hideHand(model, HumanoidArm.RIGHT, true);
             }
-            if (ClientDataHolderVR.getInstance().vrSettings.shouldRenderSelf &&
-                !ShadersHelper.isRenderingShadows() &&
-                !(ImmersivePortalsHelper.isLoaded() && ImmersivePortalsHelper.isRenderingPortal()) &&
-                RenderPass.isFirstPerson(ClientDataHolderVR.getInstance().currentPass))
-            {
+            if (VREffectsHelper.isFirstPersonEntityPass()) {
                 // hide the head or you won't see anything
                 model.head.visible = false;
                 model.hat.visible = false;
@@ -152,6 +149,8 @@ public class VRPlayerModel extends PlayerModel {
         float armScale = 1F;
         float legScale = 1F;
 
+        // this check is similar to VREffectsHelper#isFirstPersonEntityPass,
+        // but does different stuff for shaders shadow pass
         if (isMainPlayer && ClientDataHolderVR.getInstance().vrSettings.shouldRenderSelf &&
             !(ImmersivePortalsHelper.isLoaded() && ImmersivePortalsHelper.isRenderingPortal()) &&
             (!ShadersHelper.isRenderingShadows() &&
@@ -219,7 +218,8 @@ public class VRPlayerModel extends PlayerModel {
         } else if (noLowerBodyAnimation) {
             // with only arms simply rotate the body in place
             model.body.setRotation(
-                Mth.PI * Math.max(0F, model.body.y / 22F) * (model instanceof VRPlayerModel_WithArmsLegs ? 0.5F : 1F), 0F, 0F);
+                Mth.PI * Math.max(0F, model.body.y / 22F) * (model instanceof VRPlayerModel_WithArmsLegs ? 0.5F : 1F),
+                0F, 0F);
             if (laying) {
                 float bodyXRot;
                 if (swimming) {

@@ -328,9 +328,10 @@ public abstract class VRRenderer {
     public abstract String getName();
 
     /**
+     * @param includeNonRendered if set, will also include passes that are used with the current settings, but currently not rendered
      * @return a list of passes that need to be rendered
      */
-    public List<RenderPass> getRenderPasses() {
+    public List<RenderPass> getRenderPasses(boolean includeNonRendered) {
         Minecraft minecraft = Minecraft.getInstance();
         ClientDataHolderVR dataholder = ClientDataHolderVR.getInstance();
         List<RenderPass> passes = new ArrayList<>();
@@ -340,8 +341,9 @@ public abstract class VRRenderer {
         passes.add(RenderPass.RIGHT);
 
         // only do these, if the window is not minimized
-        if (((WindowExtension) (Object) minecraft.getWindow()).vivecraft$getActualScreenWidth() > 0 &&
-            ((WindowExtension) (Object) minecraft.getWindow()).vivecraft$getActualScreenHeight() > 0)
+        WindowExtension window = (WindowExtension) (Object) minecraft.getWindow();
+        if (includeNonRendered ||
+            window.vivecraft$getActualScreenWidth() > 0 && window.vivecraft$getActualScreenHeight() > 0)
         {
             if (dataholder.vrSettings.displayMirrorMode == VRSettings.MirrorMode.FIRST_PERSON) {
                 passes.add(RenderPass.CENTER);
@@ -523,9 +525,19 @@ public abstract class VRRenderer {
         if ((this.framebufferMR == null || this.framebufferUndistorted == null) && ShadersHelper.isShaderActive()) {
             this.reinitFrameBuffers("Shaders on, but some buffers not initialized");
         }
-        if (Minecraft.getInstance().options.graphicsMode().get() != this.previousGraphics) {
-            this.previousGraphics = Minecraft.getInstance().options.graphicsMode().get();
+        if (minecraft.options.graphicsMode().get() != this.previousGraphics) {
+            this.previousGraphics = minecraft.options.graphicsMode().get();
             this.reinitFrameBuffers("gfx setting changed to: " + this.previousGraphics);
+        }
+
+        if (minecraft.options.graphicsMode().get() == GraphicsStatus.FABULOUS &&
+            minecraft.getShaderManager().getProgram(VRShaders.VR_TRANSPARENCY_SHADER) == null)
+        {
+            // fabulous shader didn't compile
+            minecraft.gui.getChat().addMessage(Component.translatable("vivecraft.messages.fabulousFailed"));
+            minecraft.options.graphicsMode().set(GraphicsStatus.FAST);
+            minecraft.levelRenderer.allChanged();
+            this.reinitFrameBuffers("fabulous missing");
         }
 
         if (this.resizeFrameBuffers && !this.reinitFrameBuffers) {
@@ -565,8 +577,8 @@ public abstract class VRRenderer {
                     WorldRenderPass.MIXED_REALITY.resize(mirrorSize.getA(), mirrorSize.getB());
                 }
                 this.mirrorFramebuffer.resize(
-                    ((WindowExtension) (Object) Minecraft.getInstance().getWindow()).vivecraft$getActualScreenWidth(),
-                    ((WindowExtension) (Object) Minecraft.getInstance().getWindow()).vivecraft$getActualScreenHeight());
+                    ((WindowExtension) (Object) minecraft.getWindow()).vivecraft$getActualScreenWidth(),
+                    ((WindowExtension) (Object) minecraft.getWindow()).vivecraft$getActualScreenHeight());
             }
 
             // telescopes
@@ -601,7 +613,7 @@ public abstract class VRRenderer {
                 }
             }
             // need to recall this, for PostChains to get the right resize
-            Minecraft.getInstance().resizeDisplay();
+            minecraft.resizeDisplay();
 
             this.resizeFrameBuffers = false;
         }
@@ -679,33 +691,35 @@ public abstract class VRRenderer {
 
             getMirrorTextureSize(eyeFBWidth, eyeFBHeight, resolutionScale);
 
-            List<RenderPass> list = this.getRenderPasses();
+            List<RenderPass> list = this.getRenderPasses(true);
 
             VRSettings.LOGGER.info("Vivecraft: Active RenderPasses: {}",
                 list.stream().map(Enum::toString).collect(Collectors.joining(", ")));
 
-            // only do these, if the window is not minimized
-            if (this.mirrorFBWidth > 0 && this.mirrorFBHeight > 0) {
-                if (list.contains(RenderPass.THIRD) || ShadersHelper.isShaderActive()) {
-                    this.framebufferMR = new VRTextureTarget("Mixed Reality Render", this.mirrorFBWidth,
-                        this.mirrorFBHeight, true, -1, true, false, false);
-                    WorldRenderPass.MIXED_REALITY = new WorldRenderPass(this.framebufferMR);
-                    VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferMR);
-                    RenderHelper.checkGLError("Mixed reality framebuffer setup");
-                }
+            // make sure these are valid, even when not needed
+            if (list.contains(RenderPass.THIRD) || ShadersHelper.isShaderActive()) {
+                this.framebufferMR = new VRTextureTarget("Mixed Reality Render",
+                    Math.max(1, this.mirrorFBWidth),
+                    Math.max(1, this.mirrorFBHeight),
+                    true, -1, true, false, false);
+                WorldRenderPass.MIXED_REALITY = new WorldRenderPass(this.framebufferMR);
+                VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferMR);
+                RenderHelper.checkGLError("Mixed reality framebuffer setup");
+            }
 
-                if (list.contains(RenderPass.CENTER) || ShadersHelper.isShaderActive()) {
-                    this.framebufferUndistorted = new VRTextureTarget("Undistorted View Render", this.mirrorFBWidth,
-                        this.mirrorFBHeight, true, -1, true, false, false);
-                    WorldRenderPass.CENTER = new WorldRenderPass(this.framebufferUndistorted);
-                    VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferUndistorted);
-                    RenderHelper.checkGLError("Undistorted view framebuffer setup");
-                }
+            if (list.contains(RenderPass.CENTER) || ShadersHelper.isShaderActive()) {
+                this.framebufferUndistorted = new VRTextureTarget("Undistorted View Render",
+                    Math.max(1, this.mirrorFBWidth),
+                    Math.max(1, this.mirrorFBHeight),
+                    true, -1, true, false, false);
+                WorldRenderPass.CENTER = new WorldRenderPass(this.framebufferUndistorted);
+                VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferUndistorted);
+                RenderHelper.checkGLError("Undistorted view framebuffer setup");
             }
             this.mirrorFramebuffer = new VRTextureTarget("Mirror", Math.max(1,
-                ((WindowExtension) (Object) Minecraft.getInstance().getWindow()).vivecraft$getActualScreenWidth()),
+                ((WindowExtension) (Object) minecraft.getWindow()).vivecraft$getActualScreenWidth()),
                 Math.max(1,
-                    ((WindowExtension) (Object) Minecraft.getInstance().getWindow()).vivecraft$getActualScreenHeight()),
+                    ((WindowExtension) (Object) minecraft.getWindow()).vivecraft$getActualScreenHeight()),
                 false, -1, false, false, false);
 
             GuiHandler.updateResolution();

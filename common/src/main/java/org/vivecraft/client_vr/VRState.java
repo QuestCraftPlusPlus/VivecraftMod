@@ -1,6 +1,7 @@
 package org.vivecraft.client_vr;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.StringUtils;
 import org.vivecraft.client.Xplat;
@@ -107,9 +108,7 @@ public class VRState {
                     if (os.getTotalMemorySize() >= 1073741824L * 12L - 1048576L * 256L &&
                         Runtime.getRuntime().availableProcessors() >= 6)
                     {
-                        // store the garbage collector, as indicator, that the GarbageCollectorScreen should be shown, if it would be discarded
-                        dh.incorrectGarbageCollector = garbageCollector;
-                        Minecraft.getInstance().setScreen(new GarbageCollectorScreen(garbageCollector));
+                        setScreenAndCache(new GarbageCollectorScreen(garbageCollector));
                     }
                 }
             } catch (Throwable e) {
@@ -119,14 +118,22 @@ public class VRState {
             VRSettings.LOGGER.error("Vivecraft: Failed to initialize VR: ", exception);
             destroyVR(true);
             if (exception instanceof RenderConfigException renderConfigException) {
-                Minecraft.getInstance()
-                    .setScreen(new ErrorScreen(renderConfigException.title, renderConfigException.error));
+                setScreenAndCache(new ErrorScreen(renderConfigException.title, renderConfigException.error));
             } else {
-                Minecraft.getInstance()
-                    .setScreen(new ErrorScreen(Component.translatable("vivecraft.messages.vriniterror"),
-                        TextUtils.throwableToComponent(exception)));
+                setScreenAndCache(new ErrorScreen(Component.translatable("vivecraft.messages.vriniterror"),
+                    TextUtils.throwableToComponent(exception)));
             }
         }
+    }
+
+    /**
+     * sets the given {@code screen} and caches it, in case it gets discarded when booting up the game
+     *
+     * @param screen Screen to set and cache
+     */
+    private static void setScreenAndCache(Screen screen) {
+        Minecraft.getInstance().setScreen(screen);
+        ClientDataHolderVR.getInstance().cachedScreen = screen;
     }
 
     public static void destroyVR(boolean disableVRSetting) {
