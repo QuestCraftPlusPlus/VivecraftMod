@@ -2,9 +2,11 @@ package org.vivecraft.client_vr.provider.openxr;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.Profiler;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.PointerBuffer;
@@ -27,6 +29,7 @@ import org.vivecraft.client_vr.provider.control.VRInputAction;
 import org.vivecraft.client_vr.provider.control.VRInputActionSet;
 import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.settings.VRSettings;
+import org.vivecraft.common.utils.MathUtils;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -311,6 +314,22 @@ public class MCOpenXR extends MCVR {
                 } else {
                     this.controllerTracking[LEFT_CONTROLLER] = false;
                 }
+            }
+
+            if(this.controllerTracking[RIGHT_CONTROLLER]) {
+                Matrix4fc tip = this.controllerRotation[RIGHT_CONTROLLER];
+                Matrix4fc hand = this.handRotation[RIGHT_CONTROLLER];
+
+                Vector3f tipVec = tip.transformDirection(MathUtils.BACK, new Vector3f());
+                Vector3f handVec = hand.transformDirection(MathUtils.BACK, new Vector3f());
+
+                float dot = Math.abs(tipVec.dot(handVec));
+
+                float angleRad = (float) Math.acos(dot);
+                float angleDeg = Mth.RAD_TO_DEG * angleRad;
+
+                this.gunStyle = angleDeg > 10.0F;
+                this.gunAngle = angleDeg;
             }
 
             this.updateAim();
