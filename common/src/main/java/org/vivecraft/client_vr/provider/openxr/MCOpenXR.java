@@ -3,7 +3,6 @@ package org.vivecraft.client_vr.provider.openxr;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
-import net.minecraft.util.profiling.Profiler;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
