@@ -22,7 +22,9 @@ import org.vivecraft.client.render.VRPlayerModel;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.gameplay.trackers.ClimbTracker;
-import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
+import org.vivecraft.client_vr.render.RenderPass;
+import org.vivecraft.mod_compat_vr.immersiveportals.ImmersivePortalsHelper;
+import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
 
 @Mixin(ItemInHandLayer.class)
 public abstract class ItemInHandLayerMixin extends RenderLayer {
