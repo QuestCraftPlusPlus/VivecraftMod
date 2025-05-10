@@ -146,7 +146,7 @@ public abstract class GameRendererVRMixin
 
             // set the entity position and view to the controller
             this.vivecraft$cacheRVEPos(this.minecraft.getCameraEntity());
-            this.vivecraft$setupRVEAtDevice(vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render.getAim());
+            this.vivecraft$setupRVEAtDevice(vivecraft$DATA_HOLDER.vrPlayer.vrdata_world_render.getController(0));
         }
 
         // call the vanilla method

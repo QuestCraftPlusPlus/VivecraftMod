@@ -21,7 +21,7 @@ public class ShaderMacrosVRMixin {
 
     @Inject(method = "getFixedMacroLines", at = @At(value = "INVOKE", target = "Lnet/optifine/shaders/config/ShaderMacros;addMacroLine(Ljava/lang/StringBuilder;Ljava/lang/String;I)V"))
     private static void vivecraft$addVivecraftMacros(
-        CallbackInfoReturnable<String> cir, @Local StringBuilder stringBuilder)
+        CallbackInfoReturnable<String> cir,@Local StringBuilder stringBuilder)
     {
         ShadersHelper.addMacros(
             (string) -> addMacroLine(stringBuilder, string),

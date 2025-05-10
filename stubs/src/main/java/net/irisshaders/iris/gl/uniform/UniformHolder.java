@@ -7,7 +7,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-public interface UniformHolder {
+public interface  UniformHolder {
 
     UniformHolder uniform1i(UniformUpdateFrequency updateFrequency, String name, IntSupplier value);
 
