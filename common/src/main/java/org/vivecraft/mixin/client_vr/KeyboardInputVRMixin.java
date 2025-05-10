@@ -17,11 +17,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.vivecraft.client.VivecraftVRMod;
+import org.vivecraft.client_vr.provider.control.VRInputAction;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.provider.MCVR;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.VRInputAction;
 import org.vivecraft.common.utils.MathUtils;
 
 @Mixin(KeyboardInput.class)
@@ -48,7 +48,7 @@ public class KeyboardInputVRMixin extends Input {
 
     @Unique
     private float vivecraft$getAxisValue(KeyMapping keyBinding) {
-        return Math.abs(MCVR.get().getInputAction(keyBinding).getAxis1DUseTracked());
+        return Math.abs(ClientDataHolderVR.getInstance().vr.getInputAction(keyBinding).getAxis1DUseTracked());
     }
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/KeyboardInput;calculateImpulse(ZZ)F", ordinal = 0))
