@@ -94,12 +94,14 @@ public abstract class ClientPacketListenerVRMixin {
 
     @Inject(method = "handleSystemChat", at = @At("TAIL"))
     private void vivecraft$chatHapticsSystem(ClientboundSystemChatPacket packet, CallbackInfo ci) {
-        String lastMsg = ((PlayerExtension) this.minecraft.player).vivecraft$getLastMsg();
-        ((PlayerExtension) this.minecraft.player).vivecraft$setLastMsg(null);
-        if (VRState.VR_RUNNING &&
-            (this.minecraft.player == null || lastMsg == null || packet.content().getString().contains(lastMsg)))
-        {
-            vivecraft$triggerHapticSound();
+        if (this.minecraft.player != null) {
+            String lastMsg = ((PlayerExtension) this.minecraft.player).vivecraft$getLastMsg();
+            ((PlayerExtension) this.minecraft.player).vivecraft$setLastMsg(null);
+            if (VRState.VR_RUNNING &&
+                (this.minecraft.player == null || lastMsg == null || packet.content().getString().contains(lastMsg)))
+            {
+                vivecraft$triggerHapticSound();
+            }
         }
     }
 
