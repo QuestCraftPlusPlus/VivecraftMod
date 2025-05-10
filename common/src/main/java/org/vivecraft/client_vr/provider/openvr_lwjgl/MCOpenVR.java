@@ -3,7 +3,6 @@ package org.vivecraft.client_vr.provider.openvr_lwjgl;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.sun.jna.NativeLibrary;
 import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
@@ -16,7 +15,6 @@ import net.minecraft.util.Mth;
 import org.apache.commons.lang3.tuple.Triple;
 import org.joml.*;
 import org.lwjgl.Version;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.openvr.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -26,12 +24,12 @@ import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client.utils.FileUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
-import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.RadialHandler;
 import org.vivecraft.client_vr.provider.*;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.control.TrackpadSwipeSampler;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.control.VRInputActionSet;
+import org.vivecraft.client_vr.provider.control.TrackpadSwipeSampler;
+import org.vivecraft.client_vr.provider.control.VRInputAction;
+import org.vivecraft.client_vr.provider.control.VRInputActionSet;
 import org.vivecraft.client_vr.render.RenderConfigException;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_vr.utils.external.jinfinadeck;
@@ -103,7 +101,6 @@ public class MCOpenVR extends MCVR {
     // holds the handle to the devices other than the headset
     private final long[] deviceHandle = new long[MCVR.TRACKABLE_DEVICE_COUNT];
 
-    private boolean inputInitialized;
     private final InputOriginInfo originInfo;
     private final InputPoseActionData poseData;
     private final InputDigitalActionData digital;
@@ -111,7 +108,6 @@ public class MCOpenVR extends MCVR {
 
     private boolean paused = false;
 
-    private final Map<String, TrackpadSwipeSampler> trackpadSwipeSamplers = new HashMap<>();
     private boolean triedToInit;
 
     private final Queue<VREvent> vrEvents = new LinkedList<>();
@@ -433,15 +429,21 @@ public class MCOpenVR extends MCVR {
     }
 
     @Override
+    public void handleEvents() {
+        mc.getProfiler().push("pollEvents");
+        this.pollVREvents();
+        this.mc.getProfiler().popPush("processEvents");
+        this.processVREvents();
+        mc.getProfiler().pop();
+    }
+
+    @Override
     public void poll(long frameIndex) {
         if (!this.initialized) return;
 
         this.paused = VRSystem_ShouldApplicationPause();
-        this.mc.getProfiler().push("pollEvents");
-        this.pollVREvents();
-        this.mc.getProfiler().popPush("processEvents");
-        this.processVREvents();
-        this.mc.getProfiler().popPush("updatePose/Vsync");
+
+        mc.getProfiler().push("updatePose/Vsync");
         this.updatePose();
 
         if (!this.dh.vrSettings.seated) {
@@ -458,36 +460,6 @@ public class MCOpenVR extends MCVR {
         this.mc.getProfiler().popPush("hmdSampling");
         this.hmdSampling();
         this.mc.getProfiler().pop();
-    }
-
-    @Override
-    public void processInputs() {
-        if (this.dh.vrSettings.seated || ClientDataHolderVR.VIEW_ONLY || !this.inputInitialized) return;
-
-        for (VRInputAction action : this.inputActions.values()) {
-            if (action.isHanded()) {
-                for (ControllerType controllertype : ControllerType.values()) {
-                    action.setCurrentHand(controllertype);
-                    this.processInputAction(action);
-                }
-            } else {
-                this.processInputAction(action);
-            }
-        }
-
-        this.processScrollInput(GuiHandler.KEY_SCROLL_AXIS,
-            () -> InputSimulator.scrollMouse(0.0D, 1.0D),
-            () -> InputSimulator.scrollMouse(0.0D, -1.0D));
-        this.processScrollInput(VivecraftVRMod.INSTANCE.keyHotbarScroll,
-            () -> this.changeHotbar(-1),
-            () -> this.changeHotbar(1));
-        this.processSwipeInput(VivecraftVRMod.INSTANCE.keyHotbarSwipeX,
-            () -> this.changeHotbar(1),
-            () -> this.changeHotbar(-1), null, null);
-        this.processSwipeInput(VivecraftVRMod.INSTANCE.keyHotbarSwipeY, null, null,
-            () -> this.changeHotbar(-1),
-            () -> this.changeHotbar(1));
-        this.ignorePressesNextFrame = false;
     }
 
     /**
@@ -1203,109 +1175,6 @@ public class MCOpenVR extends MCVR {
     }
 
     /**
-     * updates the KeyMapping state that is linked to the given VRInputAction
-     *
-     * @param action VRInputAction to process
-     */
-    private void processInputAction(VRInputAction action) {
-        if (action.isActive() && action.isEnabledRaw() &&
-            // try to prevent double left clicks
-            (!ClientDataHolderVR.getInstance().vrSettings.ingameBindingsInGui ||
-                !(action.actionSet == VRInputActionSet.INGAME &&
-                    action.keyBinding.key.getType() == InputConstants.Type.MOUSE &&
-                    action.keyBinding.key.getValue() == GLFW.GLFW_MOUSE_BUTTON_LEFT && this.mc.screen != null
-                )
-            ))
-        {
-            if (action.isButtonChanged()) {
-                if (action.isButtonPressed() && action.isEnabled()) {
-                    // We do this, so shit like closing a GUI by clicking a button won't
-                    // also click in the world immediately after.
-                    if (!this.ignorePressesNextFrame) {
-                        action.pressBinding();
-                    }
-                } else {
-                    action.unpressBinding();
-                }
-            }
-        } else {
-            action.unpressBinding();
-        }
-    }
-
-    /**
-     * checks the axis input of the VRInputAction linked to {@code keyMapping} and runs the callbacks when it's non 0
-     *
-     * @param keyMapping   KeyMapping to check
-     * @param upCallback   action to do when the axis input is positive
-     * @param downCallback action to do when the axis input is negative
-     */
-    private void processScrollInput(KeyMapping keyMapping, Runnable upCallback, Runnable downCallback) {
-        VRInputAction action = this.getInputAction(keyMapping);
-
-        if (action.isEnabled() && action.getLastOrigin() != k_ulInvalidInputValueHandle) {
-            float value = action.getAxis2D(false).y();
-            if (value != 0.0F) {
-                if (value > 0.0F) {
-                    upCallback.run();
-                } else if (value < 0.0F) {
-                    downCallback.run();
-                }
-            }
-        }
-    }
-
-    /**
-     * checks the trackpad input of the controller the {@code keyMapping} is on
-     *
-     * @param keyMapping    KeyMapping to check
-     * @param leftCallback  action to do when swiped to the left
-     * @param rightCallback action to do when swiped to the right
-     * @param upCallback    action to do when swiped to the up
-     * @param downCallback  action to do when swiped to the down
-     */
-    private void processSwipeInput(
-        KeyMapping keyMapping, Runnable leftCallback, Runnable rightCallback, Runnable upCallback,
-        Runnable downCallback)
-    {
-        VRInputAction action = this.getInputAction(keyMapping);
-
-        if (action.isEnabled() && action.getLastOrigin() != k_ulInvalidInputValueHandle) {
-            ControllerType controller = this.findActiveBindingControllerType(keyMapping);
-
-            if (controller != null) {
-                // if that keyMapping is not tracked yet, create a new sampler
-                if (!this.trackpadSwipeSamplers.containsKey(keyMapping.getName())) {
-                    this.trackpadSwipeSamplers.put(keyMapping.getName(), new TrackpadSwipeSampler());
-                }
-
-                TrackpadSwipeSampler trackpadswipesampler = this.trackpadSwipeSamplers.get(keyMapping.getName());
-                trackpadswipesampler.update(controller, action.getAxis2D(false));
-
-                if (trackpadswipesampler.isSwipedUp() && upCallback != null) {
-                    this.triggerHapticPulse(controller, 0.001F, 400.0F, 0.5F);
-                    upCallback.run();
-                }
-
-                if (trackpadswipesampler.isSwipedDown() && downCallback != null) {
-                    this.triggerHapticPulse(controller, 0.001F, 400.0F, 0.5F);
-                    downCallback.run();
-                }
-
-                if (trackpadswipesampler.isSwipedLeft() && leftCallback != null) {
-                    this.triggerHapticPulse(controller, 0.001F, 400.0F, 0.5F);
-                    leftCallback.run();
-                }
-
-                if (trackpadswipesampler.isSwipedRight() && rightCallback != null) {
-                    this.triggerHapticPulse(controller, 0.001F, 400.0F, 0.5F);
-                    rightCallback.run();
-                }
-            }
-        }
-    }
-
-    /**
      * fetches all available VREvents from OpenVR
      */
     private void pollVREvents() {
@@ -1534,6 +1403,10 @@ public class MCOpenVR extends MCVR {
             this.hmdPose.m31(1.62F);
         }
 
+        // ret the complete room eye transforms
+        this.hmdPose.mul(this.hmdPoseLeftEye, this.hmdPoseLeftEye);
+        this.hmdPose.mul(this.hmdPoseRightEye, this.hmdPoseRightEye);
+
         // Gotta do this here so we can get the poses
         if (this.inputInitialized) {
             this.mc.getProfiler().push("updateActionState");
@@ -1617,11 +1490,8 @@ public class MCOpenVR extends MCVR {
         }
     }
 
-    /**
-     * @param inputValueHandle inputHandle to check
-     * @return what controller the inputHandle is on, {@code null} if the handle or device is invalid
-     */
-    protected ControllerType getOriginControllerType(long inputValueHandle) {
+    @Override
+    public ControllerType getOriginControllerType(long inputValueHandle) {
         if (inputValueHandle != k_ulInvalidInputValueHandle) {
             this.readOriginInfo(inputValueHandle);
 
