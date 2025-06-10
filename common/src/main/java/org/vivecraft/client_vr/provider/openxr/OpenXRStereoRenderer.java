@@ -57,10 +57,10 @@ public class OpenXRStereoRenderer extends VRRenderer {
                 for (int i1 = 0; i1 < imageCount; i1++) {
                     XrSwapchainImageOpenGLKHR openxrImage = swapchainImageBuffer.get(i1);
                     if(i == 0) {
-                        this.leftFramebuffers[i1] = new VRTextureTarget("L Eye " + i1, width, height, true, openxrImage.image(), true, false, false);
+                        this.leftFramebuffers[i1] = new VRTextureTarget("L Eye " + i1, width, height, true, openxrImage.image(), true, false, false, true);
                         leftError = RenderHelper.checkGLError("Left Eye " + i1 + " framebuffer setup");
                     } else {
-                        this.rightFramebuffers[i1] = new VRTextureTarget("R Eye " + i1, width, height, true, openxrImage.image(), true, false, false);
+                        this.rightFramebuffers[i1] = new VRTextureTarget("R Eye " + i1, width, height, true, openxrImage.image(), true, false, false, true);
                         rightError = RenderHelper.checkGLError("Right Eye " + i1 + " framebuffer setup");
                     }
                 }
