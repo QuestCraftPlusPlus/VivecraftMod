@@ -41,12 +41,6 @@ public abstract class RenderTargetMixin implements RenderTargetExtension {
 
     @Override
     @Unique
-    public void vivecraft$setTexId(int texId) {
-        this.vivecraft$texId = texId;
-    }
-
-    @Override
-    @Unique
     public void vivecraft$setLinearFilter(boolean linearFilter) {
         this.vivecraft$linearFilter = linearFilter;
     }
