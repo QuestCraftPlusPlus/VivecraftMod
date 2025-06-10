@@ -49,7 +49,7 @@ public class MCOpenXR extends MCVR {
     public XrSession session;
     public XrSpace xrAppSpace;
     public XrSpace xrViewSpace;
-    public XrSwapchain swapchain;
+    public XrSwapchain[] swapchain;
     public final XrEventDataBuffer eventDataBuffer = XrEventDataBuffer.calloc();
     public long time;
     private boolean tried;
@@ -96,8 +96,8 @@ public class MCOpenXR extends MCVR {
             error = XR10.xrDestroyActionSet(new XrActionSet(inputActionSet, this.instance));
             logError(error, "xrDestroyActionSet", "");
         }
-        if (this.swapchain != null) {
-            error = XR10.xrDestroySwapchain(this.swapchain);
+        for (XrSwapchain xrSwapchain : this.swapchain) {
+            error = XR10.xrDestroySwapchain(xrSwapchain);
             logError(error, "xrDestroySwapchain", "");
         }
         if (this.viewBuffer != null) {
@@ -870,27 +870,30 @@ public class MCOpenXR extends MCVR {
                 throw new RuntimeException("No compatible swapchain / framebuffer format available: " + formats);
             }
 
+            this.swapchain = new XrSwapchain[2];
             // Make swapchain
-            XrViewConfigurationView viewConfig = views.get(0);
-            XrSwapchainCreateInfo swapchainCreateInfo = XrSwapchainCreateInfo.calloc(stack);
-            swapchainCreateInfo.type(XR10.XR_TYPE_SWAPCHAIN_CREATE_INFO);
-            swapchainCreateInfo.next(NULL);
-            swapchainCreateInfo.createFlags(0);
-            swapchainCreateInfo.usageFlags(XR10.XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT);
-            swapchainCreateInfo.format(chosenFormat);
-            swapchainCreateInfo.sampleCount(1);
-            swapchainCreateInfo.width(viewConfig.recommendedImageRectWidth());
-            swapchainCreateInfo.height(viewConfig.recommendedImageRectHeight());
-            swapchainCreateInfo.faceCount(1);
-            swapchainCreateInfo.arraySize(2);
-            swapchainCreateInfo.mipCount(1);
+            for(int i = 0; i < 2; i++) {
+                XrViewConfigurationView viewConfig = views.get(0);
+                XrSwapchainCreateInfo swapchainCreateInfo = XrSwapchainCreateInfo.calloc(stack);
+                swapchainCreateInfo.type(XR10.XR_TYPE_SWAPCHAIN_CREATE_INFO);
+                swapchainCreateInfo.next(NULL);
+                swapchainCreateInfo.createFlags(0);
+                swapchainCreateInfo.usageFlags(XR10.XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT);
+                swapchainCreateInfo.format(chosenFormat);
+                swapchainCreateInfo.sampleCount(1);
+                swapchainCreateInfo.width(viewConfig.recommendedImageRectWidth());
+                swapchainCreateInfo.height(viewConfig.recommendedImageRectHeight());
+                swapchainCreateInfo.faceCount(1);
+                swapchainCreateInfo.arraySize(1);
+                swapchainCreateInfo.mipCount(1);
 
-            PointerBuffer handlePointer = stack.callocPointer(1);
-            error = XR10.xrCreateSwapchain(this.session, swapchainCreateInfo, handlePointer);
-            logError(error, "xrCreateSwapchain", "format: " + chosenFormat);
-            this.swapchain = new XrSwapchain(handlePointer.get(0), this.session);
-            this.width = swapchainCreateInfo.width();
-            this.height = swapchainCreateInfo.height();
+                PointerBuffer handlePointer = stack.callocPointer(1);
+                error = XR10.xrCreateSwapchain(this.session, swapchainCreateInfo, handlePointer);
+                logError(error, "xrCreateSwapchain", "format: " + chosenFormat);
+                this.swapchain[i] = new XrSwapchain(handlePointer.get(0), this.session);
+                this.width = swapchainCreateInfo.width();
+                this.height = swapchainCreateInfo.height();
+            }
         }
     }
 

@@ -62,8 +62,8 @@ public class VRPassHelper {
 
             // do post-processing
             ShaderHelper.doVrPostProcess(eye, rendertarget,
-                eye == RenderPass.LEFT ? DATA_HOLDER.vrRenderer.framebufferEye0 :
-                    DATA_HOLDER.vrRenderer.framebufferEye1, deltaTracker.getGameTimeDeltaPartialTick(false));
+                eye == RenderPass.LEFT ? DATA_HOLDER.vrRenderer.getLeftEyeTarget() :
+                    DATA_HOLDER.vrRenderer.getRightEyeTarget(), deltaTracker.getGameTimeDeltaPartialTick(false));
 
             RenderHelper.checkGLError("post overlay" + eye);
             Profiler.get().pop();
@@ -239,14 +239,6 @@ public class VRPassHelper {
         Profiler.get().pop();
 
         DATA_HOLDER.vrPlayer.postRender(deltaTracker.getGameTimeDeltaPartialTick(true));
-
-        Profiler.get().push("vrMirror");
-        // use the vanilla target for the mirror
-        RenderPassManager.setMirrorRenderPass();
-        MC.mainRenderTarget.bindWrite(true);
-        ShaderHelper.drawMirror();
-        RenderHelper.checkGLError("post-mirror");
-
         Profiler.get().popPush("Display/Reproject");
 
         try {

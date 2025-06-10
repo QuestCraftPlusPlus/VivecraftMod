@@ -2,6 +2,7 @@ package org.vivecraft.client_vr.provider.nullvr;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
@@ -51,7 +52,7 @@ public class NullVRStereoRenderer extends VRRenderer {
         GlStateManager._bindTexture(this.LeftEyeTextureId);
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_INT,
+        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, width, height, 0, GL11.GL_RGBA, GL11.GL_INT,
             null);
 
         GlStateManager._bindTexture(i);
@@ -60,7 +61,7 @@ public class NullVRStereoRenderer extends VRRenderer {
         GlStateManager._bindTexture(this.RightEyeTextureId);
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, lwidth, lheight, 0, GL11.GL_RGBA, GL11.GL_INT,
+        GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, width, height, 0, GL11.GL_RGBA, GL11.GL_INT,
             null);
         GlStateManager._bindTexture(i);
         this.lastError = RenderHelper.checkGLError("create VR textures");
@@ -83,7 +84,7 @@ public class NullVRStereoRenderer extends VRRenderer {
             this.lastError = !leftError.isEmpty() ? leftError : rightError;
         }
 
-        RenderSystem.bindTexture(boundTextureId);
+        GlStateManager._bindTexture(boundTextureId);
     }
 
     @Override

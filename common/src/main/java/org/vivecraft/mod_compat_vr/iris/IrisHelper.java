@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.RenderType;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.vivecraft.client.Xplat;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_xr.render_pass.RenderPassManager;
 

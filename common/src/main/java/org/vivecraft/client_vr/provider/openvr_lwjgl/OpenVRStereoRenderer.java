@@ -142,7 +142,7 @@ public class OpenVRStereoRenderer extends VRRenderer {
             this.lastError = !leftError.isEmpty() ? leftError : rightError;
         }
 
-        RenderSystem.bindTexture(boundTextureId);
+        GlStateManager._bindTexture(boundTextureId);
     }
 
     @Override

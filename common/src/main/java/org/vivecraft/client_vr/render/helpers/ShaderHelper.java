@@ -5,7 +5,6 @@ import com.mojang.blaze3d.buffers.BufferUsage;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.vertex.*;
@@ -274,11 +273,11 @@ public class ShaderHelper {
             int screenHeight = MC.mainRenderTarget.height;
 
             if (leftEye != null) {
-                blitFramebuffer(leftEye, 0, 0, screenWidth, screenHeight);
+                ShaderHelper.blitToScreen(leftEye, 0, screenWidth, screenHeight, 0, 0.0F, 0.0F, false);
             }
 
             if (rightEye != null) {
-                blitFramebuffer(rightEye, screenWidth, 0, MC.mainRenderTarget.width, screenHeight);
+                ShaderHelper.blitToScreen(rightEye, screenWidth, screenWidth, screenHeight, 0, 0.0F, 0.0F, false);
             }
         } else {
             // general single buffer case
@@ -317,7 +316,9 @@ public class ShaderHelper {
             // source = DataHolder.getInstance().vrRenderer.telescopeFramebufferR;
             //
             if (source != null) {
-                blitFramebufferCrop(source, 0, 0, MC.mainRenderTarget.width, MC.mainRenderTarget.height,
+                ShaderHelper.blitToScreen(source,
+                    0, MC.mainRenderTarget.width,
+                    MC.mainRenderTarget.height, 0,
                     xCrop, yCrop, keepAspect);
             }
         }
@@ -376,9 +377,9 @@ public class ShaderHelper {
                     source = DATA_HOLDER.vrRenderer.framebufferUndistorted;
                 } else {
                     if (DATA_HOLDER.vrSettings.displayMirrorLeftEye) {
-                        source = DATA_HOLDER.vrRenderer.framebufferEye0;
+                        source = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
                     } else {
-                        source = DATA_HOLDER.vrRenderer.framebufferEye1;
+                        source = DATA_HOLDER.vrRenderer.getRightEyeTarget();
                     }
                 }
                 renderPass.bindSampler(VRShaders.MIXED_REALITY_FIRST_COLOR_SAMPLER, source.getColorTexture());
@@ -418,21 +419,22 @@ public class ShaderHelper {
     }
 
     /**
-     * blits the given {@code source} RenderTarget to the bound framebuffer<br>
+     * blits the given {@code source} RenderTarget to the screen/bound buffer<br>
      * the {@code source} is drawn to the rectangle at {@code left},{@code top} with a size of {@code width},{@code height}<br>
      * if {@code xCropFactor} or {@code yCropFactor} are non 0 the {@code source} gets zoomed in
-     * @param source RenderTarget to draw to the screen
-     * @param left left edge of the target area
-     * @param top top edge of the target area
-     * @param right right edge width of the target area
-     * @param bottom bottom edge of the target area
+     *
+     * @param source      RenderTarget to draw to the screen
+     * @param left        left edge of the target area
+     * @param width       width of the target area
+     * @param height      height of the target area
+     * @param top         top edge of the target area
      * @param xCropFactor vertical crop factor for the {@code source}
      * @param yCropFactor horizontal crop factor for the {@code source}
-     * @param keepAspect keeps the aspect ratio in takt when cropping the buffer
+     * @param keepAspect  keeps the aspect ratio in takt when cropping the buffer
      */
-    private static void blitFramebufferCrop(
-        RenderTarget source, int left, int top, int right, int bottom,
-        float xCropFactor, float yCropFactor, boolean keepAspect)
+    public static void blitToScreen(
+        RenderTarget source, int left, int width, int height, int top, float xCropFactor, float yCropFactor,
+        boolean keepAspect)
     {
         RenderSystem.assertOnRenderThread();
 
@@ -449,12 +451,14 @@ public class ShaderHelper {
                 // destination is wider than the buffer
                 float heightAspect = (bufferAspect / drawAspect) * (0.5F - yCropFactor);
 
-                yCropFactor = 0.5F - heightAspect;
+                yMin = 0.5F - heightAspect;
+                yMax = 0.5F + heightAspect;
             } else {
                 // destination is taller than the buffer
                 float widthAspect = (drawAspect / bufferAspect) * (0.5F - xCropFactor);
 
-                xCropFactor = 0.5F - widthAspect;
+                xMin = 0.5F - widthAspect;
+                xMax = 0.5F + widthAspect;
             }
         }
 
