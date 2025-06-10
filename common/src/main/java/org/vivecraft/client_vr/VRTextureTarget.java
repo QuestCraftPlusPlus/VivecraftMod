@@ -21,6 +21,13 @@ public class VRTextureTarget extends RenderTarget {
         String name, int width, int height, boolean useDepth, int texId, boolean linearFilter, boolean mipmaps,
         boolean useStencil)
     {
+        this(name, width, height, useDepth, texId, linearFilter, mipmaps, useStencil, false);
+    }
+
+    public VRTextureTarget(
+        String name, int width, int height, boolean useDepth, int texId, boolean linearFilter, boolean mipmaps,
+        boolean useStencil, boolean prePopulated)
+    {
         super(name, useDepth);
         RenderSystem.assertOnRenderThread();
         ((RenderTargetExtension) this).vivecraft$setLinearFilter(linearFilter);
@@ -39,9 +46,15 @@ public class VRTextureTarget extends RenderTarget {
         if (texId >= 0) {
             // hardcoded opengl here
             if (RenderSystem.getDevice() instanceof GlDevice glDevice) {
-                this.colorTexture = ((GlDeviceExtension) glDevice).vivecraft$createFixedIdTexture(
-                    () -> this.label + " / Color", TextureFormat.RGBA8, width, height,
-                    mipmaps ? Math.max(Mth.log2(width), Mth.log2(height)) : 1, texId);
+                if(!prePopulated) {
+                    this.colorTexture = ((GlDeviceExtension) glDevice).vivecraft$createFixedIdTexture(
+                        () -> this.label + " / Color", TextureFormat.RGBA8, width, height,
+                        mipmaps ? Math.max(Mth.log2(width), Mth.log2(height)) : 1, texId);
+                } else {
+                    this.colorTexture = ((GlDeviceExtension) glDevice).vivecraft$precreatedFixedIdTexture(
+                        () -> this.label + " / Color", TextureFormat.RGBA8, width, height,
+                        mipmaps ? Math.max(Mth.log2(width), Mth.log2(height)) : 1, texId);
+                }
 
                 this.colorTexture.setAddressMode(AddressMode.CLAMP_TO_EDGE);
                 this.setFilterMode(linearFilter ? FilterMode.LINEAR : FilterMode.NEAREST);

@@ -62,4 +62,24 @@ public class GlDeviceMixin implements GlDeviceExtension {
             }
         }
     }
+
+    @Override
+    public GpuTexture vivecraft$precreatedFixedIdTexture(
+        @Nullable Supplier<String> labelSup, TextureFormat textureFormat, int width,
+        int height, int mipmapLevels, int texId)
+    {
+        if (mipmapLevels < 1) {
+            throw new IllegalArgumentException("mipLevels must be at least 1");
+        } else {
+            GlStateManager.clearGlErrors();
+            String label = this.debugLabels.exists() && labelSup != null ? labelSup.get() : null;
+            if (label == null) {
+                label = String.valueOf(texId);
+            }
+
+            GlTexture glTexture = new GlTexture(label, textureFormat, width, height, mipmapLevels, texId);
+            this.debugLabels.applyLabel(glTexture);
+            return glTexture;
+        }
+    }
 }
