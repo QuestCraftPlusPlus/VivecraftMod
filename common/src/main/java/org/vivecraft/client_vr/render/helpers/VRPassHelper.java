@@ -239,7 +239,7 @@ public class VRPassHelper {
         Profiler.get().pop();
 
         DATA_HOLDER.vrPlayer.postRender(deltaTracker.getGameTimeDeltaPartialTick(true));
-        Profiler.get().popPush("Display/Reproject");
+        Profiler.get().push("Display/Reproject");
 
         try {
             DATA_HOLDER.vrRenderer.endFrame();

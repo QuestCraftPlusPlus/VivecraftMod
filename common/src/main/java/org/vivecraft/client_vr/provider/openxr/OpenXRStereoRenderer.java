@@ -1,11 +1,9 @@
 package org.vivecraft.client_vr.provider.openxr;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.opengl.GL11C;
 import org.lwjgl.openxr.*;
 import org.lwjgl.system.MemoryStack;
 import org.vivecraft.client_vr.VRTextureTarget;
@@ -18,7 +16,7 @@ import java.nio.IntBuffer;
 
 public class OpenXRStereoRenderer extends VRRenderer {
     private final MCOpenXR openxr;
-    private int[] swapIndex = new int[2];
+    private final int[] swapIndex = new int[] {0, 0}; // Needs to be initialized otherwise stuff splodes
     private VRTextureTarget[] leftFramebuffers;
     private VRTextureTarget[] rightFramebuffers;
     private boolean render;
@@ -49,8 +47,11 @@ public class OpenXRStereoRenderer extends VRRenderer {
                         XrSwapchainImageBaseHeader.create(swapchainImageBuffer.address(), swapchainImageBuffer.capacity()));
                 this.openxr.logError(error, "xrEnumerateSwapchainImages", "get images");
 
-                this.leftFramebuffers = new VRTextureTarget[imageCount];
-                this.rightFramebuffers = new VRTextureTarget[imageCount];
+                if(i == 0) {
+                    this.leftFramebuffers = new VRTextureTarget[imageCount];
+                } else {
+                    this.rightFramebuffers = new VRTextureTarget[imageCount];
+                }
 
                 String leftError = "";
                 String rightError = "";
@@ -103,7 +104,7 @@ public class OpenXRStereoRenderer extends VRRenderer {
                         .fov(this.openxr.viewBuffer.get(i).fov())
                         .subImage();
                 subImage.swapchain(this.openxr.swapchain[i]);
-                subImage.imageRect().offset().set(i * this.openxr.width, 0);
+                subImage.imageRect().offset().set(0, 0);
                 subImage.imageRect().extent().set(this.openxr.width, this.openxr.height);
             }
             this.recalculateProjectionMatrix = true;
@@ -197,6 +198,9 @@ public class OpenXRStereoRenderer extends VRRenderer {
 
         if (this.leftFramebuffers != null) {
             for (VRTextureTarget leftFramebuffer : this.leftFramebuffers) {
+                if(leftFramebuffer == null) {
+                    continue;
+                }
                 leftFramebuffer.destroyBuffers();
             }
             this.leftFramebuffers = null;
@@ -204,6 +208,9 @@ public class OpenXRStereoRenderer extends VRRenderer {
 
         if (this.rightFramebuffers != null) {
             for (VRTextureTarget rightFramebuffer : this.rightFramebuffers) {
+                if(rightFramebuffer == null) {
+                    continue;
+                }
                 rightFramebuffer.destroyBuffers();
             }
             this.rightFramebuffers = null;
