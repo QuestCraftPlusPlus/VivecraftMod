@@ -172,7 +172,7 @@ public class VREffectsHelper {
         float alpha = TelescopeTracker.viewPercent(c);
         // draw spyglass view
         RenderHelper.drawSizedQuadFullbright(720.0F, 720.0F, scale, new float[]{alpha, alpha, alpha, 1},
-            poseStack.last().pose(), VRRenderTypes.entitySolid(scopeView));
+            poseStack.last().pose(), VRRenderTypes.entitySolidNoCardinalLight(scopeView));
 
         // draw spyglass overlay
         // slight offset to not cause z fighting
@@ -272,8 +272,8 @@ public class VREffectsHelper {
      */
     public static void renderMenuPanorama(Matrix4fStack poseStack) {
         RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
-            MC.getMainRenderTarget().getColorTexture(), ARGB.opaque(0),
-            MC.getMainRenderTarget().getDepthTexture(), 1F);
+            MC.getMainRenderTarget().getColorTexture(), 0xFF000000,
+            MC.getMainRenderTarget().getDepthTexture(), 1.0);
 
         RenderSystem.setShaderColor(1, 1, 1, 1);
 
@@ -422,8 +422,8 @@ public class VREffectsHelper {
      */
     public static void renderJrbuddasAwesomeMainMenuRoomNew(Matrix4fStack poseStack) {
         RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
-            MC.getMainRenderTarget().getColorTexture(), ARGB.opaque(0),
-            MC.getMainRenderTarget().getDepthTexture(), 1F);
+            MC.getMainRenderTarget().getColorTexture(), 0xFF000000,
+            MC.getMainRenderTarget().getDepthTexture(), 1.0);
         RenderSystem.setShaderColor(1, 1, 1, 1);
 
         int repeat = 4; // texture wraps per meter
@@ -523,9 +523,7 @@ public class VREffectsHelper {
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         // transfer the rotation
-        //poseStack.pushMatrix().identity();
-        //RenderSystem.getModelViewStack().mul(poseStack, poseStack);
-        RenderSystem.getModelViewStack().pushMatrix().mul(poseStack);//.identity();
+        RenderSystem.getModelViewStack().pushMatrix().mul(poseStack);
         poseStack = RenderSystem.getModelViewStack();
 
         try {
@@ -592,7 +590,6 @@ public class VREffectsHelper {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         } finally {
             // reset stacks
-            //poseStack.popMatrix();
             RenderSystem.getModelViewStack().popMatrix();
         }
     }
@@ -625,7 +622,7 @@ public class VREffectsHelper {
         RenderTarget mainTarget = MC.mainRenderTarget;
 
         RenderSystem.getDevice().createCommandEncoder()
-            .clearColorTexture(extTargets.vivecraft$getOccluded().get().getColorTexture(), 0);
+            .clearColorTexture(extTargets.vivecraft$getOccluded().get().getColorTexture(), 0x00000000);
         extTargets.vivecraft$getOccluded().get().copyDepthFrom(mainTarget);
         MC.mainRenderTarget = extTargets.vivecraft$getOccluded().get();
 
@@ -633,10 +630,13 @@ public class VREffectsHelper {
             renderGuiAndShadow(partialTick, false, false);
         }
 
+        // iris, need to end all, to have stuff rendered in the right order
+        MC.renderBuffers().bufferSource().endBatch();
+
         // switch to VR UnOccluded buffer, no depth copy
         RenderSystem.getDevice().createCommandEncoder()
-            .clearColorAndDepthTextures(extTargets.vivecraft$getUnoccluded().get().getColorTexture(), 0,
-                extTargets.vivecraft$getUnoccluded().get().getDepthTexture(), 1F);
+            .clearColorAndDepthTextures(extTargets.vivecraft$getUnoccluded().get().getColorTexture(), 0x00000000,
+                extTargets.vivecraft$getUnoccluded().get().getDepthTexture(), 1.0);
         MC.mainRenderTarget = extTargets.vivecraft$getUnoccluded().get();
 
         if (!shouldOccludeGui()) {
@@ -651,14 +651,20 @@ public class VREffectsHelper {
         VRArmHelper.renderVRHands(partialTick, renderHands && DATA_HOLDER.menuHandMain,
             renderHands && DATA_HOLDER.menuHandOff, true, true);
 
+        // iris, need to end all, to have stuff rendered in the right order
+        MC.renderBuffers().bufferSource().endBatch();
+
         // switch to VR hands buffer
         RenderSystem.getDevice().createCommandEncoder()
-            .clearColorTexture(extTargets.vivecraft$getHands().get().getColorTexture(), 0);
+            .clearColorTexture(extTargets.vivecraft$getHands().get().getColorTexture(), 0x00000000);
         extTargets.vivecraft$getHands().get().copyDepthFrom(mainTarget);
         MC.mainRenderTarget = extTargets.vivecraft$getHands().get();
 
         VRArmHelper.renderVRHands(partialTick, renderHands && !DATA_HOLDER.menuHandMain,
             renderHands && !DATA_HOLDER.menuHandOff, false, false);
+
+        // iris, need to end all, to have stuff rendered in the right order
+        MC.renderBuffers().bufferSource().endBatch();
 
         RenderSystem.setShaderColor(1, 1, 1, 1);
         // rebind the original buffer
@@ -693,6 +699,9 @@ public class VREffectsHelper {
             renderGuiAndShadow(partialTick, !shouldOccludeGui(), true);
         }
 
+        // iris, need to end all, to have stuff rendered in the right order
+        MC.renderBuffers().bufferSource().endBatch();
+
         // render hands in second pass when gui is open
         boolean renderHandsSecond =
             RadialHandler.isShowing() || KeyboardHandler.SHOWING || Minecraft.getInstance().screen != null;
@@ -704,6 +713,9 @@ public class VREffectsHelper {
         }
 
         renderVRSelfEffects(partialTick);
+
+        // iris, need to end all, to have stuff rendered in the right order
+        MC.renderBuffers().bufferSource().endBatch();
     }
 
     /**
@@ -845,8 +857,10 @@ public class VREffectsHelper {
         RenderType renderType;
         TextureAtlasSprite textureAtlasSprite = ModelBakery.FIRE_1.sprite();
         if (RenderPass.isThirdPerson(DATA_HOLDER.currentPass)) {
+            // with depthtest
             renderType = RenderType.guiTextured(textureAtlasSprite.atlasLocation());
         } else {
+            // without depthtest
             renderType = RenderType.fireScreenEffect(textureAtlasSprite.atlasLocation());
         }
 
@@ -947,8 +961,6 @@ public class VREffectsHelper {
     private static void renderScreen(
         RenderTarget framebuffer, boolean depthAlways, boolean noFog, Vec3 pos, Matrix4f matrix)
     {
-        // disable culling to show the screen from both sides
-
         // cache fog distance
         FogParameters oldFog = RenderSystem.getShaderFog();
         float[] color = new float[]{1.0F, 1.0F, 1.0F, 1.0F};
@@ -979,11 +991,11 @@ public class VREffectsHelper {
             {
                 RenderHelper.drawSizedQuadWithLightmap((float) MC.getWindow().getGuiScaledWidth(),
                     (float) MC.getWindow().getGuiScaledHeight(), 1.5F, light, color, matrix,
-                    VRRenderTypes.entityTranslucent(framebuffer.getColorTexture(), depthAlways), false);
+                    VRRenderTypes.entityTranslucentNoCardinalLight(framebuffer.getColorTexture(), depthAlways), false);
             } else {
                 RenderHelper.drawSizedQuadWithLightmap((float) MC.getWindow().getGuiScaledWidth(),
                     (float) MC.getWindow().getGuiScaledHeight(), 1.5F, light, color, matrix,
-                    VRRenderTypes.entityCutout(framebuffer.getColorTexture(), depthAlways), false);
+                    VRRenderTypes.entityCutoutNoCardinalLight(framebuffer.getColorTexture(), depthAlways), false);
             }
         } else {
             RenderHelper.drawSizedQuad(
@@ -1124,7 +1136,7 @@ public class VREffectsHelper {
      * renders a fullscreen black quad, to block the screen
      */
     public static void renderFaceInBlock() {
-        RenderType renderType = VRRenderTypes.debugQuads(true);
+        RenderType renderType = VRRenderTypes.quads(true);
         VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
         // render a big quad 2 meters in front
         consumer.addVertex(-100.F, -100.F, -2.0F).setColor(0, 0, 0, 255);

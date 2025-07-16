@@ -1,6 +1,5 @@
 package org.vivecraft.mixin.client.gui.screens;
 
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -96,14 +95,6 @@ public abstract class TitleScreenMixin extends Screen {
         ))
         {
             ci.cancel();
-        }
-    }
-
-    @Inject(method = "renderPanorama", at = @At("TAIL"))
-    private void vivecraft$solidPanorama(CallbackInfo ci, @Local(argsOnly = true) GuiGraphics guiGraphics) {
-        if (VRState.VR_RUNNING && !ClientDataHolderVR.getInstance().vrSettings.menuWorldFallbackPanorama) {
-            // no clue why the panorama doesn't write to the alpha channel, but we want it
-
         }
     }
 }

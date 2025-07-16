@@ -250,7 +250,7 @@ public abstract class VRRenderer {
      * @param height height of the circle in screen pixels
      */
     private void drawCircle(float width, float height) {
-        RenderType renderType = VRRenderTypes.debugTriangleFanAlways();
+        RenderType renderType = VRRenderTypes.triangleFanAlways();
         VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(renderType);
 
         final float edges = 32.0F;
@@ -268,7 +268,9 @@ public abstract class VRRenderer {
                     0.0F)
                 .setColor(0, 0, 0, 255);
         }
-        Minecraft.getInstance().renderBuffers().bufferSource().endBatch(renderType);
+
+        // need to end all, because of iris batching
+        Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
     }
 
     /**
@@ -282,7 +284,7 @@ public abstract class VRRenderer {
             return;
         }
 
-        RenderType renderType = VRRenderTypes.debugTrianglesAlways();
+        RenderType renderType = VRRenderTypes.trianglesAlways();
         VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(renderType);
 
         RenderSystem.setShaderTexture(0, RenderHelper.getGpuTexture(RenderHelper.BLACK_TEXTURE));
@@ -294,8 +296,8 @@ public abstract class VRRenderer {
                     0.0F)
                 .setColor(0, 0, 0, 255);
         }
-
-        Minecraft.getInstance().renderBuffers().bufferSource().endBatch(renderType);
+        // need to end all, because of iris batching
+        Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
     }
 
     /**

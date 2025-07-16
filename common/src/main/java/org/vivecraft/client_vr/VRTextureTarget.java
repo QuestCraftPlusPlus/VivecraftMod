@@ -48,7 +48,7 @@ public class VRTextureTarget extends RenderTarget {
             if (RenderSystem.getDevice() instanceof GlDevice glDevice) {
                 if(!prePopulated) {
                     this.colorTexture = ((GlDeviceExtension) glDevice).vivecraft$createFixedIdTexture(
-                        () -> this.label + " / Color", TextureFormat.RGBA8, width, height,
+                        () -> this.label , TextureFormat.RGBA8, width, height,
                         mipmaps ? Math.max(Mth.log2(width), Mth.log2(height)) : 1, texId);
                 } else {
                     this.colorTexture = ((GlDeviceExtension) glDevice).vivecraft$precreatedFixedIdTexture(

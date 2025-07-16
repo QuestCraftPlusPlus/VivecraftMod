@@ -21,6 +21,7 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.provider.ControllerType;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
+import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import org.vivecraft.client_vr.settings.AutoCalibration;
 import org.vivecraft.common.utils.MathUtils;
 
@@ -228,7 +229,7 @@ public class FBTCalibrationScreen extends Screen {
             }
 
             // body overlay
-            renderType = RenderType.debugQuads();
+            renderType = VRRenderTypes.quads(true);
             builder = this.minecraft.renderBuffers().bufferSource().getBuffer(renderType);
 
             // legs
