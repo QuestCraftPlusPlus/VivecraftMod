@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
 import org.vivecraft.client_xr.render_pass.WorldRenderPass;
@@ -121,12 +122,12 @@ public class MultiPassTextureTarget extends TextureTarget {
     }
 
     @Override
-    public void blitAndBlendToTexture(GpuTexture gpuTexture) {
+    public void blitAndBlendToTexture(GpuTextureView gpuTextureView) {
         if (this.vrTargets == null) {
-            super.blitAndBlendToTexture(gpuTexture);
+            super.blitAndBlendToTexture(gpuTextureView);
             return;
         }
-        callOnTarget(r -> r.blitAndBlendToTexture(gpuTexture));
+        callOnTarget(r -> r.blitAndBlendToTexture(gpuTextureView));
     }
 
     @Override
@@ -138,11 +139,27 @@ public class MultiPassTextureTarget extends TextureTarget {
     }
 
     @Override
+    public GpuTextureView getColorTextureView() {
+        if (this.vrTargets == null) {
+            return super.getColorTextureView();
+        }
+        return callOnTargetTexture(RenderTarget::getColorTextureView);
+    }
+
+    @Override
     public GpuTexture getDepthTexture() {
         if (this.vrTargets == null) {
             return super.getDepthTexture();
         }
         return callOnTargetTexture(RenderTarget::getDepthTexture);
+    }
+
+    @Override
+    public GpuTextureView getDepthTextureView() {
+        if (this.vrTargets == null) {
+            return super.getDepthTextureView();
+        }
+        return callOnTargetTexture(RenderTarget::getDepthTextureView);
     }
 
     private void callOnAllTarget(Consumer<TextureTarget> consumer) {
@@ -164,7 +181,7 @@ public class MultiPassTextureTarget extends TextureTarget {
         consumer.accept(current);
     }
 
-    private GpuTexture callOnTargetTexture(Function<TextureTarget, GpuTexture> function) {
+    private <T> T callOnTargetTexture(Function<TextureTarget, T> function) {
         TextureTarget current = getCurrent();
         if (current != this.last) {
             setLast(current);

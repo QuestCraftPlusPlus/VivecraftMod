@@ -34,4 +34,14 @@ public abstract class ScreenVRMixin extends AbstractContainerEventHandler implem
             ci.cancel();
         }
     }
+
+    @Inject(method = "renderPanorama", at = @At("HEAD"), cancellable = true)
+    private void vivecraft$maybeNoPanorama(CallbackInfo ci) {
+        if (VRState.VR_RUNNING && (ClientDataHolderVR.getInstance().menuWorldRenderer.isReady() ||
+            ClientDataHolderVR.getInstance().vrSettings.menuWorldFallbackPanorama
+        ))
+        {
+            ci.cancel();
+        }
+    }
 }

@@ -158,7 +158,7 @@ public class SettingsList extends ContainerObjectSelectionList<SettingsList.Base
         {
             guiGraphics.drawString(Minecraft.getInstance().font, this.name,
                 Minecraft.getInstance().screen.width / 2 - this.width / 2,
-                top + height - Minecraft.getInstance().font.lineHeight - 1, 0xFFFFFF);
+                top + height - Minecraft.getInstance().font.lineHeight - 1, 0xFFFFFFFF);
         }
 
         @Override
@@ -251,7 +251,7 @@ public class SettingsList extends ContainerObjectSelectionList<SettingsList.Base
             boolean hovering, float partialTick)
         {
             guiGraphics.drawString(Minecraft.getInstance().font, this.name, left + 90 - 140,
-                top + height / 2 - Minecraft.getInstance().font.lineHeight / 2, 0xFFFFFF);
+                top + height / 2 - Minecraft.getInstance().font.lineHeight / 2, 0xFFFFFFFF);
             this.valueWidget.setX(left + 105);
             this.valueWidget.setY(top);
             this.valueWidget.render(guiGraphics, mouseX, mouseY, partialTick);

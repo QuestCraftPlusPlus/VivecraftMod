@@ -6,6 +6,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
@@ -218,7 +220,7 @@ public abstract class GuiVROptionsBase extends Screen {
             this.visibleList.render(guiGraphics, mouseX, mouseY, partialTick);
         }
 
-        guiGraphics.drawCenteredString(this.font, Component.translatable(this.vrTitle), this.width / 2, 15, 0xFFFFFF);
+        guiGraphics.drawCenteredString(this.font, Component.translatable(this.vrTitle), this.width / 2, 15, 0xFFFFFFFF);
 
         if (this.btnDefaults != null) {
             this.btnDefaults.visible = this.drawDefaultButtons;
@@ -352,12 +354,18 @@ public abstract class GuiVROptionsBase extends Screen {
                         if (guiHover.getY() + guiHover.getHeight() + formattedText.size() * (this.font.lineHeight + 1) +
                             14 < this.height)
                         {
-                            guiGraphics.renderTooltip(this.font, this.font.split(Component.literal(tooltip), 308),
-                                this.width / 2 - 166, guiHover.getY() + guiHover.getHeight() + 14);
+                            guiGraphics.renderTooltip(this.font,
+                                this.font.split(Component.literal(tooltip), 308).stream()
+                                    .map(ClientTooltipComponent::create).toList(),
+                                this.width / 2 - 166, guiHover.getY() + guiHover.getHeight() + 14,
+                                DefaultTooltipPositioner.INSTANCE, null);
                         } else {
-                            guiGraphics.renderTooltip(this.font, this.font.split(Component.literal(tooltip), 308),
+                            guiGraphics.renderTooltip(this.font,
+                                this.font.split(Component.literal(tooltip), 308).stream()
+                                    .map(ClientTooltipComponent::create).toList(),
                                 this.width / 2 - 166,
-                                guiHover.getY() - formattedText.size() * (this.font.lineHeight + 1) + 9);
+                                guiHover.getY() - formattedText.size() * (this.font.lineHeight + 1) + 9,
+                                DefaultTooltipPositioner.INSTANCE, null);
                         }
                     }
                 }

@@ -73,7 +73,7 @@ public class TextScrollWidget extends AbstractWidget {
         // draw text
         for (int line = 0; line + this.currentLine < this.formattedChars.size() && line < this.maxLines; line++) {
             guiGraphics.drawString(Minecraft.getInstance().font, this.formattedChars.get(line + this.currentLine),
-                getX() + this.padding, getY() + this.padding + line * 12, 0xFFFFFF);
+                getX() + this.padding, getY() + this.padding + line * 12, 0xFFFFFFFF);
         }
 
         float scrollbarStart =

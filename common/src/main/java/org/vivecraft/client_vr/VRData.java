@@ -337,6 +337,8 @@ public class VRData {
     }
 
     /**
+     * estimates the head pivot
+     *
      * @return estimated pivot point that the players head rotates around, in world space
      */
     public Vec3 getHeadPivot() {
@@ -345,6 +347,19 @@ public class VRData {
         Vector3f headPivotOffset = this.hmd.getMatrix()
             .transformPosition(new Vector3f(0.0F, -0.1F * this.worldScale, 0.1F * this.worldScale));
         return eye.add(headPivotOffset.x, headPivotOffset.y, headPivotOffset.z);
+    }
+
+    /**
+     * estimates the head pivot as a float Vector, is safe to use for VRData marked as {@code room}
+     *
+     * @return estimated pivot point that the players head rotates around.
+     */
+    public Vector3f getHeadPivotF() {
+        Vector3f eye = this.hmd.getPositionF();
+        // scale pivot point with world scale, to prevent unwanted player movement
+        Vector3f headPivotOffset = this.hmd.getMatrix()
+            .transformPosition(new Vector3f(0.0F, -0.1F * this.worldScale, 0.1F * this.worldScale));
+        return eye.add(headPivotOffset);
     }
 
     /**

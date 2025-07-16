@@ -102,7 +102,7 @@ public class MenuWorldExporter {
             dos.writeLong(level.getBiomeManager().biomeZoomSeed); // not really correct :/
         }
 
-        dos.writeInt(SharedConstants.getCurrentVersion().getDataVersion().getVersion());
+        dos.writeInt(SharedConstants.getCurrentVersion().dataVersion().version());
 
         dos.writeBoolean(level.dimensionType().fixedTime().isPresent());
         if (level.dimensionType().fixedTime().isPresent()) {
@@ -227,7 +227,7 @@ public class MenuWorldExporter {
             dataVersion = dis.readInt(); // v5+ stores the real data version
         }
 
-        if (dataVersion > SharedConstants.getCurrentVersion().getDataVersion().getVersion()) {
+        if (dataVersion > SharedConstants.getCurrentVersion().dataVersion().version()) {
             VRSettings.LOGGER.warn(
                 "Vivecraft: Menuworld data version is newer than current, this menu world may not load correctly.");
         }
@@ -261,9 +261,11 @@ public class MenuWorldExporter {
             dimMinY = dis.readInt();
             dimAmbientLight = dis.readFloat();
         }
+        // TODO 1.21.6 store that in the menuworld
+        Optional<Integer> cloudHeight = dimHasSkyLight ? Optional.of(192) : Optional.empty();
 
         DimensionType dimensionType = new DimensionType(dimFixedTime, dimHasSkyLight, dimHasCeiling, false, false, 1.0,
-            true, false, dimMinY, ySize, ySize, BlockTags.INFINIBURN_OVERWORLD, dimName, dimAmbientLight,
+            true, false, dimMinY, ySize, ySize, BlockTags.INFINIBURN_OVERWORLD, dimName, dimAmbientLight, cloudHeight,
             new DimensionType.MonsterSettings(false, false, ConstantInt.of(0), 0));
 
         float rotation = 0.0f;
@@ -399,7 +401,7 @@ public class MenuWorldExporter {
             for (int i = 0; i < size; i++) {
                 CompoundTag tag = CompoundTag.TYPE.load(dis, NbtAccounter.unlimitedHeap());
                 tag = (CompoundTag) DATA_FIXER.update(References.BLOCK_STATE, new Dynamic<>(NbtOps.INSTANCE, tag),
-                    dataVersion, SharedConstants.getCurrentVersion().getDataVersion().getVersion()).getValue();
+                    dataVersion, SharedConstants.getCurrentVersion().dataVersion().version()).getValue();
                 this.paletteMap.add(NbtUtils.readBlockState(BuiltInRegistries.BLOCK, tag));
             }
         }

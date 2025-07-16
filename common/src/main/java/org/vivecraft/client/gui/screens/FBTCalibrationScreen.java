@@ -1,28 +1,23 @@
 package org.vivecraft.client.gui.screens;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.vivecraft.client.VivecraftVRMod;
+import org.vivecraft.client.gui.pip.state.GuiFBTPlayerState;
 import org.vivecraft.client.gui.widgets.MultilineComponent;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.provider.ControllerType;
-import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_vr.settings.AutoCalibration;
 import org.vivecraft.common.utils.MathUtils;
+import org.vivecraft.mixin.client.gui.GuiGraphicsAccessor;
 
 public class FBTCalibrationScreen extends Screen {
 
@@ -171,94 +166,21 @@ public class FBTCalibrationScreen extends Screen {
         } else {
             checkPosition();
 
-            PoseStack poseStack = guiGraphics.pose();
-            poseStack.pushPose();
+            // render target rectangles
+            guiGraphics.renderOutline(guiGraphics.guiWidth() / 2 - 64, guiGraphics.guiHeight() - 32 - 96,
+                48, 16, 0xFFFFFFFF);
+            guiGraphics.renderOutline(guiGraphics.guiWidth() / 2 + 16, guiGraphics.guiHeight() - 32 - 96,
+                48, 16, 0xFFFFFFFF);
 
-            Vec3i color = new Vec3i(128, 64, 64);
-            Vec3i colorActive = new Vec3i(64, 128, 64);
-            byte alpha = (byte) 200;
-
-            if (this.leftHandAtPosition && this.rightHandAtPosition) {
-                color = colorActive;
-            }
-
-            // move to screen center
-            float min = Math.min(guiGraphics.guiWidth(), guiGraphics.guiHeight()) / (4F * 16F);
-            poseStack.translate(guiGraphics.guiWidth() / 2F, guiGraphics.guiHeight() - 32F, 0);
-            poseStack.scale(min, -min, min);
-            poseStack.mulPose(Axis.YP.rotation(Mth.PI));
-
-            // arms outline
-            RenderType renderType = RenderType.debugLineStrip(2F);
-            VertexConsumer builder = this.minecraft.renderBuffers().bufferSource().getBuffer(renderType);
-
-            builder.addVertex(poseStack.last().pose(), 4, 24, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), 16, 24, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), 16, 20, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), 4, 20, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), 4, 24, -100)
-                .setColor(1F, 1F, 1F, 1F);
-
-            // connecting line
-            builder.addVertex(poseStack.last().pose(), 4, 24, -100)
-                .setColor(1F, 1F, 1F, 0F);
-            builder.addVertex(poseStack.last().pose(), -4, 24, -100)
-                .setColor(1F, 1F, 1F, 0F);
-
-            builder.addVertex(poseStack.last().pose(), -4, 24, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), -16, 24, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), -16, 20, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), -4, 20, -100)
-                .setColor(1F, 1F, 1F, 1F);
-            builder.addVertex(poseStack.last().pose(), -4, 24, -100)
-                .setColor(1F, 1F, 1F, 1F);
-
-            this.minecraft.renderBuffers().bufferSource().endLastBatch();
-
+            // submit player pip
+            float yRot = 0;
             if (VRState.VR_RUNNING) {
-                poseStack.mulPose(Axis.YP.rotation(
-                    this.yaw - ClientDataHolderVR.getInstance().vrPlayer.vrdata_room_post.hmd.getYawRad()));
+                yRot = this.yaw - ClientDataHolderVR.getInstance().vrPlayer.vrdata_room_post.hmd.getYawRad();
             }
 
-            // body overlay
-            renderType = RenderType.debugQuads();
-            builder = this.minecraft.renderBuffers().bufferSource().getBuffer(renderType);
-
-            // legs
-            RenderHelper.renderBox(builder,
-                new Vec3(2, 0, 0), new Vec3(2, 12, 0),
-                4, 4, color, alpha, poseStack.last().pose());
-            RenderHelper.renderBox(builder,
-                new Vec3(-2, 0, 0), new Vec3(-2, 12, 0),
-                4, 4, color, alpha, poseStack.last().pose());
-            // body
-            RenderHelper.renderBox(builder,
-                new Vec3(0, 12, 0), new Vec3(0, 24, 0),
-                8, 4, color, alpha, poseStack.last().pose());
-
-            // head
-            RenderHelper.renderBox(builder,
-                new Vec3(0, 24, 0), new Vec3(0, 32, 0),
-                8, 8, color, alpha, poseStack.last().pose());
-
-            // arms
-            RenderHelper.renderBox(builder,
-                new Vec3(6, 22, 0).subtract(this.leftHand.x * 2F, this.leftHand.y * 2F, this.leftHand.z * 2F),
-                new Vec3(6, 22, 0).add(this.leftHand.x * 10F, this.leftHand.y * 10F, this.leftHand.z * 10F),
-                4, 4, this.leftHandAtPosition ? colorActive : color, (byte) 200, poseStack.last().pose());
-            RenderHelper.renderBox(builder,
-                new Vec3(-6, 22, 0).subtract(this.rightHand.x * 2F, this.rightHand.y * 2F, this.rightHand.z * 2F),
-                new Vec3(-6, 22, 0).add(this.rightHand.x * 10F, this.rightHand.y * 10F, this.rightHand.z * 10F),
-                4, 4, this.rightHandAtPosition ? colorActive : color, (byte) 200, poseStack.last().pose());
-
-            this.minecraft.renderBuffers().bufferSource().endBatch(renderType);
+            ((GuiGraphicsAccessor) guiGraphics).getGuiRenderState().submitPicturesInPictureState(
+                new GuiFBTPlayerState(this.rightHandAtPosition, this.leftHandAtPosition, new Vector3f(this.rightHand),
+                    new Vector3f(this.leftHand), yRot, 0, 0, guiGraphics.guiWidth(), guiGraphics.guiHeight()));
 
             if (VRState.VR_RUNNING) {
                 ClientDataHolderVR.getInstance().vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract)

@@ -58,7 +58,7 @@ public class GuiRadialItemsList extends ObjectSelectionList<GuiRadialItemsList.B
         {
             guiGraphics.drawString(Minecraft.getInstance().font, this.labelText,
                 (Minecraft.getInstance().screen.width / 2 - this.labelWidth / 2),
-                (top + height - 9 - 1), 0x67697F);
+                (top + height - 9 - 1), 0xFF67697F);
         }
     }
 
@@ -84,7 +84,7 @@ public class GuiRadialItemsList extends ObjectSelectionList<GuiRadialItemsList.B
 
             guiGraphics.drawString(Minecraft.getInstance().font, chatformatting + I18n.get(this.myKey.getName()),
                 (Minecraft.getInstance().screen.width / 2 - MAX_LIST_LABEL_WIDTH / 2), (top + height / 2 - 9 / 2),
-                0xFFFFFF);
+                0xFFFFFFFF);
         }
 
         @Override

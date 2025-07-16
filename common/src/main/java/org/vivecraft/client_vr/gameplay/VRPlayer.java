@@ -13,6 +13,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.HappyGhast;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
@@ -226,16 +227,17 @@ public class VRPlayer {
                     VRSettings.LOGGER.info(
                         "VIVECRAFT: disconnected user from server. runtime IPD: {}, measured IPD: {}, runtime worldscale: {}",
                         queriedIPD, measuredIPD, runtimeWorldScale);
-                    this.mc.level.disconnect();
+                    this.mc.level.disconnect(Component.translatable("vivecraft.message.worldscaleOutOfRange.title"));
                     this.mc.disconnect(new DisconnectedScreen(new JoinMultiplayerScreen(new TitleScreen()),
-                        Component.translatable("vivecraft.message.worldscaleOutOfRange.title"),
-                        Component.translatable("vivecraft.message.worldscaleOutOfRange",
-                            Component.literal("%.2fx".formatted(worldScaleOverride.getValueMin()))
-                                .withStyle(style -> style.withColor(ChatFormatting.GREEN)),
-                            Component.literal("%.2fx".formatted(worldScaleOverride.getValueMax()))
-                                .withStyle(style -> style.withColor(ChatFormatting.GREEN)),
-                            Component.literal(this.dh.vr.getRuntimeName())
-                                .withStyle(style -> style.withColor(ChatFormatting.GOLD)))));
+                            Component.translatable("vivecraft.message.worldscaleOutOfRange.title"),
+                            Component.translatable("vivecraft.message.worldscaleOutOfRange",
+                                Component.literal("%.2fx".formatted(worldScaleOverride.getValueMin()))
+                                    .withStyle(style -> style.withColor(ChatFormatting.GREEN)),
+                                Component.literal("%.2fx".formatted(worldScaleOverride.getValueMax()))
+                                    .withStyle(style -> style.withColor(ChatFormatting.GREEN)),
+                                Component.literal(this.dh.vr.getRuntimeName())
+                                    .withStyle(style -> style.withColor(ChatFormatting.GOLD)))),
+                        false);
                 }
             }
         }
@@ -432,7 +434,10 @@ public class VRPlayer {
             } else if (entity instanceof Mob mob) {
                 // pigs and striders.
                 if (mob.isLocalInstanceAuthoritative()) {
-                    mob.yBodyRot = this.vrdata_world_pre.getBodyYaw();
+                    // happy ghasts rotate serverside
+                    if (!(mob instanceof HappyGhast)) {
+                        mob.yBodyRot = this.vrdata_world_pre.getBodyYaw();
+                    }
                     this.dh.vehicleTracker.rotationCooldown = 10;
                 }
             }

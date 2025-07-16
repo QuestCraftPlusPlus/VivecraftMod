@@ -13,7 +13,7 @@ public class ServerVRPlayers {
      * @return ServerVivePlayer for the player, or {@code null} if there is none
      */
     public static ServerVivePlayer getVivePlayer(ServerPlayer player) {
-        return getPlayersWithVivecraft(player.server).get(player.getUUID());
+        return getPlayersWithVivecraft(player.getServer()).get(player.getUUID());
     }
 
     /**

@@ -1,6 +1,6 @@
 package org.vivecraft.client_vr.render.helpers;
 
-import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -62,7 +62,7 @@ public class VRWidgetHelper {
 
                 renderVRCameraWidget(-0.748F, -0.438F, -0.06F, scale, RenderPass.THIRD,
                     ClientDataHolderVR.THIRD_PERSON_CAMERA_MODEL, ClientDataHolderVR.THIRD_PERSON_CAMERA_DISPLAY_MODEL,
-                    () -> DATA_HOLDER.vrRenderer.framebufferMR.getColorTexture(), (face) -> {
+                    () -> DATA_HOLDER.vrRenderer.framebufferMR.getColorTextureView(), (face) -> {
                         if (face == Direction.NORTH) {
                             return DisplayFace.MIRROR;
                         } else {
@@ -91,7 +91,7 @@ public class VRWidgetHelper {
                         DATA_HOLDER.vrPlayer.vrdata_world_render.getEye(RenderPass.CAMERA).getPosition(),
                         ((GameRendererExtension) MC.gameRenderer).vivecraft$getMinClipDistance()) == null)
                     {
-                        return DATA_HOLDER.vrRenderer.cameraFramebuffer.getColorTexture();
+                        return DATA_HOLDER.vrRenderer.cameraFramebuffer.getColorTextureView();
                     } else {
                         return RenderHelper.getGpuTexture(RenderHelper.BLACK_TEXTURE);
                     }
@@ -114,7 +114,7 @@ public class VRWidgetHelper {
      */
     public static void renderVRCameraWidget(
         float offsetX, float offsetY, float offsetZ, float scale, RenderPass renderPass, ResourceLocation model,
-        ResourceLocation displayModel, Supplier<GpuTexture> displaySupFunc,
+        ResourceLocation displayModel, Supplier<GpuTextureView> displaySupFunc,
         Function<Direction, DisplayFace> displayFaceFunc)
     {
 
@@ -173,7 +173,7 @@ public class VRWidgetHelper {
                 null, null, 0);
 
         if (!ITEM_STACK_RENDER_STATE.isEmpty() && !ITEM_STACK_RENDER_STATE.layers[0].prepareQuadList().isEmpty()) {
-            RenderType renderType = VRRenderTypes.entitySolid(displaySupFunc.get());
+            RenderType renderType = VRRenderTypes.entitySolidNoCardinalLight(displaySupFunc.get());
             consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
             // need to render this manually, because the uvs in the model are for the atlas texture, and not fullscreen

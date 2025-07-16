@@ -41,9 +41,9 @@ public class MultilineComponent extends AbstractWidget {
         int yPos = 0;
         for (FormattedCharSequence text : this.text) {
             if (this.centered) {
-                guiGraphics.drawCenteredString(this.font, text, getX() + this.width / 2, getY() + yPos, 0xFFFFFF);
+                guiGraphics.drawCenteredString(this.font, text, getX() + this.width / 2, getY() + yPos, 0xFFFFFFFF);
             } else {
-                guiGraphics.drawString(this.font, text, getX(), getY() + yPos, 0xFFFFFF);
+                guiGraphics.drawString(this.font, text, getX(), getY() + yPos, 0xFFFFFFFF);
             }
             yPos += this.font.lineHeight;
         }
