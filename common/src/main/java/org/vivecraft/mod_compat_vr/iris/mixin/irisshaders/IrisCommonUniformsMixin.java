@@ -15,6 +15,8 @@ import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
 
 import java.util.function.Supplier;
 
+import net.irisshaders.iris.gl.uniform.UniformUpdateFrequency;
+
 @Pseudo
 @Mixin(targets = "net.irisshaders.iris.uniforms.CommonUniforms", remap = false)
 public class IrisCommonUniformsMixin {

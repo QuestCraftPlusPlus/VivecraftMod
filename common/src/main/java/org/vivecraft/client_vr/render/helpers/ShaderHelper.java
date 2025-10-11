@@ -265,8 +265,8 @@ public class ShaderHelper {
             ))
         {
             // show both eyes side by side
-            RenderTarget leftEye = DATA_HOLDER.vrRenderer.framebufferEye0;
-            RenderTarget rightEye = DATA_HOLDER.vrRenderer.framebufferEye1;
+            RenderTarget leftEye = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
+            RenderTarget rightEye = DATA_HOLDER.vrRenderer.getRightEyeTarget();
 
             int screenWidth = MC.mainRenderTarget.width / 2;
             int screenHeight = MC.mainRenderTarget.height;
@@ -283,7 +283,7 @@ public class ShaderHelper {
             float xCrop = 0.0F;
             float yCrop = 0.0F;
             boolean keepAspect = false;
-            RenderTarget source = DATA_HOLDER.vrRenderer.framebufferEye0;
+            RenderTarget source = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
 
             if (DATA_HOLDER.vrSettings.displayMirrorUseScreenshotCamera &&
                 DATA_HOLDER.cameraTracker.isVisible())
@@ -300,11 +300,11 @@ public class ShaderHelper {
                 DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.OFF)
             {
                 if (!DATA_HOLDER.vrSettings.displayMirrorLeftEye) {
-                    source = DATA_HOLDER.vrRenderer.framebufferEye1;
+                    source = DATA_HOLDER.vrRenderer.getRightEyeTarget();
                 }
             } else if (DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.CROPPED) {
                 if (!DATA_HOLDER.vrSettings.displayMirrorLeftEye) {
-                    source = DATA_HOLDER.vrRenderer.framebufferEye1;
+                    source = DATA_HOLDER.vrRenderer.getRightEyeTarget();
                 }
 
                 xCrop = DATA_HOLDER.vrSettings.mirrorCrop;
@@ -371,9 +371,9 @@ public class ShaderHelper {
                     source = DATA_HOLDER.vrRenderer.framebufferUndistorted;
                 } else {
                     if (DATA_HOLDER.vrSettings.displayMirrorLeftEye) {
-                        source = DATA_HOLDER.vrRenderer.framebufferEye0;
+                        source = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
                     } else {
-                        source = DATA_HOLDER.vrRenderer.framebufferEye1;
+                        source = DATA_HOLDER.vrRenderer.getRightEyeTarget();
                     }
                 }
                 renderPass.bindSampler(VRShaders.MIXED_REALITY_FIRST_COLOR_SAMPLER, source.getColorTextureView());

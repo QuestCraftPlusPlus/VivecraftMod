@@ -20,13 +20,13 @@
   "environment": "*",
   "entrypoints": {
     "mm:early_risers": [
-      "org.vivecraft.fabric.VivecraftEarlyEntryForOptifabric"
+      "org.vivecraft.VivecraftEarlyEntryForOptifabric"
     ],
     "main": [
       "org.vivecraft.fabric.VivecraftMod"
     ],
     "modmenu": [
-      "org.vivecraft.fabric.client.VivecraftModMenuApiImpl"
+      "org.vivecraft.client.fabric.VivecraftModMenuApiImpl"
     ]
   },
   "mixins": [
@@ -42,16 +42,14 @@
     "vivecraft.iris.mixins.json",
     "vivecraft.mca.mixins.json",
     "vivecraft.modmenu.mixins.json",
-    "vivecraft.optifine.mixins.json",
     "vivecraft.rei.mixins.json",
     "vivecraft.resolutioncontrol.mixins.json",
     "vivecraft.sereneseasons.mixins.json",
-    "vivecraft.sodium.mixins.json",
-    "vivecraft.xaerosmimimap.mixins.json"
+    "vivecraft.sodium.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.16.1",
-    "minecraft": ["1.21.9","1.21.10"],
+    "minecraft": ["1.21.6","1.21.7","1.21.8"],
     "java": ">=21"
   },
   "breaks": {

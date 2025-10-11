@@ -11,28 +11,22 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.joml.*;
-import org.vivecraft.api.client.data.RenderPass;
-import org.vivecraft.api.data.FBTMode;
 import org.vivecraft.client.ClientVRPlayers;
 import org.vivecraft.client.gui.screens.FBTCalibrationScreen;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.extensions.GameRendererExtension;
 import org.vivecraft.client_vr.gameplay.VRPlayer;
-import org.vivecraft.client_vr.gameplay.trackers.DebugRenderTracker;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
 import org.vivecraft.client_vr.provider.DeviceSource;
 import org.vivecraft.client_vr.provider.MCVR;
-import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
+import org.vivecraft.client_vr.render.RenderPass;
+import org.vivecraft.common.network.FBTMode;
 import org.vivecraft.common.utils.MathUtils;
-import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
 
-import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +34,11 @@ public class DebugRenderHelper {
 
     private static final ClientDataHolderVR DATA_HOLDER = ClientDataHolderVR.getInstance();
     private static final Minecraft MC = Minecraft.getInstance();
+
+    private static final Vector3fc RED = new Vector3f(1F, 0F, 0F);
+    private static final Vector3fc GREEN = new Vector3f(0F, 1F, 0F);
+    private static final Vector3fc BLUE = new Vector3f(0F, 0F, 1F);
+    private static final Vector3fc DARK_GRAY = new Vector3f(0.25F);
 
     /**
      * renders debug stuff
@@ -62,17 +61,6 @@ public class DebugRenderHelper {
             }
             renderTackerPositions(showNames);
         }
-
-        if (DATA_HOLDER.vrSettings.renderGameplayTrackers) {
-            DATA_HOLDER.getTrackers().stream()
-                .filter(t -> DATA_HOLDER.vrSettings.gameplayTrackerToRender.isEmpty() ||
-                    t.getClass().getName().equals(DATA_HOLDER.vrSettings.gameplayTrackerToRender))
-                .forEach(t -> {
-                    if (t instanceof DebugRenderTracker debugTracker && t.isActive(MC.player)) {
-                        debugTracker.renderDebug();
-                    }
-                });
-        }
     }
 
     /**
@@ -83,6 +71,7 @@ public class DebugRenderHelper {
     public static void renderPlayerAxes(float partialTick) {
         if (MC.player != null) {
             VertexConsumer consumer = null;
+            RenderType renderType = RenderType.debugLineStrip(2F);
             Vec3 camPos = MC.gameRenderer.getMainCamera().getPosition();
 
             for (Player p : MC.player.level().players()) {
@@ -90,13 +79,13 @@ public class DebugRenderHelper {
                     ClientVRPlayers.RotInfo info = ClientVRPlayers.getInstance().getRotationsForPlayer(p.getUUID());
 
                     if (consumer == null) {
-                        consumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
+                        consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
                     }
 
-                    Vector3f playerPos = MathUtils.subtractToVector3f(p.getPosition(partialTick), camPos);
+                    Vector3f playerPos = p.getPosition(partialTick).subtract(camPos).toVector3f();
                     if (p == MC.player) {
-                        playerPos = MathUtils.subtractToVector3f(
-                            ((GameRendererExtension) MC.gameRenderer).vivecraft$getRvePos(partialTick), camPos);
+                        playerPos = ((GameRendererExtension) MC.gameRenderer).vivecraft$getRvePos(partialTick)
+                            .subtract(camPos).toVector3f();
                     }
 
                     if (p != MC.player || DATA_HOLDER.currentPass == RenderPass.THIRD) {
@@ -122,7 +111,7 @@ public class DebugRenderHelper {
                 }
             }
             if (consumer != null) {
-                MC.renderBuffers().bufferSource().endBatch();
+                MC.renderBuffers().bufferSource().endBatch(renderType);
             }
         }
     }
@@ -133,7 +122,8 @@ public class DebugRenderHelper {
      * @param data VRData to get the devices from
      */
     public static void renderDeviceAxes(VRData data) {
-        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
+        RenderType renderType = RenderType.debugLineStrip(2F);
+        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
         List<VRData.VRDevicePose> list = new ArrayList<>();
 
@@ -177,7 +167,7 @@ public class DebugRenderHelper {
 
         list.forEach(p -> addAxes(consumer, data, p));
 
-        MC.renderBuffers().bufferSource().endBatch();
+        MC.renderBuffers().bufferSource().endBatch(renderType);
     }
 
     /**
@@ -215,14 +205,14 @@ public class DebugRenderHelper {
                 if (tracker.getMiddle() >= 0) {
                     addNamedCube(pos, orientation, Component.translatable("vivecraft.formatting.name_value",
                             Component.literal(tracker.getLeft().source.toString()), labels[tracker.getMiddle()]), 0.05F,
-                        MathUtils.DARK_GRAY);
+                        DARK_GRAY);
                 } else {
                     addNamedCube(pos, orientation, Component.translatable("vivecraft.formatting.name_value",
                         Component.literal(tracker.getLeft().source.toString() + tracker.getLeft().deviceIndex),
-                        Component.translatable("vivecraft.messages.tracker.unknown")), 0.05F, MathUtils.DARK_GRAY);
+                        Component.translatable("vivecraft.messages.tracker.unknown")), 0.05F, DARK_GRAY);
                 }
             } else {
-                renderCube(pos, 0.05F, MathUtils.DARK_GRAY);
+                addCube(pos, 0.05F, DARK_GRAY);
             }
         }
         MC.renderBuffers().bufferSource().endLastBatch();
@@ -236,15 +226,16 @@ public class DebugRenderHelper {
     public static void renderLocalAxes(Matrix4f matrix) {
         RenderSystem.getModelViewStack().pushMatrix().mul(matrix);
 
-        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
+        RenderType renderType = RenderType.debugLineStrip(2F);
+        VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
         Vector3f position = new Vector3f();
 
-        addLine(consumer, position, MathUtils.BACK, MathUtils.BLUE);
-        addLine(consumer, position, MathUtils.UP, MathUtils.GREEN);
-        addLine(consumer, position, MathUtils.RIGHT, MathUtils.RED);
+        addLine(consumer, position, MathUtils.BACK, BLUE);
+        addLine(consumer, position, MathUtils.UP, GREEN);
+        addLine(consumer, position, MathUtils.RIGHT, RED);
 
-        MC.renderBuffers().bufferSource().endBatch();
+        MC.renderBuffers().bufferSource().endBatch(renderType);
         RenderSystem.getModelViewStack().popMatrix();
     }
 
@@ -253,11 +244,13 @@ public class DebugRenderHelper {
      *
      * @param consumer VertexConsumer to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
      * @param data     VRData to get camera position from
-     * @param pose     VRDevicePose to get the orientation and position from.
+     * @param pose     VRDevicePose to ge the orientation and position from.
      */
-    private static void addAxes(VertexConsumer consumer, VRData data, VRData.VRDevicePose pose) {
-        Vector3f position = MathUtils.subtractToVector3f(pose.getPosition(),
-            data.getEye(DATA_HOLDER.currentPass).getPosition());
+    private static void addAxes(
+        VertexConsumer consumer, VRData data, VRData.VRDevicePose pose)
+    {
+        Vector3f position = pose.getPosition().subtract(data.getEye(DATA_HOLDER.currentPass).getPosition())
+            .toVector3f();
 
         float scale = 0.25F * DATA_HOLDER.vrPlayer.worldScale;
 
@@ -265,9 +258,9 @@ public class DebugRenderHelper {
         Vector3f up = pose.getCustomVector(MathUtils.UP).mul(scale);
         Vector3f right = pose.getCustomVector(MathUtils.RIGHT).mul(scale);
 
-        addLine(consumer, position, forward, MathUtils.BLUE);
-        addLine(consumer, position, up, MathUtils.GREEN);
-        addLine(consumer, position, right, MathUtils.RED);
+        addLine(consumer, position, forward, BLUE);
+        addLine(consumer, position, up, GREEN);
+        addLine(consumer, position, right, RED);
     }
 
     /**
@@ -278,7 +271,9 @@ public class DebugRenderHelper {
      * @param devicePos device position, relative to the player
      * @param rot       device rotation
      */
-    private static void addAxes(VertexConsumer consumer, Vector3fc playerPos, Vector3fc devicePos, Quaternionfc rot) {
+    private static void addAxes(
+        VertexConsumer consumer, Vector3fc playerPos, Vector3fc devicePos, Quaternionfc rot)
+    {
         addAxes(consumer, playerPos, devicePos, rot.transform(MathUtils.BACK, new Vector3f()), rot);
     }
 
@@ -292,7 +287,8 @@ public class DebugRenderHelper {
      * @param rot       device rotation
      */
     private static void addAxes(
-        VertexConsumer consumer, Vector3fc playerPos, Vector3fc devicePos, Vector3fc dir, Quaternionfc rot)
+        VertexConsumer consumer, Vector3fc playerPos, Vector3fc devicePos, Vector3fc dir,
+        Quaternionfc rot)
     {
         Vector3f position = playerPos.add(devicePos, new Vector3f());
 
@@ -302,20 +298,21 @@ public class DebugRenderHelper {
         Vector3f up = rot.transform(MathUtils.UP, new Vector3f()).mul(scale);
         Vector3f right = rot.transform(MathUtils.RIGHT, new Vector3f()).mul(scale);
 
-        addLine(consumer, position, forward, MathUtils.BLUE);
-        addLine(consumer, position, up, MathUtils.GREEN);
-        addLine(consumer, position, right, MathUtils.RED);
+        addLine(consumer, position, forward, BLUE);
+        addLine(consumer, position, up, GREEN);
+        addLine(consumer, position, right, RED);
     }
 
     /**
-     * adds a line from {@code position} in direction {@code dir}, with the given {@code color}, to the given {@code consumer}
+     * adds a line from {@code position} in direction {@code dir}, with the given {@code color}
      *
      * @param consumer VertexConsumer to use, needs to be in DEBUG_LINE_STRIP and POSITION_COLOR mode
      * @param position line start position
      * @param dir      line end, relative to {@code position}
      * @param color    line color
      */
-    private static void addLine(VertexConsumer consumer, Vector3fc position, Vector3fc dir, Vector3fc color) {
+    private static void addLine(VertexConsumer consumer, Vector3fc position, Vector3fc dir, Vector3fc color)
+    {
         consumer.addVertex(position.x(), position.y(), position.z())
             .setColor(color.x(), color.y(), color.z(), 0.0F);
         consumer.addVertex(position.x(), position.y(), position.z())
@@ -324,70 +321,6 @@ public class DebugRenderHelper {
             .setColor(color.x(), color.y(), color.z(), 1.0F);
         consumer.addVertex(position.x() + dir.x(), position.y() + dir.y(), position.z() + dir.z())
             .setColor(color.x(), color.y(), color.z(), 0.0F);
-    }
-
-    /**
-     * renders a camera relative line
-     *
-     * @param color  color of the line
-     * @param points list of points the line should follow, at least 2
-     */
-    public static void renderLine(Vector3fc color, Vector3fc... points) {
-        VertexConsumer vertexConsumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
-
-        for (Vector3fc point : points) {
-            vertexConsumer.addVertex(point.x(), point.y(), point.z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-        }
-
-        MC.renderBuffers().bufferSource().endBatch();
-    }
-
-    /**
-     * renders a camera relative multi segment line
-     *
-     * @param points list of points the line should follow, at least 2, boolean of the pair indicates a line split
-     * @param color  color of the line
-     */
-    public static void renderLine(List<Pair<Vector3fc, Boolean>> points, Vector3fc color) {
-        VertexConsumer vertexConsumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
-
-        Pair<Vector3fc, Boolean> prev = null;
-
-        for (Pair<Vector3fc, Boolean> point : points) {
-            if (point.getRight() && prev != null) {
-                // reset line
-                vertexConsumer.addVertex(prev.getLeft().x(), prev.getLeft().y(), prev.getLeft().z())
-                    .setColor(color.x(), color.y(), color.z(), 0.0F);
-                vertexConsumer.addVertex(point.getLeft().x(), point.getLeft().y(), point.getLeft().z())
-                    .setColor(color.x(), color.y(), color.z(), 0.0F);
-            }
-
-            vertexConsumer.addVertex(point.getLeft().x(), point.getLeft().y(), point.getLeft().z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-            prev = point;
-        }
-
-        MC.renderBuffers().bufferSource().endBatch();
-    }
-
-    /**
-     * renders a camera relative line, with a list of world space positions, and a camera position
-     *
-     * @param color  color of the line
-     * @param camPos position of the camera
-     * @param points list of points the line should follow
-     */
-    public static void renderLine(Vector3fc color, Vec3 camPos, Iterable<Vec3> points) {
-        VertexConsumer vertexConsumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
-
-        for (Vec3 point : points) {
-            vertexConsumer.addVertex((float) (point.x() - camPos.x()), (float) (point.y() - camPos.y()),
-                    (float) (point.z() - camPos.z()))
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-        }
-
-        MC.renderBuffers().bufferSource().endBatch();
     }
 
     /**
@@ -402,7 +335,7 @@ public class DebugRenderHelper {
     private static void addNamedCube(
         Vector3fc cubePos, Quaternionf rot, Component label, float size, Vector3fc color)
     {
-        renderCube(cubePos, size, color);
+        addCube(cubePos, size, color);
 
         if (label != null) {
             renderTextAtRelativePosition(cubePos.x(), cubePos.y(), cubePos.z(), rot, label);
@@ -447,7 +380,9 @@ public class DebugRenderHelper {
      * @param rot  rotation the text should look at
      * @param text text to render
      */
-    public static void renderTextAtRelativePosition(float x, float y, float z, Quaternionf rot, String text) {
+    public static void renderTextAtRelativePosition(
+        float x, float y, float z, Quaternionf rot, String text)
+    {
         renderTextAtRelativePosition(x, y, z, rot, Component.literal(text));
     }
 
@@ -460,7 +395,9 @@ public class DebugRenderHelper {
      * @param rot  rotation the text should look at
      * @param text text to render
      */
-    public static void renderTextAtRelativePosition(float x, float y, float z, Quaternionf rot, Component text) {
+    public static void renderTextAtRelativePosition(
+        float x, float y, float z, Quaternionf rot, Component text)
+    {
         Matrix4f matrix = new Matrix4f();
         matrix.translate(x, y + 0.05F, z);
         matrix.rotate(rot);
@@ -478,10 +415,10 @@ public class DebugRenderHelper {
      * @param size     cube size
      * @param color    cube color
      */
-    public static void renderCube(Vector3fc position, float size, Vector3fc color) {
-        ShadersHelper.bindTexture(RenderHelper.WHITE_TEXTURE);
+    private static void addCube(Vector3fc position, float size, Vector3fc color) {
+        RenderSystem.setShaderTexture(0, RenderHelper.getGpuTexture(RenderHelper.WHITE_TEXTURE));
 
-        RenderType renderType = VRRenderTypes.quads(false);
+        RenderType renderType = RenderType.debugQuads();
         VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
         Vec3i iColor = new Vec3i((int) (color.x() * 255), (int) (color.y() * 255), (int) (color.z() * 255));
@@ -489,187 +426,6 @@ public class DebugRenderHelper {
         Vec3 end = new Vec3(position.x(), position.y(), position.z()).add(MathUtils.BACK_D.scale(size * 0.5F));
         RenderHelper.renderBox(consumer, start, end, size, size, iColor, (byte) 255, new Matrix4f());
 
-        MC.renderBuffers().bufferSource().endBatch();
-    }
-
-    /**
-     * adds a circle to the given {@code vertexConsumer}
-     *
-     * @param vertexConsumer VertexConsumer to add the circle to
-     * @param center         center to render the circle at, world camera relative
-     * @param forward        world direction the circle points at
-     * @param radius         circle
-     * @param color          circle color
-     */
-    public static void addCircle(
-        VertexConsumer vertexConsumer, Vector3fc center, Vector3fc forward, float radius, Vector3fc color)
-    {
-        Vector3f offset = MathUtils.getPerpendicularVec(forward).mul(radius);
-
-        vertexConsumer.addVertex(center.x() + offset.x(), center.y() + offset.y(), center.z() + offset.z())
-            .setColor(color.x(), color.y(), color.z(), 0.0F);
-
-        for (int i = 0; i <= 20; i++) {
-            vertexConsumer.addVertex(center.x() + offset.x(), center.y() + offset.y(), center.z() + offset.z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-            if (i != 20) {
-                offset.rotateAxis(Mth.TWO_PI / 20F, forward.x(), forward.y(), forward.z());
-            }
-        }
-
-        vertexConsumer.addVertex(center.x() + offset.x(), center.y() + offset.y(), center.z() + offset.z())
-            .setColor(color.x(), color.y(), color.z(), 0.0F);
-    }
-
-    /**
-     * Renders a camera facing circle
-     *
-     * @param center  center to render the circle at, world camera relative
-     * @param forward direction the camera faces, world direction
-     * @param radius  circle radius
-     * @param color   circle color
-     */
-    public static void renderCircle(Vector3fc center, Vector3fc forward, float radius, Vector3fc color) {
-        VertexConsumer vertexConsumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
-
-        addCircle(vertexConsumer, center, forward, radius, color);
-
-        MC.renderBuffers().bufferSource().endBatch();
-    }
-
-    /**
-     * Renders a sphere made out of 4 circles, a camera facing one and 3 axis aligned ones
-     *
-     * @param center center to render the sphere at, world camera relative
-     * @param radius sphere radius
-     * @param color  sphere color
-     */
-    public static void renderSphere(Vector3fc center, float radius, Vector3fc color) {
-        VertexConsumer vertexConsumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
-
-        addCircle(vertexConsumer, center, MathUtils.LEFT, radius, color);
-        addCircle(vertexConsumer, center, MathUtils.FORWARD, radius, color);
-        addCircle(vertexConsumer, center, MathUtils.UP, radius, color);
-
-        MC.renderBuffers().bufferSource().endBatch();
-    }
-
-    /**
-     * Renders a cone made out of a circle and 4 lines
-     *
-     * @param tip    tip position of the cone, world camera relative
-     * @param dir    direction the cone base points at, world space
-     * @param angle  radius of the cone
-     * @param length length of the cone
-     * @param color  sphere color
-     */
-    public static void renderCone(Vector3fc tip, Vector3fc dir, float angle, float length, Vector3fc color) {
-        VertexConsumer vertexConsumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
-
-        Vector3f center = dir.normalize(new Vector3f()).mul(length).add(tip);
-        float radius = length * (float) Math.tan(Math.toRadians(angle));
-        addCircle(vertexConsumer, center, dir, radius, color);
-
-        Vector3f offset = MathUtils.getPerpendicularVec(dir).mul(radius);
-        for (int i = 0; i < 2; i++) {
-            vertexConsumer.addVertex(center.x() + offset.x(), center.y() + offset.y(), center.z() + offset.z())
-                .setColor(color.x(), color.y(), color.z(), 0.0F);
-            vertexConsumer.addVertex(center.x() + offset.x(), center.y() + offset.y(), center.z() + offset.z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-            vertexConsumer.addVertex(tip.x(), tip.y(), tip.z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-            vertexConsumer.addVertex(center.x() - offset.x(), center.y() - offset.y(), center.z() - offset.z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-            vertexConsumer.addVertex(center.x() - offset.x(), center.y() - offset.y(), center.z() - offset.z())
-                .setColor(color.x(), color.y(), color.z(), 0.0F);
-            offset.rotateAxis(Mth.HALF_PI, dir.x(), dir.y(), dir.z());
-        }
-
-        MC.renderBuffers().bufferSource().endBatch();
-    }
-
-    /**
-     * Renders a cylinder made out of 2 circles and 4 lines
-     *
-     * @param bottom bottom position of the cylinder, world camera relative
-     * @param topDir vector from the bottom center to the top center, world space
-     * @param radius radius of the cylinder
-     * @param color  sphere color
-     */
-    public static void renderCylinder(Vector3fc bottom, Vector3fc topDir, float radius, Vector3fc color) {
-        VertexConsumer vertexConsumer = MC.renderBuffers().bufferSource().getBuffer(RenderType.debugLineStrip(2F));
-
-        Vector3f dir = topDir.normalize(new Vector3f());
-
-        addCircle(vertexConsumer, bottom, dir, radius, color);
-        addCircle(vertexConsumer, bottom.add(topDir, new Vector3f()), dir, radius, color);
-
-        Vector3f offset = MathUtils.getPerpendicularVec(topDir).mul(radius);
-        for (int i = 0; i < 4; i++) {
-            Vector3f bot = bottom.add(offset, new Vector3f());
-            Vector3f top = bot.add(topDir, new Vector3f());
-
-            vertexConsumer.addVertex(bot.x(), bot.y(), bot.z())
-                .setColor(color.x(), color.y(), color.z(), 0.0F);
-            vertexConsumer.addVertex(bot.x(), bot.y(), bot.z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-            vertexConsumer.addVertex(top.x(), top.y(), top.z())
-                .setColor(color.x(), color.y(), color.z(), 1.0F);
-            vertexConsumer.addVertex(top.x(), top.y(), top.z())
-                .setColor(color.x(), color.y(), color.z(), 0.0F);
-            offset.rotateAxis(Mth.HALF_PI, dir.x(), dir.y(), dir.z());
-        }
-
-        MC.renderBuffers().bufferSource().endBatch();
-    }
-
-    /**
-     * renders the outline of the given camera relative AABB
-     *
-     * @param aabb  AABB to render
-     * @param color color to render the AABB in
-     */
-    public static void renderAABB(AABB aabb, Vector3fc color) {
-        renderCubeOutline(
-            new Vector3f((float) aabb.minX, (float) aabb.minY, (float) aabb.minZ),
-            new Vector3f((float) aabb.minX, (float) aabb.maxY, (float) aabb.minZ),
-            new Vector3f((float) aabb.minX, (float) aabb.maxY, (float) aabb.maxZ),
-            new Vector3f((float) aabb.minX, (float) aabb.minY, (float) aabb.maxZ),
-            new Vector3f((float) aabb.maxX, (float) aabb.minY, (float) aabb.minZ),
-            new Vector3f((float) aabb.maxX, (float) aabb.maxY, (float) aabb.minZ),
-            new Vector3f((float) aabb.maxX, (float) aabb.maxY, (float) aabb.maxZ),
-            new Vector3f((float) aabb.maxX, (float) aabb.minY, (float) aabb.maxZ),
-            color);
-    }
-
-    /**
-     * renders the outline of the cube, defined by the 8 camera relative corner points.
-     * corner points are expected to be in the order of v0-v3 being one side in clockwise order, and v4-v7 being the other
-     * side in clockwise order
-     *
-     * @param color color to render the cube in
-     */
-    public static void renderCubeOutline(
-        Vector3fc v0, Vector3fc v1, Vector3fc v2, Vector3fc v3, Vector3fc v4, Vector3fc v5, Vector3fc v6, Vector3fc v7,
-        Vector3fc color)
-    {
-        renderLine(
-            List.of(Pair.of(v0, false),
-                Pair.of(v1, false),
-                Pair.of(v2, false),
-                Pair.of(v3, false),
-                Pair.of(v0, false),
-                Pair.of(v4, false),
-                Pair.of(v5, false),
-                Pair.of(v6, false),
-                Pair.of(v7, false),
-                Pair.of(v4, false),
-                Pair.of(v1, true),
-                Pair.of(v5, false),
-                Pair.of(v2, true),
-                Pair.of(v6, false),
-                Pair.of(v3, true),
-                Pair.of(v7, false)),
-            color);
+        MC.renderBuffers().bufferSource().endBatch(renderType);
     }
 }

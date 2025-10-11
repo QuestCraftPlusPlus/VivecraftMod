@@ -155,6 +155,7 @@ public class VRSettings {
 
     public enum VRProvider implements OptionEnum<VRProvider> {
         OPENVR,
+        OPENXR,
         NULLVR
     }
 
@@ -218,7 +219,7 @@ public class VRSettings {
     public int version = UNKNOWN_VERSION;
 
     @SettingField(VrOptions.VR_PLUGIN)
-    public VRProvider stereoProviderPluginID = VRProvider.OPENVR;
+    public VRProvider stereoProviderPluginID = VRProvider.OPENXR;
     public boolean storeDebugAim = false;
     @SettingField
     public int smoothRunTickCount = 20;
@@ -594,7 +595,7 @@ public class VRSettings {
     @SettingField(VrOptions.GUI_ANISOTROPIC_FILTERING)
     public boolean guiAnisotropicFiltering = true;
     @SettingField(VrOptions.SHOW_UPDATES)
-    public boolean alwaysShowUpdates = true;
+    public boolean alwaysShowUpdates = false;
     @SettingField
     public String lastUpdate = "";
     @SettingField(VrOptions.UPDATE_TYPE)
@@ -608,15 +609,15 @@ public class VRSettings {
     @SettingField(VrOptions.CHAT_MESSAGE_STENCIL)
     public boolean showChatMessageStencil = true;
     @SettingField(value = VrOptions.VR_ENABLED, config = "vrEnabled")
-    public boolean vrEnabled = false;
+    public boolean vrEnabled = true;
     @SettingField(VrOptions.VR_CLOSE_WITH_RUNTIME)
     public boolean closeWithRuntime = true;
     @SettingField(VrOptions.VR_REMEMBER_ENABLED)
     public boolean rememberVr = true;
     @SettingField(VrOptions.VR_HOTSWITCH)
-    public boolean vrHotswitchingEnabled = true;
+    public boolean vrHotswitchingEnabled = false;
     @SettingField(VrOptions.VR_TOGGLE_BUTTON_VISIBLE)
-    public boolean vrToggleButtonEnabled = true;
+    public boolean vrToggleButtonEnabled = false;
     @SettingField(VrOptions.VR_SETTINGS_BUTTON_VISIBLE)
     public boolean vrSettingsButtonEnabled = true;
     @SettingField(VrOptions.VR_SETTINGS_BUTTON_POSITION)
@@ -628,7 +629,7 @@ public class VRSettings {
     @SettingField(VrOptions.SEARCH_TYPE)
     public boolean useFuzzySearch = true;
     @SettingField
-    public boolean disableGarbageCollectorMessage = false;
+    public boolean disableGarbageCollectorMessage = true;
     @SettingField
     public boolean selfButtSparklesInFirstPerson = false;
     @SettingField
@@ -2026,7 +2027,7 @@ public class VRSettings {
             @Override
             String getDisplayString(String prefix, Object value) {
                 if (VRState.VR_INITIALIZED) {
-                    RenderTarget eye0 = ClientDataHolderVR.getInstance().vrRenderer.framebufferEye0;
+                    RenderTarget eye0 = ClientDataHolderVR.getInstance().vrRenderer.getLeftEyeTarget();
                     return prefix + Math.round((float) value * 100) + "% (" +
                         (int) Math.ceil(eye0.width * Math.sqrt((float) value)) + "x" +
                         (int) Math.ceil(eye0.height * Math.sqrt((float) value)) + ")";
