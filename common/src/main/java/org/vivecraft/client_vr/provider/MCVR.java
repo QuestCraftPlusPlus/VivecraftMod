@@ -199,6 +199,8 @@ public abstract class MCVR {
         this.oscTrackers.stop();
     }
 
+    public void prerender() {}
+
     /**
      * triggers a haptic pulse on the give controller, as soon as possible
      *
