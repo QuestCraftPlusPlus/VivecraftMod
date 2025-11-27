@@ -2,6 +2,7 @@ package org.vivecraft.client_vr.provider.openxr;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.util.Tuple;
+import net.minecraft.util.profiling.Profiler;
 import org.joml.Matrix4f;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.openxr.*;
