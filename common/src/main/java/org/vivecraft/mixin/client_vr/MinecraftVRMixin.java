@@ -23,6 +23,7 @@ import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.core.BlockPos;
@@ -822,6 +823,10 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
                     this.mouseHandler.onMove(this.window.handle(), this.mouseHandler.xpos(),
                         this.mouseHandler.ypos());
                 }
+                if (ClientDataHolderVR.getInstance().vrSettings.displayMirrorMode == VRSettings.MirrorMode.OFF) {
+                    // make sure this is shown at lest once when the text is disabled
+                    MirrorNotification.notify(I18n.get("vivecraft.messages.mirroroff"), true, 1000);
+                }
             } else {
                 // VR got disabled
                 RenderPassManager.setVanillaRenderPass();
@@ -860,6 +865,12 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
                     InputConstants.grabOrReleaseMouse(this.window, GLFW.GLFW_CURSOR_DISABLED, mouseX,
                         mouseY);
                     this.mouseHandler.grabMouse();
+                }
+                // unpress any keys we simulated for VR
+                if (MCVR.get() != null) {
+                    for (VRInputAction action : MCVR.get().getInputActions()) {
+                        action.unpressBindingImmediately();
+                    }
                 }
             }
 

@@ -26,6 +26,8 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.vivecraft.api.client.Tracker;
 import org.vivecraft.api.client.data.RenderPass;
+import org.vivecraft.api.data.FBTMode;
+import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.client.VivecraftVRMod;
 import org.vivecraft.client.api_impl.VRClientAPIImpl;
 import org.vivecraft.client.network.ClientNetworking;
@@ -240,7 +242,7 @@ public class VRPlayer {
         if (this.mc.level != null &&
             (this.mc.getSingleplayerServer() == null || !this.mc.getSingleplayerServer().isPaused()))
         {
-            VRClientAPIImpl.INSTANCE.addPoseToHistory(this.vrdata_world_pre.asVRPose());
+            VRClientAPIImpl.INSTANCE.addPoseToHistory(this.vrdata_world_pre.asVRPose(), this.mc.player.position());
         }
     }
 
@@ -472,10 +474,25 @@ public class VRPlayer {
         float playerHalfWidth = player.getBbWidth() / 2.0F;
         float playerHeight = player.getBbHeight();
 
+        Vec3 feetPos = null;
+        if (!this.dh.vrSettings.seated && this.dh.vrSettings.feetBodyPosition &&
+            this.vrdata_room_pre.fbtMode != FBTMode.ARMS_ONLY)
+        {
+            Vector3f leftFoot = this.vrdata_room_pre.getBodyPart(VRBodyPart.LEFT_FOOT).getPositionF();
+            Vector3f rightFoot = this.vrdata_room_pre.getBodyPart(VRBodyPart.RIGHT_FOOT).getPositionF();
+            if (leftFoot.y < 0.1F && rightFoot.y < 0.1F) {
+                feetPos = roomToWorldPos(leftFoot.add(rightFoot).mul(0.5F), this.vrdata_world_pre);
+            } else if (leftFoot.y < 0.1F) {
+                feetPos = roomToWorldPos(leftFoot, this.vrdata_world_pre);
+            } else if (rightFoot.y < 0.1F) {
+                feetPos = roomToWorldPos(rightFoot, this.vrdata_world_pre);
+            }
+        }
+
         // OK this is the first place I've found where we really need to update the VR data before doing this calculation.
-        double x = newHeadPivot.x;
+        double x = feetPos == null ? newHeadPivot.x : feetPos.x;
         double y = player.getY();
-        double z = newHeadPivot.z;
+        double z = feetPos == null ? newHeadPivot.z : feetPos.z;
 
         // create bounding box at dest position
         AABB bb = new AABB(
@@ -689,19 +706,21 @@ public class VRPlayer {
         {
             // Server-side movement
             // when swimming/flying adjust player look according to the user setting
-            VRSettings.FreeMove freeMoveType =
-                player.isFallFlying() && this.dh.vrSettings.vrFreeMoveFlyMode != VRSettings.FreeMove.AUTO ?
-                    this.dh.vrSettings.vrFreeMoveFlyMode : this.dh.vrSettings.vrFreeMoveMode;
-
-            if (freeMoveType == VRSettings.FreeMove.CONTROLLER) {
-                player.setYRot(data.getController(1).getYaw());
-                player.setYHeadRot(player.getYRot());
-                player.setXRot(-data.getController(1).getPitch());
-            } else {
-                player.setYRot(data.hmd.getYaw());
-                player.setYHeadRot(player.getYRot());
-                player.setXRot(-data.hmd.getPitch());
+            switch (this.dh.vrSettings.getVrFreeMoveMode(player.isFallFlying(), data.fbtMode)) {
+                case CONTROLLER -> {
+                    player.setYRot(data.getController(1).getYaw());
+                    player.setXRot(-data.getController(1).getPitch());
+                }
+                case WAIST -> {
+                    player.setYRot(data.waist.getYaw());
+                    player.setXRot(-data.hmd.getPitch()); // use head for up/down
+                }
+                default -> {
+                    player.setYRot(data.hmd.getYaw());
+                    player.setXRot(-data.hmd.getPitch());
+                }
             }
+            player.setYHeadRot(player.getYRot());
         } else if (((GameRendererExtension) this.mc.gameRenderer).vivecraft$getCrossVec() != null) {
             // Look AT the crosshair by default, most compatible with mods.
             Vec3 playerToCrosshair = player.getEyePosition(1)
