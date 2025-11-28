@@ -240,6 +240,8 @@ public class VRPassHelper {
                 RenderHelper.checkGLError("post submit");
             }
         }
+        DATA_HOLDER.vrPlayer.postRender(deltaTracker.getGameTimeDeltaPartialTick(true));
+
         // now we are done with rendering
         Profiler.get().pop();
     }
