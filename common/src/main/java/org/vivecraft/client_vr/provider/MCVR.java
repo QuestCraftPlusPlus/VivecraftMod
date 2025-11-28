@@ -1433,7 +1433,7 @@ public abstract class MCVR {
      * processes the fetched inputs from the VR runtime, and maps them to the ingame keys
      */
     public void processInputs() {
-        if (this.dh.vrSettings.seated || ClientDataHolderVR.VIEW_ONLY || !this.inputInitialized) return;
+        if (this.dh.vrSettings.seated || ClientDataHolderVR.getInstance().viewOnly || !this.inputInitialized) return;
 
         for (VRInputAction action : this.inputActions.values()) {
             if (action.isHanded()) {
