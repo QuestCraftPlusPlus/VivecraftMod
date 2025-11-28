@@ -9,16 +9,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.profiling.Profiler;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.RadialHandler;
 import org.vivecraft.client_vr.render.RenderConfigException;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.opengl.OpenGLHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_xr.render_pass.RenderPassManager;
 import org.vivecraft.client_xr.render_pass.WorldRenderPass;
+import org.vivecraft.mod_compat_vr.optifine.OptifineHelper;
 
 import java.util.List;
 
@@ -70,30 +71,22 @@ public class VRPassHelper {
 
         if (DATA_HOLDER.currentPass == RenderPass.CAMERA) {
             Profiler.get().push("cameraCopy");
+            // set alpha, because the blit does not copy it anymore
+            RenderSystem.getDevice().createCommandEncoder().clearColorTexture(
+                DATA_HOLDER.vrRenderer.cameraFramebuffer.getColorTexture(), 0xFF000000);
             DATA_HOLDER.vrRenderer.cameraRenderFramebuffer.blitAndBlendToTexture(
                 DATA_HOLDER.vrRenderer.cameraFramebuffer.getColorTexture());
             Profiler.get().pop();
         }
 
-        // TODO 1.21.5 optifine
-        /*
         if (DATA_HOLDER.currentPass == RenderPass.THIRD &&
             DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.MIXED_REALITY &&
             renderLevel && MC.level != null &&
-            OptifineHelper.isOptifineLoaded() && OptifineHelper.isShaderActive() &&
-            OptifineHelper.bindShaderFramebuffer())
+            OptifineHelper.isOptifineLoaded() && OptifineHelper.isShaderActive())
         {
             // copy optifine depth buffer, since we need it for the mixed reality split
-            RenderSystem.activeTexture(GL13C.GL_TEXTURE0);
-            RenderSystem.bindTexture(DATA_HOLDER.vrRenderer.framebufferMR.getDepthTextureId());
-            RenderHelper.checkGLError("pre copy depth");
-            GlStateManager._glCopyTexSubImage2D(GL13C.GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-                DATA_HOLDER.vrRenderer.framebufferMR.width, DATA_HOLDER.vrRenderer.framebufferMR.height);
-            RenderHelper.checkGLError("post copy depth");
-            // rebind the original buffer
-            DATA_HOLDER.vrRenderer.framebufferMR.bindWrite(false);
+            OptifineHelper.copyOptifineShaderDepth(DATA_HOLDER.vrRenderer.framebufferMR);
         }
-        */
     }
 
     /**

@@ -67,3 +67,5 @@ config = "vivecraft.resolutioncontrol.mixins.json"
 config = "vivecraft.sereneseasons.mixins.json"
 [[mixins]]
 config = "vivecraft.sodium.mixins.json"
+[[mixins]]
+config = "vivecraft.xaerosmimimap.mixins.json"

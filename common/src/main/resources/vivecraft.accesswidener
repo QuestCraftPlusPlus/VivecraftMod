@@ -34,8 +34,6 @@ accessible field net/minecraft/client/Minecraft mainRenderTarget Lcom/mojang/bla
 accessible field net/minecraft/client/Camera initialized Z
 accessible field net/minecraft/client/Camera level Lnet/minecraft/world/level/BlockGetter;
 accessible field net/minecraft/client/Camera entity Lnet/minecraft/world/entity/Entity;
-accessible field net/minecraft/client/Camera xRot F
-accessible field net/minecraft/client/Camera yRot F
 
 # to set reset camera before tick
 accessible method net/minecraft/client/Camera setPosition (Lnet/minecraft/world/phys/Vec3;)V
@@ -75,6 +73,9 @@ accessible field net/minecraft/world/item/CreativeModeTabs FOOD_AND_DRINKS Lnet/
 # to render crosshair
 accessible field net/minecraft/client/gui/Gui CROSSHAIR_SPRITE Lnet/minecraft/resources/ResourceLocation;
 
+# to check for an active tooltip
+accessible field net/minecraft/client/gui/screens/Screen deferredTooltipRendering Lnet/minecraft/client/gui/screens/Screen$DeferredTooltipRendering;
+
 # for menuworlds
 accessible field net/minecraft/client/multiplayer/ClientLevel$ClientLevelData isFlat Z
 accessible field net/minecraft/world/level/biome/BiomeManager biomeZoomSeed J
@@ -93,10 +94,8 @@ accessible method net/minecraft/world/item/BrushItem spawnDustParticles (Lnet/mi
 # do not kick climbing players
 accessible field net/minecraft/server/network/ServerGamePacketListenerImpl aboveGroundTickCount I
 
-# to render the camera widget with dispaly
+# to render the camera widget with display
 accessible field net/minecraft/client/renderer/item/ItemStackRenderState layers [Lnet/minecraft/client/renderer/item/ItemStackRenderState$LayerRenderState;
-
-# to have a custom crosshair shader
 
 # for custom rendertypes / to create custom END shader
 accessible field net/minecraft/client/renderer/RenderStateShard LIGHTMAP Lnet/minecraft/client/renderer/RenderStateShard$LightmapStateShard;

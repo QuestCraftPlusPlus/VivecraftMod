@@ -3,9 +3,9 @@ package org.vivecraft.client.gui.settings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
-import org.vivecraft.client.gui.framework.GuiVROption;
-import org.vivecraft.client.gui.framework.GuiVROptionsBase;
 import org.vivecraft.client.gui.framework.VROptionEntry;
+import org.vivecraft.client.gui.framework.screens.GuiVROptionsBase;
+import org.vivecraft.client.gui.framework.widgets.GuiVROption;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.settings.VRHotkeys;
 import org.vivecraft.client_vr.settings.VRSettings;
@@ -36,6 +36,9 @@ public class GuiRenderOpticsSettings extends GuiVROptionsBase {
     };
     private static final VRSettings.VrOptions[] SINGLE_OPTIONS = new VRSettings.VrOptions[]{
         VRSettings.VrOptions.MIRROR_EYE
+    };
+    private static final VRSettings.VrOptions[] OFF_OPTIONS = new VRSettings.VrOptions[]{
+        VRSettings.VrOptions.MIRROR_OFF_TEXT
     };
     private final VROptionEntry[] MROptions = new VROptionEntry[]{new VROptionEntry(
         "vivecraft.options.screen.mixedreality.button", (button, mousePos) -> {
@@ -90,6 +93,7 @@ public class GuiRenderOpticsSettings extends GuiVROptionsBase {
             case THIRD_PERSON -> super.init(THIRD_OPTIONS, false);
             case CROPPED -> super.init(CROP_OPTIONS, false);
             case SINGLE -> super.init(SINGLE_OPTIONS, false);
+            case OFF -> super.init(OFF_OPTIONS, false);
         }
 
         super.addDefaultButtons();
@@ -110,30 +114,6 @@ public class GuiRenderOpticsSettings extends GuiVROptionsBase {
         this.minecraft.options.fov().set(70);
         if (VRState.VR_INITIALIZED) {
             this.dataHolder.vrRenderer.reinitFrameBuffers("Defaults Loaded");
-        }
-    }
-
-    @Override
-    protected void actionPerformed(AbstractWidget widget) {
-        if (widget instanceof GuiVROption guivroption) {
-            if (guivroption.getId() == VRSettings.VrOptions.MIRROR_DISPLAY.ordinal() ||
-                guivroption.getId() == VRSettings.VrOptions.FSAA.ordinal() ||
-                guivroption.getId() == VRSettings.VrOptions.STENCIL_ON.ordinal())
-            {
-                if (VRState.VR_INITIALIZED) {
-                    if (guivroption.getId() == VRSettings.VrOptions.MIRROR_DISPLAY.ordinal() &&
-                        ShadersHelper.isShaderActive())
-                    {
-                        this.dataHolder.vrRenderer.resizeFrameBuffers("Render Setting Changed");
-                    } else {
-                        this.dataHolder.vrRenderer.reinitFrameBuffers("Render Setting Changed");
-                    }
-                }
-                this.reinit = true;
-            }
-            if (guivroption.getId() == VRSettings.VrOptions.RELOAD_EXTERNAL_CAMERA.ordinal()) {
-                VRHotkeys.loadExternalCameraConfig(this.vrSettings);
-            }
         }
     }
 

@@ -59,7 +59,7 @@ public class MirrorNotification {
 
             if (MIRROR_NOTIFY_CLEAR) {
                 RenderSystem.getDevice().createCommandEncoder()
-                    .clearColorTexture(MC.mainRenderTarget.getColorTexture(), 0);
+                    .clearColorTexture(MC.mainRenderTarget.getColorTexture(), 0xFF000000);
             }
 
             final int TEXT_WORDWRAP_LEN = screenX / 22;
@@ -73,7 +73,7 @@ public class MirrorNotification {
             final int COLUMN_GAP = 12;
 
             for (String line : wrapped) {
-                guiGraphics.drawString(MC.font, line, 1, column, 0xFFFFFF);
+                guiGraphics.drawString(MC.font, line, 1, column, 0xFFFFFFFF);
                 column += COLUMN_GAP;
             }
             guiGraphics.flush();

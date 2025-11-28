@@ -43,11 +43,11 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
-import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.vivecraft.client.Xplat;
+import org.vivecraft.Xplat;
 import org.vivecraft.client.extensions.BufferBuilderExtension;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
@@ -104,7 +104,7 @@ public class MenuWorldRenderer {
     private GpuBuffer endSkyVBO;
     private int renderDistance;
     private int renderDistanceChunks;
-    public MenuFogRenderer fogRenderer;
+    public final MenuFogRenderer fogRenderer;
     public Set<TextureAtlasSprite> animatedSprites;
     private final Random rand;
     private boolean ready;
@@ -135,13 +135,15 @@ public class MenuWorldRenderer {
 
     private static boolean FIRST_RENDER_DONE;
 
+    private boolean rendering = false;
+
     public MenuWorldRenderer() {
         this.mc = Minecraft.getInstance();
 
         this.lightMap = RenderSystem.getDevice()
             .createTexture("MenuWOrld Light Texture", TextureFormat.RGBA8, 16, 16, 1);
         this.lightMap.setTextureFilter(FilterMode.LINEAR, false);
-        RenderSystem.getDevice().createCommandEncoder().clearColorTexture(this.lightMap, -1);
+        RenderSystem.getDevice().createCommandEncoder().clearColorTexture(this.lightMap, 0xFFFFFFFF);
 
         this.fogRenderer = new MenuFogRenderer(this);
         this.rand = new Random();
@@ -195,6 +197,7 @@ public class MenuWorldRenderer {
     }
 
     public void render(Matrix4fStack poseStack) {
+        this.rendering = true;
 
         // temporarily disable fabulous to render the menu world
         GraphicsStatus current = this.mc.options.graphicsMode().get();
@@ -252,6 +255,7 @@ public class MenuWorldRenderer {
         poseStack.popMatrix();
         turnOffLightLayer();
         this.mc.options.graphicsMode().set(current);
+        this.rendering = false;
     }
 
     private void renderChunkLayer(RenderType layer) {
@@ -285,6 +289,10 @@ public class MenuWorldRenderer {
         }
     }
 
+    public boolean isRendering() {
+        return this.rendering;
+    }
+
     public void prepare() {
         if (this.vertexBuffers == null && !this.building) {
             VRSettings.LOGGER.info("Vivecraft: MenuWorlds: Building geometry...");
@@ -301,7 +309,7 @@ public class MenuWorldRenderer {
             if (IrisHelper.isLoaded() && IrisHelper.isShaderActive() && IrisHelper.hasIssuesWithMenuWorld()) {
                 VRSettings.LOGGER.info("Vivecraft: Temporarily disabling shaders to build Menuworld.");
                 this.reenableShaders = true;
-                this.mc.gui.getChat().addMessage(Component.translatable("vivecraft.messages.menuworldshaderdisable"));
+                ClientUtils.addChatMessage(Component.translatable("vivecraft.messages.menuworldshaderdisable"));
                 IrisHelper.setShadersActive(false);
             }
 
@@ -345,6 +353,10 @@ public class MenuWorldRenderer {
             } catch (OutOfMemoryError e) {
                 VRSettings.LOGGER.error(
                     "Vivecraft: OutOfMemoryError while building main menu world. Low system memory or 32-bit Java?", e);
+                destroy();
+                return;
+            } catch (NullPointerException e) {
+                VRSettings.LOGGER.error("Vivecraft: Something canceled menu world building while preparing", e);
                 destroy();
                 return;
             }
@@ -572,8 +584,7 @@ public class MenuWorldRenderer {
     private void uploadGeometry(RenderType layer, MeshData meshData) {
         try (meshData) {
             this.vertexBuffers.get(layer).add(Pair.of(meshData.drawState().indexCount(), RenderSystem.getDevice()
-                .createBuffer(null, BufferType.VERTICES, BufferUsage.STATIC_WRITE,
-                    meshData.vertexBuffer())));
+                .createBuffer(null, BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer())));
         }
     }
 
@@ -620,6 +631,7 @@ public class MenuWorldRenderer {
         if (this.endSkyVBO != null) {
             this.endSkyVBO.close();
         }
+        this.lightMap.close();
         this.ready = false;
     }
 
@@ -834,7 +846,6 @@ public class MenuWorldRenderer {
                 this.fogRenderer.setupFog(FogRenderer.FogMode.FOG_SKY);
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             }
-
 
             poseStack.popMatrix();
             // RenderSystem.disableTexture();
@@ -1235,17 +1246,17 @@ public class MenuWorldRenderer {
                 float distance = starPoint.lengthSquared();
                 if (distance <= 0.010000001F || distance >= 1.0F) continue;
 
-                starPoint = starPoint.normalize(starDistance);
+                starPoint.normalize(starDistance);
                 float starRotation = (float) (randomSource.nextDouble() * Math.PI * 2.0);
 
-                Quaternionf quaternionf = new Quaternionf()
-                    .rotateTo(new Vector3f(0.0F, 0.0F, -1.0F), starPoint)
-                    .rotateZ(starRotation);
+                Matrix3f rotation = new Matrix3f()
+                    .rotateTowards(starPoint.negate(new Vector3f()), new Vector3f(0.0f, 1.0f, 0.0f))
+                    .rotateZ(-starRotation);
 
-                bufferBuilder.addVertex(starPoint.add(new Vector3f(starSize, -starSize, 0.0F).rotate(quaternionf)));
-                bufferBuilder.addVertex(starPoint.add(new Vector3f(starSize, starSize, 0.0F).rotate(quaternionf)));
-                bufferBuilder.addVertex(starPoint.add(new Vector3f(-starSize, starSize, 0.0F).rotate(quaternionf)));
-                bufferBuilder.addVertex(starPoint.add(new Vector3f(-starSize, -starSize, 0.0F).rotate(quaternionf)));
+                bufferBuilder.addVertex(new Vector3f(starSize, -starSize, 0.0f).mul(rotation).add(starPoint));
+                bufferBuilder.addVertex(new Vector3f(starSize, starSize, 0.0f).mul(rotation).add(starPoint));
+                bufferBuilder.addVertex(new Vector3f(-starSize, starSize, 0.0f).mul(rotation).add(starPoint));
+                bufferBuilder.addVertex(new Vector3f(-starSize, -starSize, 0.0f).mul(rotation).add(starPoint));
             }
             try (MeshData meshData = bufferBuilder.buildOrThrow()) {
                 return RenderSystem.getDevice()

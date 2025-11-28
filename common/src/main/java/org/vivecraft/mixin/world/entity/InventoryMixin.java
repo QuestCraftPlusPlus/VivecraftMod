@@ -12,10 +12,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.client.network.ClientNetworking;
 import org.vivecraft.client_vr.VRState;
-import org.vivecraft.common.network.BodyPart;
-import org.vivecraft.common.network.CommonNetworkHelper;
+import org.vivecraft.common.network.NetworkVersion;
 import org.vivecraft.server.ServerVRPlayers;
 import org.vivecraft.server.ServerVivePlayer;
 import org.vivecraft.server.config.ServerConfig;
@@ -35,28 +37,43 @@ public class InventoryMixin {
         return vivecraft$activeItem(original);
     }
 
+    @Inject(method = "setSelectedItem", at = @At("HEAD"), cancellable = true)
+    private void vivecraft$setOffhand(ItemStack stack, CallbackInfoReturnable<ItemStack> cir) {
+        if (this.player instanceof ServerPlayer serverPlayer && ServerConfig.DUAL_WIELDING.get()) {
+            if (ServerVRPlayers.isVRPlayer(serverPlayer)) {
+                ServerVivePlayer vivePlayer = ServerVRPlayers.getVivePlayer(serverPlayer);
+                // older clients don't reset the active hand
+                if (NetworkVersion.DUAL_WIELDING.accepts(vivePlayer.networkVersion) &&
+                    vivePlayer.activeBodyPart == VRBodyPart.OFF_HAND)
+                {
+                    cir.setReturnValue(this.equipment.set(EquipmentSlot.OFFHAND, stack));
+                }
+            }
+        }
+    }
+
     @Unique
     private ItemStack vivecraft$activeItem(ItemStack original) {
-        BodyPart bodyPart = null;
+        VRBodyPart bodyPart = null;
         // server side
         if (this.player instanceof ServerPlayer serverPlayer && ServerConfig.DUAL_WIELDING.get()) {
             if (ServerVRPlayers.isVRPlayer(serverPlayer)) {
                 ServerVivePlayer vivePlayer = ServerVRPlayers.getVivePlayer(serverPlayer);
                 // older clients don't reset the active hand
-                if (vivePlayer.networkVersion >= CommonNetworkHelper.NETWORK_VERSION_DUAL_WIELDING) {
+                if (NetworkVersion.DUAL_WIELDING.accepts(vivePlayer.networkVersion)) {
                     bodyPart = vivePlayer.activeBodyPart;
                 }
             }
         }
         // client side
         else if (this.player.isLocalPlayer() && VRState.VR_RUNNING && ClientNetworking.SERVER_ALLOWS_DUAL_WIELDING) {
-            bodyPart = ClientNetworking.LAST_SENT_BODY_PART;
+            bodyPart = ClientNetworking.getActiveBodyPart();
         }
 
         if (bodyPart != null) {
-            if (bodyPart == BodyPart.OFF_HAND) {
+            if (bodyPart == VRBodyPart.OFF_HAND) {
                 return this.equipment.get(EquipmentSlot.OFFHAND);
-            } else if (bodyPart != BodyPart.MAIN_HAND) {
+            } else if (bodyPart != VRBodyPart.MAIN_HAND && bodyPart != VRBodyPart.HEAD) {
                 // feet
                 return ItemStack.EMPTY;
             }
