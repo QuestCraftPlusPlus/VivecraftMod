@@ -8,7 +8,6 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.vivecraft.Xplat;
 import org.vivecraft.client.VivecraftVRMod;
-import org.vivecraft.client.Xplat;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.provider.ControllerType;
 import org.vivecraft.client_vr.provider.HandedKeyBinding;
