@@ -20,7 +20,6 @@ public class OpenXRStereoRenderer extends VRRenderer {
     private final int[] swapIndex = new int[] {0, 0}; // Needs to be initialized otherwise stuff splodes
     private VRTextureTarget[] leftFramebuffers;
     private VRTextureTarget[] rightFramebuffers;
-    private boolean render;
     private XrCompositionLayerProjectionView.Buffer projectionLayerViews;
     private boolean recalculateProjectionMatrix = true;
 
@@ -74,10 +73,10 @@ public class OpenXRStereoRenderer extends VRRenderer {
     }
 
     @Override
-    public void setupRenderConfiguration() throws IOException, RenderConfigException {
-        super.setupRenderConfiguration();
+    public void setupRenderConfiguration(boolean render) throws IOException, RenderConfigException {
+        super.setupRenderConfiguration(render);
 
-        if (!render) return;
+        if(!render) return;
 
         this.projectionLayerViews = XrCompositionLayerProjectionView.calloc(2);
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -175,11 +174,17 @@ public class OpenXRStereoRenderer extends VRRenderer {
 
     @Override
     public RenderTarget getLeftEyeTarget() {
+        if(this.leftFramebuffers == null) {
+            return null;
+        }
         return this.leftFramebuffers[this.swapIndex[0]];
     }
 
     @Override
     public RenderTarget getRightEyeTarget() {
+        if(this.leftFramebuffers == null) {
+            return null;
+        }
         return this.rightFramebuffers[this.swapIndex[1]];
     }
 
