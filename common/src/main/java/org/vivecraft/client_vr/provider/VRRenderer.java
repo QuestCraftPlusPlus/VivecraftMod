@@ -496,7 +496,7 @@ public abstract class VRRenderer {
      * @throws RenderConfigException in case something failed to initialize or the gpu vendor is unsupported
      * @throws IOException           can be thrown by the WorldRenderPass init when trying to load the shaders
      */
-    public void setupRenderConfiguration() throws RenderConfigException, IOException {
+    public void setupRenderConfiguration(boolean render) throws RenderConfigException, IOException {
         Minecraft minecraft = Minecraft.getInstance();
         ClientDataHolderVR dataholder = ClientDataHolderVR.getInstance();
 
@@ -650,10 +650,10 @@ public abstract class VRRenderer {
 
             destroyBuffers();
 
-            if (this.LeftEyeTextureId == -1) {
+            if (this.getLeftEyeTarget() == null) {
                 this.createRenderTexture(eyew, eyeh);
 
-                if (this.LeftEyeTextureId == -1) {
+                if (this.getLeftEyeTarget() == null) {
                     throw new RenderConfigException(
                         Component.translatable("vivecraft.messages.renderiniterror", this.getName()),
                         Component.literal(this.getLastError()));
