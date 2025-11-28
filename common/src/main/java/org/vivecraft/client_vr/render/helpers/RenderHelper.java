@@ -15,7 +15,9 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
@@ -24,17 +26,19 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL30C;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
-import org.vivecraft.client_vr.provider.MCVR;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.VRShaders;
 import org.vivecraft.client_vr.render.helpers.opengl.OpenGLHelper;
 import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.utils.MathUtils;
+import org.vivecraft.mod_compat_vr.shaders.ShadersHelper;
+
+import java.util.List;
 
 public class RenderHelper {
 
@@ -219,6 +223,39 @@ public class RenderHelper {
     }
 
     /**
+     * draws the "connecting to vr runtime" message to the main rendertarget screen
+     */
+    public static void drawVRConnectingMessage() {
+        // clear depth, because text that was already there would be over ours
+        RenderSystem.getDevice().createCommandEncoder()
+            .clearDepthTexture(MC.getMainRenderTarget().getDepthTexture(), 1.0);
+
+        GuiGraphics guiGraphics = GuiRenderHelper.getGuiGraphics();
+
+        int width = 200;
+        List<FormattedCharSequence> formattedChars = MC.font.split(
+            Component.translatable("vivecraft.messages.connectingtoruntime"), width - 10);
+        int height = formattedChars.size() * 8 + Math.max(formattedChars.size() - 1, 0) * 4 + 10;
+
+        int x = guiGraphics.guiWidth() / 2 - width / 2;
+        int y = guiGraphics.guiHeight() / 2 - height / 2;
+
+        // transparent background to dim the game
+        guiGraphics.fill(0, 0, guiGraphics.guiWidth(), guiGraphics.guiHeight(), 0x40000000);
+
+        // black background with border
+        guiGraphics.fill(x, y, x + width, y + height, 0xFF000000);
+        guiGraphics.renderOutline(x, y, width, height, 0xFFFFFFFF);
+
+        for (int line = 0; line < formattedChars.size(); line++) {
+            guiGraphics.drawCenteredString(MC.font, formattedChars.get(line), guiGraphics.guiWidth() / 2,
+                y + 5 + line * 12, 0xFFFFFFFF);
+        }
+
+        GuiRenderHelper.finish();
+    }
+
+    /**
      * draws a quad with the PositionTex shader, ignoring depth, to be used when <b>not</b> in a world
      *
      * @param displayWidth  texture width
@@ -356,12 +393,12 @@ public class RenderHelper {
         Vec3 pos, float width, float height, float yaw, int r, int g, int b, int a, Matrix4f matrix,
         boolean depthAlways)
     {
-        RenderType renderType = VRRenderTypes.debugQuads(depthAlways);
+        RenderType renderType = VRRenderTypes.quads(depthAlways);
         VertexConsumer consumer = MC.renderBuffers().bufferSource().getBuffer(renderType);
 
         Vec3 offset = (new Vec3(width * 0.5F, 0.0, height * 0.5F))
             .yRot(Mth.DEG_TO_RAD * -yaw);
-        RenderSystem.setShaderTexture(0, getGpuTexture(RenderHelper.WHITE_TEXTURE));
+        ShadersHelper.bindTexture(RenderHelper.WHITE_TEXTURE);
 
         consumer.addVertex(matrix, (float) (pos.x + offset.x), (float) pos.y, (float) (pos.z + offset.z))
             .setColor(r, g, b, a);

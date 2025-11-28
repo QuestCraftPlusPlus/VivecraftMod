@@ -10,8 +10,9 @@ import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.vivecraft.client.VivecraftVRMod;
+import org.vivecraft.client.gui.framework.widgets.MultilineComponent;
 import org.vivecraft.client.gui.pip.state.GuiFBTPlayerState;
-import org.vivecraft.client.gui.widgets.MultilineComponent;
+import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.provider.ControllerType;
@@ -156,15 +157,12 @@ public class FBTCalibrationScreen extends Screen {
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        if (this.calibrated && this.usingUnlabeledTrackers) {
-            if (VRState.VR_RUNNING) {
-                ClientDataHolderVR.getInstance().vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract)
-                    .setEnabled(ControllerType.LEFT, false);
-                ClientDataHolderVR.getInstance().vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract)
-                    .setEnabled(ControllerType.RIGHT, false);
-            }
-        } else {
-            checkPosition();
+        if (!this.calibrated || !this.usingUnlabeledTrackers) {
+            // arm overlay
+            guiGraphics.renderOutline(guiGraphics.guiWidth() / 2 - 64, guiGraphics.guiHeight() - 32 - 96,
+                48, 16, 0xFFFFFFFF);
+            guiGraphics.renderOutline(guiGraphics.guiWidth() / 2 + 16, guiGraphics.guiHeight() - 32 - 96,
+                48, 16, 0xFFFFFFFF);
 
             // render target rectangles
             guiGraphics.renderOutline(guiGraphics.guiWidth() / 2 - 64, guiGraphics.guiHeight() - 32 - 96,
@@ -181,36 +179,11 @@ public class FBTCalibrationScreen extends Screen {
             ((GuiGraphicsAccessor) guiGraphics).getGuiRenderState().submitPicturesInPictureState(
                 new GuiFBTPlayerState(this.rightHandAtPosition, this.leftHandAtPosition, new Vector3f(this.rightHand),
                     new Vector3f(this.leftHand), yRot, 0, 0, guiGraphics.guiWidth(), guiGraphics.guiHeight()));
-
-            if (VRState.VR_RUNNING) {
-                ClientDataHolderVR.getInstance().vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract)
-                    .setEnabled(ControllerType.LEFT, this.leftHandAtPosition && this.rightHandAtPosition);
-                ClientDataHolderVR.getInstance().vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract)
-                    .setEnabled(ControllerType.RIGHT, this.leftHandAtPosition && this.rightHandAtPosition);
-
-                if (VivecraftVRMod.INSTANCE.keyVRInteract.isDown(ControllerType.LEFT) &&
-                    VivecraftVRMod.INSTANCE.keyVRInteract.isDown(ControllerType.RIGHT) &&
-                    VivecraftVRMod.INSTANCE.keyVRInteract.consumeClick())
-                {
-                    AutoCalibration.calibrateManual();
-                    ClientDataHolderVR.getInstance().vr.calibrateFBT(this.yaw + Mth.PI);
-                    ClientDataHolderVR.getInstance().vrSettings.unlabeledTrackersUsed = this.usingUnlabeledTrackers;
-                    ClientDataHolderVR.getInstance().vrSettings.saveOptions();
-                    this.minecraft.gui.getChat()
-                        .addMessage(Component.translatable("vivecraft.messages.fbtcalibrationsuccess"));
-                    this.calibrated = true;
-                    if (!this.usingUnlabeledTrackers) {
-                        this.minecraft.setScreen(this.parent);
-                    } else {
-                        this.cancelButton.setMessage(Component.translatable("vivecraft.gui.ok"));
-                        this.resetButton.visible = true;
-                    }
-                }
-            }
         }
     }
 
-    private void checkPosition() {
+    @Override
+    public void tick() {
         if (!VRState.VR_RUNNING) {
             this.rightHand.set(MathUtils.DOWN);
             this.leftHand.set(MathUtils.DOWN);
@@ -222,7 +195,7 @@ public class FBTCalibrationScreen extends Screen {
         Vector3f hmdPosAvg = dataHolder.vr.hmdPivotHistory.averagePosition(0.5D);
 
         float height = hmdPosAvg.y / AutoCalibration.DEFAULT_HEIGHT;
-        float scale = height * 0.9375F * dataHolder.vrPlayer.getVRDataWorld().worldScale;
+        float scale = height * 0.9375F;
 
         int main = dataHolder.vrSettings.reverseHands ? 1 : 0;
 
@@ -250,5 +223,32 @@ public class FBTCalibrationScreen extends Screen {
 
         this.rightHandAtPosition = rightHandNew;
         this.leftHandAtPosition = leftHandNew;
+
+        if (VRState.VR_RUNNING) {
+            if (this.calibrated && this.usingUnlabeledTrackers) {
+                dataHolder.vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract).setEnabled(false);
+            } else {
+                dataHolder.vr.getInputAction(VivecraftVRMod.INSTANCE.keyVRInteract)
+                    .setEnabled(this.leftHandAtPosition && this.rightHandAtPosition);
+
+                if (VivecraftVRMod.INSTANCE.keyVRInteract.isDown(ControllerType.LEFT) &&
+                    VivecraftVRMod.INSTANCE.keyVRInteract.isDown(ControllerType.RIGHT) &&
+                    VivecraftVRMod.INSTANCE.keyVRInteract.consumeClick())
+                {
+                    AutoCalibration.calibrateManual();
+                    dataHolder.vr.calibrateFBT(this.yaw + Mth.PI);
+                    dataHolder.vrSettings.unlabeledTrackersUsed = this.usingUnlabeledTrackers;
+                    dataHolder.vrSettings.saveOptions();
+                    ClientUtils.addChatMessage(Component.translatable("vivecraft.messages.fbtcalibrationsuccess"));
+                    this.calibrated = true;
+                    if (!this.usingUnlabeledTrackers) {
+                        this.minecraft.setScreen(this.parent);
+                    } else {
+                        this.cancelButton.setMessage(Component.translatable("vivecraft.gui.ok"));
+                        this.resetButton.visible = true;
+                    }
+                }
+            }
+        }
     }
 }

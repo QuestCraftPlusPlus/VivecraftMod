@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.vivecraft.client.utils.TextUtils;
-import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.render.helpers.GuiRenderHelper;
 
@@ -12,7 +11,6 @@ import java.util.ArrayList;
 
 public class MirrorNotification {
 
-    private static final ClientDataHolderVR DH = ClientDataHolderVR.getInstance();
     private static final Minecraft MC = Minecraft.getInstance();
 
     private static long MIRROR_NOTIFY_START;
@@ -53,7 +51,7 @@ public class MirrorNotification {
 
             if (MIRROR_NOTIFY_CLEAR) {
                 RenderSystem.getDevice().createCommandEncoder()
-                    .clearColorTexture(MC.mainRenderTarget.getColorTexture(), 0);
+                    .clearColorTexture(MC.mainRenderTarget.getColorTexture(), 0xFF000000);
             }
 
             final int TEXT_WORDWRAP_LEN = screenX / 22;

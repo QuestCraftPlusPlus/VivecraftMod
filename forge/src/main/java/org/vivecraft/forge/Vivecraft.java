@@ -7,7 +7,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.EventNetworkChannel;
-import org.vivecraft.client.Xplat;
+import org.vivecraft.Xplat;
 import org.vivecraft.client.network.ClientNetworking;
 import org.vivecraft.common.network.CommonNetworkHelper;
 import org.vivecraft.common.network.packet.c2s.VivecraftPayloadC2S;
@@ -29,6 +29,8 @@ public class Vivecraft {
 
     public Vivecraft(FMLJavaModLoadingContext context) {
         // init server config
+        // this is too early for the lang files to be loaded, is needed to register the commands though
+        // server config is validated again later to have the comments
         ServerConfig.init(null);
 
         VIVECRAFT_NETWORK_CHANNEL.addListener(event -> {

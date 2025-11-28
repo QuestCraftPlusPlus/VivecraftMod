@@ -35,6 +35,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.vivecraft.Xloader;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client.network.ClientNetworking;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
@@ -43,7 +45,6 @@ import org.vivecraft.client_vr.gameplay.trackers.BowTracker;
 import org.vivecraft.client_vr.gameplay.trackers.ClimbTracker;
 import org.vivecraft.client_vr.gameplay.trackers.SwingTracker;
 import org.vivecraft.client_vr.gameplay.trackers.TelescopeTracker;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.VRArmRenderer;
 import org.vivecraft.client_vr.render.VivecraftItemRendering;
 import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
@@ -247,9 +248,9 @@ public abstract class ItemInHandRendererVRMixin {
             boolean hasItemOverride = itemStack.getComponents() instanceof PatchedDataComponentMap patched &&
                 patched.hasNonDefault(DataComponents.ITEM_MODEL);
             boolean hasCMD = (hasItemOverride || itemStack.has(DataComponents.CUSTOM_MODEL_DATA)) &&
-                transformType != VivecraftItemRendering.VivecraftItemTransformType.Crossbow &&
-                transformType != VivecraftItemRendering.VivecraftItemTransformType.Spear &&
-                transformType != VivecraftItemRendering.VivecraftItemTransformType.Shield;
+                transformType != VivecraftItemRendering.VivecraftItemTransformType.CROSSBOW &&
+                transformType != VivecraftItemRendering.VivecraftItemTransformType.SPEAR &&
+                transformType != VivecraftItemRendering.VivecraftItemTransformType.SHIELD;
 
             boolean isBow = BowTracker.isBow(itemStack) && dh.bowTracker.isActive((LocalPlayer) player);
 
@@ -275,9 +276,9 @@ public abstract class ItemInHandRendererVRMixin {
                     ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
             }
 
-            if (transformType == VivecraftItemRendering.VivecraftItemTransformType.Map) {
+            if (transformType == VivecraftItemRendering.VivecraftItemTransformType.MAP) {
                 this.renderMap(poseStack, buffer, combinedLight, itemStack);
-            } else if (transformType == VivecraftItemRendering.VivecraftItemTransformType.Telescope) {
+            } else if (transformType == VivecraftItemRendering.VivecraftItemTransformType.TELESCOPE) {
                 if (dh.currentPass != RenderPass.SCOPEL && dh.currentPass != RenderPass.SCOPER) {
                     poseStack.pushPose();
 
@@ -322,6 +323,9 @@ public abstract class ItemInHandRendererVRMixin {
     }
 
     @Unique
+    private boolean vivecraft$didLogModelError = false;
+
+    @Unique
     private void vivecraft$vrPlayerArm(
         PoseStack poseStack, MultiBufferSource buffer, int combinedLight, float swingProgress, HumanoidArm side)
     {
@@ -333,6 +337,16 @@ public abstract class ItemInHandRendererVRMixin {
 
         VRArmRenderer vrArmRenderer = ((EntityRenderDispatcherVRExtension) this.entityRenderDispatcher).vivecraft$getArmSkinMap()
             .get(player.getSkin().model().id());
+
+        if (vrArmRenderer == null) {
+            if (!this.vivecraft$didLogModelError) {
+                VRSettings.LOGGER.error(
+                    "Vivecraft: Some mod broke player model reloading. Possible culprit 'Stfu' loaded: {}",
+                    Xloader.isModLoaded("stfu"));
+                this.vivecraft$didLogModelError = true;
+            }
+            return;
+        }
 
         poseStack.pushPose();
 
@@ -377,7 +391,7 @@ public abstract class ItemInHandRendererVRMixin {
         if (swingProgress == 0.0F) return;
 
         switch (ClientDataHolderVR.getInstance().swingType) {
-            case Attack -> {
+            case ATTACK -> {
                 float forwardRotation;
                 if (swingProgress > 0.5F) {
                     forwardRotation = Mth.sin(swingProgress * Mth.PI + Mth.PI);
@@ -389,7 +403,7 @@ public abstract class ItemInHandRendererVRMixin {
                 poseStack.mulPose(Axis.XP.rotationDegrees(forwardRotation * 30.0F));
                 poseStack.translate(0.0F, 0.0F, -0.2F);
             }
-            case Interact -> {
+            case INTERACT -> {
                 float sideRotation;
                 if (swingProgress > 0.5F) {
                     sideRotation = Mth.sin(swingProgress * Mth.PI + Mth.PI);
@@ -400,7 +414,7 @@ public abstract class ItemInHandRendererVRMixin {
                 poseStack.mulPose(
                     Axis.ZP.rotationDegrees((side == HumanoidArm.RIGHT ? -1F : 1F) * sideRotation * 45.0F));
             }
-            case Use -> {
+            case USE -> {
                 float forwardMovement;
                 if (swingProgress > 0.25F) {
                     forwardMovement = Mth.sin((swingProgress / 2.0F) * Mth.PI + Mth.PI);

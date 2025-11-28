@@ -100,11 +100,11 @@ public class VRShaders {
     public static final RenderPipeline SOLID_PANORAMA = RenderPipeline.builder(
             RenderPipelines.MATRICES_PROJECTION_SNIPPET)
         .withLocation("pipeline/panorama")
-        .withVertexShader("core/position_tex")
-        .withFragmentShader("core/position_tex")
+        .withVertexShader("core/panorama")
+        .withFragmentShader("core/panorama")
         .withSampler("Sampler0")
         .withDepthWrite(false)
-        .withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS).build();
+        .withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS).build();
 
     public static final RenderPipeline GUI_TEXTURED_ALWAYS = RenderPipeline.builder(
             RenderPipelines.GUI_TEXTURED_SNIPPET)
@@ -179,14 +179,14 @@ public class VRShaders {
         .withCull(false)
         .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).build();
 
-    public static final RenderPipeline DEBUG_TRIANGLES_ALWAYS = RenderPipeline.builder(
+    public static final RenderPipeline TRIANGLES_ALWAYS = RenderPipeline.builder(
             RenderPipelines.DEBUG_FILLED_SNIPPET)
         .withLocation("pipeline/debug_triangles_vr")
         .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLES)
         .withCull(false)
         .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).build();
 
-    public static final RenderPipeline DEBUG_TRIANGLE_FAN_ALWAYS = RenderPipeline.builder(
+    public static final RenderPipeline TRIANGLE_FAN_ALWAYS = RenderPipeline.builder(
             RenderPipelines.DEBUG_FILLED_SNIPPET)
         .withLocation("pipeline/debug_triangle_fan_vr")
         .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLE_FAN)
@@ -204,7 +204,7 @@ public class VRShaders {
 
     public static final Set<RenderPipeline> DEPTH_ALWAYS_PIPELINES = new HashSet<>(
         Set.of(CROSSHAIR_WORLD_ALWAYS, ENTITY_TRANSLUCENT_ALWAYS_NO_CARDINAL_LIGHT,
-            ENTITY_CUTOUT_NO_CULL_ALWAYS_NO_CARDINAL_LIGHT, QUADS_ALWAYS, DEBUG_TRIANGLES_ALWAYS));
+            ENTITY_CUTOUT_NO_CULL_ALWAYS_NO_CARDINAL_LIGHT, QUADS_ALWAYS, TRIANGLES_ALWAYS));
 
     private VRShaders() {}
 

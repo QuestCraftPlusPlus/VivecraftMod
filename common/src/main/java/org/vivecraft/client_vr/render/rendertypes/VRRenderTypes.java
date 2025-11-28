@@ -71,12 +71,6 @@ public class VRRenderTypes {
                 .build())
             .createCompositeState(false));
 
-    private static final Function<ResourceLocation, RenderType> CROSSHAIR_MENU = Util.memoize(
-        resourceLocation -> RenderType.create("crosshair_menu_vr", 1536, false, false,
-            VRShaders.CROSSHAIR_MENU, RenderType.CompositeState.builder()
-                .setTextureState(getTextureState(resourceLocation))
-                .createCompositeState(false)));
-
     private static final BiFunction<ResourceLocation, Boolean, RenderType> CROSSHAIR_WORLD = Util.memoize(
         (resourceLocation, depthAlways) -> RenderType.create("crosshair_world_vr", 1536, false, false,
             depthAlways ? VRShaders.CROSSHAIR_WORLD_ALWAYS : VRShaders.CROSSHAIR_WORLD,
@@ -87,20 +81,16 @@ public class VRRenderTypes {
                 .createCompositeState(false)));
 
     private static final RenderType QUADS = RenderType.create("quads_vr", 1536, false, false,
-        VRShaders.QUADS, RenderType.CompositeState.builder()
-            .createCompositeState(false));
+        VRShaders.QUADS, RenderType.CompositeState.builder().createCompositeState(false));
 
     private static final RenderType QUADS_ALWAYS = RenderType.create("quads_always_vr", 1536, false, false,
-        VRShaders.QUADS_ALWAYS, RenderType.CompositeState.builder()
-            .createCompositeState(false));
+        VRShaders.QUADS_ALWAYS, RenderType.CompositeState.builder().createCompositeState(false));
 
-    private static final RenderType DEBUG_TRIANGLES_ALWAYS = RenderType.create("debug_triangles_vr", 1536, false, false,
-        VRShaders.DEBUG_TRIANGLES_ALWAYS, RenderType.CompositeState.builder()
-            .createCompositeState(false));
+    private static final RenderType TRIANGLES_ALWAYS = RenderType.create("triangles_always_vr", 1536, false, false,
+        VRShaders.TRIANGLES_ALWAYS, RenderType.CompositeState.builder().createCompositeState(false));
 
-    private static final RenderType DEBUG_TRIANGLE_FAN_ALWAYS = RenderType.create("debug_triangle_fan_vr", 1536, false,
-        false, VRShaders.DEBUG_TRIANGLE_FAN_ALWAYS, RenderType.CompositeState.builder()
-            .createCompositeState(false));
+    private static final RenderType TRIANGLE_FAN_ALWAYS = RenderType.create("triangle_fan_always_vr", 1536, false,
+        false, VRShaders.TRIANGLE_FAN_ALWAYS, RenderType.CompositeState.builder().createCompositeState(false));
 
     private static final Function<ResourceLocation, RenderType> TEXT_NO_CULL = Util.memoize(
         resourceLocation -> RenderType.create("text_no_cull_vr", 1536, false, false,
@@ -123,24 +113,20 @@ public class VRRenderTypes {
         return new RenderStateShard.TextureStateShard(resourceLocation, false);
     }
 
-    public static RenderType crosshairMenu(ResourceLocation resourceLocation) {
-        return CROSSHAIR_MENU.apply(resourceLocation);
-    }
-
     public static RenderType crosshairWorld(ResourceLocation resourceLocation, boolean depthAlways) {
         return CROSSHAIR_WORLD.apply(resourceLocation, depthAlways);
     }
 
-    public static RenderType debugQuads(boolean depthAlways) {
+    public static RenderType quads(boolean depthAlways) {
         return depthAlways ? QUADS_ALWAYS : QUADS;
     }
 
-    public static RenderType debugTrianglesAlways() {
-        return DEBUG_TRIANGLES_ALWAYS;
+    public static RenderType trianglesAlways() {
+        return TRIANGLES_ALWAYS;
     }
 
-    public static RenderType debugTriangleFanAlways() {
-        return DEBUG_TRIANGLE_FAN_ALWAYS;
+    public static RenderType triangleFanAlways() {
+        return TRIANGLE_FAN_ALWAYS;
     }
 
     public static RenderType endGateWayVR() {

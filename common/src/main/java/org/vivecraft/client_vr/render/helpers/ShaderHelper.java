@@ -8,20 +8,20 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.extensions.GameRendererExtension;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.render.MirrorNotification;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.VRShaders;
 import org.vivecraft.client_vr.render.ubos.LanczosUBO;
 import org.vivecraft.client_vr.render.ubos.MixedRealityUBO;
@@ -30,6 +30,7 @@ import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.utils.MathUtils;
 import org.vivecraft.mod_compat_vr.iris.IrisHelper;
 
+import javax.annotation.Nullable;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -252,11 +253,15 @@ public class ShaderHelper {
      * draws the desktop mirror to the bound buffer
      */
     public static void drawMirror() {
-        if (DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.OFF &&
-            DATA_HOLDER.vr.isHMDTracking())
-        {
+        if (DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.OFF && DATA_HOLDER.vr.isHMDTracking()) {
             // no mirror, only show when headset is not tracking, to be able to see the menu with the headset off
-            MirrorNotification.notify("Mirror is OFF", true, 1000);
+            if (DATA_HOLDER.vrSettings.showMirrorOffText) {
+                MirrorNotification.notify(I18n.get("vivecraft.messages.mirroroff"), true, 1000);
+            } else {
+                // just clear it
+                RenderSystem.getDevice().createCommandEncoder()
+                    .clearColorTexture(MC.mainRenderTarget.getColorTexture(), 0xFF000000);
+            }
         } else if (DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.MIXED_REALITY) {
             ShaderHelper.doMixedRealityMirror();
         } else if (DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.DUAL &&
@@ -459,7 +464,7 @@ public class ShaderHelper {
             }
         }
 
-        BufferBuilder bufferbuilder = Tesselator.getInstance()
+        BufferBuilder bufferBuilder = Tesselator.getInstance()
             .begin(VertexFormat.Mode.QUADS, VRShaders.BLIT_VR_PIPELINE.getVertexFormat());
 
         // position quad
@@ -468,12 +473,12 @@ public class ShaderHelper {
         float xMaxPos = xMinPos + (float) width / MC.getMainRenderTarget().viewWidth * 2F;
         float yMaxPos = yMinPos + (float) height / MC.getMainRenderTarget().viewHeight * 2F;
 
-        bufferbuilder.addVertex(xMinPos, yMinPos, 0.0F).setUv(xMin, yMin);
-        bufferbuilder.addVertex(xMaxPos, yMinPos, 0.0F).setUv(xMax, yMin);
-        bufferbuilder.addVertex(xMaxPos, yMaxPos, 0.0F).setUv(xMax, yMax);
-        bufferbuilder.addVertex(xMinPos, yMaxPos, 0.0F).setUv(xMin, yMax);
+        bufferBuilder.addVertex(xMinPos, yMinPos, 0.0F).setUv(xMin, yMin);
+        bufferBuilder.addVertex(xMaxPos, yMinPos, 0.0F).setUv(xMax, yMin);
+        bufferBuilder.addVertex(xMaxPos, yMaxPos, 0.0F).setUv(xMax, yMax);
+        bufferBuilder.addVertex(xMinPos, yMaxPos, 0.0F).setUv(xMin, yMax);
 
-        try (MeshData meshData = bufferbuilder.buildOrThrow()) {
+        try (MeshData meshData = bufferBuilder.buildOrThrow()) {
             GpuBuffer gpuBuffer = VRShaders.BLIT_VR_PIPELINE.getVertexFormat()
                 .uploadImmediateVertexBuffer(meshData.vertexBuffer());
 

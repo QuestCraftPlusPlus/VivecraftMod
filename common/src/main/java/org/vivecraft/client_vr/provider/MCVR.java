@@ -13,11 +13,15 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.TorchBlock;
-import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.tuple.Triple;
 import org.joml.*;
 import org.lwjgl.glfw.GLFW;
+import org.vivecraft.api.client.data.CloseKeyboardContext;
+import org.vivecraft.api.client.data.RenderPass;
+import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.client.VivecraftVRMod;
+import org.vivecraft.client.network.ClientNetworking;
+import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client.utils.LangHelper;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.QuaternionfHistory;
@@ -34,7 +38,6 @@ import org.vivecraft.client_vr.provider.control.VRInputActionSet;
 import org.vivecraft.client_vr.provider.openxr.DeviceCompat;
 import org.vivecraft.client_vr.gameplay.trackers.ClimbTracker;
 import org.vivecraft.client_vr.render.RenderConfigException;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.settings.AutoCalibration;
 import org.vivecraft.client_vr.settings.VRHotkeys;
 import org.vivecraft.client_vr.settings.VRSettings;
@@ -123,12 +126,19 @@ public abstract class MCVR {
     public float seatedRot;
     public float aimPitch = 0.0F;
     //
-    public boolean hudPopup = true;
     protected int moveModeSwitchCount = 0;
     public boolean isWalkingAbout;
     protected boolean isFreeRotate;
     protected boolean isFlickStick;
     protected float flickStickRot;
+
+    // input movement states
+    public boolean isMovement;
+    private boolean wasMovement;
+    private boolean wasAutoSprinting;
+    // holds the actual movement input
+    public Vector2f movement = new Vector2f();
+
     protected ControllerType walkaboutController;
     protected ControllerType freeRotateController;
     protected float walkaboutYawStart;
@@ -197,6 +207,7 @@ public abstract class MCVR {
      */
     public void destroy() {
         this.oscTrackers.stop();
+        ME = null;
     }
 
     public void prerender() {}
@@ -211,6 +222,24 @@ public abstract class MCVR {
      */
     public void triggerHapticPulse(ControllerType controller, float durationSeconds, float frequency, float amplitude) {
         this.triggerHapticPulse(controller, durationSeconds, frequency, amplitude, 0.0F);
+    }
+
+    /**
+     * triggers a haptic pulse on the give BodyPart, if possible, after the specified delay
+     *
+     * @param bodyPart        BodyPart to trigger on
+     * @param durationSeconds duration in seconds
+     * @param frequency       frequency in Hz
+     * @param amplitude       strength 0.0 - 1.0
+     * @param delaySeconds    delay for when to trigger in seconds
+     */
+    public void triggerHapticPulse(
+        VRBodyPart bodyPart, float durationSeconds, float frequency, float amplitude, float delaySeconds)
+    {
+        // only hands right now
+        if (!bodyPart.isHand()) return;
+        this.triggerHapticPulse(bodyPart == VRBodyPart.MAIN_HAND ? ControllerType.RIGHT : ControllerType.LEFT,
+            durationSeconds, frequency, amplitude, delaySeconds);
     }
 
     /**
@@ -477,90 +506,6 @@ public abstract class MCVR {
     }
 
     /**
-     * processes the interactive hotbar
-     */
-    protected void processHotbar() {
-        int previousSlot = this.dh.interactTracker.hotbar;
-        this.dh.interactTracker.hotbar = -1;
-
-        if (this.mc.player == null) return;
-        // this shouldn't happen, it's final
-        if (this.mc.player.getInventory() == null) return;
-        if (this.dh.climbTracker.isGrabbingLadder() && ClimbTracker.isClaws(this.mc.player.getMainHandItem())) return;
-        if (!this.dh.interactTracker.isActive(this.mc.player)) return;
-        if (GuiHandler.GUI_POS_WORLD == Vec3.ZERO) return;
-
-        Vector3fc main = this.getAimSource(MAIN_CONTROLLER);
-
-        // TODO this is one frame behind, does it matter?
-
-        Vector3f tempV = new Vector3f();
-        VRData worldData = this.dh.vrPlayer.getVRDataWorld();
-        Vector3f guiPos = MathUtils.subtractToVector3f(GuiHandler.GUI_POS_WORLD, worldData.origin);
-
-        float scale =
-            GuiHandler.GUI_SCALE_APPLIED * (float) this.mc.getWindow().getGuiScale() / GuiHandler.GUI_SCALE_FACTOR_MAX;
-        // offset from center to the left of the hotbar
-        GuiHandler.GUI_OFFSET_WORLD.add(-0.32F * scale, -0.38F * GuiHandler.GUI_SCALE_APPLIED, 0, tempV);
-
-        Vector3f barStart = guiPos.add(GuiHandler.GUI_ROTATION_WORLD.transformDirection(tempV), new Vector3f());
-        Vector3f barEnd = barStart.add(
-            GuiHandler.GUI_ROTATION_WORLD.transformDirection(MathUtils.LEFT, tempV).mul(0.64F * scale), new Vector3f());
-
-        barStart.div(worldData.worldScale);
-        barEnd.div(worldData.worldScale);
-
-        barStart.rotateY(-worldData.rotation_radians);
-        barEnd.rotateY(-worldData.rotation_radians);
-
-        Vector3fc barLine = barStart.sub(barEnd, new Vector3f());
-        Vector3fc handToBar = barStart.sub(main, new Vector3f());
-
-        // check if the hand is close enough
-        float dist = handToBar.cross(barLine, new Vector3f()).length() / barLine.length();
-        if (dist > 0.06) return;
-
-        // check that the controller is to the right of the offhand slot, and how far it's to the right
-        float fact = handToBar.dot(barLine) / barLine.lengthSquared();
-        if (fact < -1) return;
-
-        // get the closest point from the hand to the hotbar
-        Vector3f point = barLine.mul(fact, new Vector3f()).sub(handToBar);
-        // subtract and store in point
-        main.sub(point, point);
-
-        float barSize = barLine.length();
-        float ilen = barStart.distance(point);
-        if (fact < 0) {
-            ilen *= -1;
-        }
-        float pos = ilen / barSize * 9;
-
-        // actual slot that is selected
-        int box = (int) Math.floor(pos);
-
-        if (box > 8) {
-            if (this.dh.vrSettings.reverseHands && pos >= 9.5 && pos <= 10.5) {
-                box = 9;
-            } else {
-                return;
-            }
-        } else if (box < 0) {
-            if (!this.dh.vrSettings.reverseHands && pos <= -0.5 && pos >= -1.5) {
-                box = 9;
-            } else {
-                return;
-            }
-        }
-
-        // all that maths for this.
-        this.dh.interactTracker.hotbar = box;
-        if (previousSlot != this.dh.interactTracker.hotbar) {
-            triggerHapticPulse(0, 750);
-        }
-    }
-
-    /**
      * searches a KeyMapping by name
      *
      * @param name name to search the KeyMapping for
@@ -809,7 +754,7 @@ public abstract class MCVR {
     }
 
     /**
-     * processes vr specific keys
+     * processes vr specific keys, processed on tick
      */
     public void processBindings() {
         // if (this.inputActions.isEmpty()) return;
@@ -820,23 +765,25 @@ public abstract class MCVR {
 
         // allow movement switching with long pressing pick block
         if (this.mc.options.keyPickItem.isDown() || toggleMovementPressed) {
-            if (++this.moveModeSwitchCount == 80 || toggleMovementPressed) {
+            if ((++this.moveModeSwitchCount == 80 || toggleMovementPressed) &&
+                ClientNetworking.SERVER_ALLOWS_DIRECT_TELEPORT)
+            {
                 if (this.dh.vrSettings.seated) {
                     this.dh.vrSettings.seatedFreeMove = !this.dh.vrSettings.seatedFreeMove;
-                    this.mc.gui.getChat().addMessage(Component.translatable("vivecraft.messages.movementmodeswitch",
+                    ClientUtils.addChatMessage(Component.translatable("vivecraft.messages.movementmodeswitch",
                         this.dh.vrSettings.seatedFreeMove ? Component.translatable("vivecraft.options.freemove") :
                             Component.translatable("vivecraft.options.teleport")));
                 } else if (this.dh.vrPlayer.isTeleportSupported()) {
                     this.dh.vrSettings.forceStandingFreeMove = !this.dh.vrSettings.forceStandingFreeMove;
-                    this.mc.gui.getChat().addMessage(Component.translatable("vivecraft.messages.movementmodeswitch",
+                    ClientUtils.addChatMessage(Component.translatable("vivecraft.messages.movementmodeswitch",
                         this.dh.vrSettings.seatedFreeMove ? Component.translatable("vivecraft.options.freemove") :
                             Component.translatable("vivecraft.options.teleport")));
                 } else if (this.dh.vrPlayer.isTeleportOverridden()) {
                     this.dh.vrPlayer.setTeleportOverride(false);
-                    this.mc.gui.getChat().addMessage(Component.translatable("vivecraft.messages.teleportdisabled"));
+                    ClientUtils.addChatMessage(Component.translatable("vivecraft.messages.teleportdisabled"));
                 } else {
                     this.dh.vrPlayer.setTeleportOverride(true);
-                    this.mc.gui.getChat().addMessage(Component.translatable("vivecraft.messages.teleportenabled"));
+                    ClientUtils.addChatMessage(Component.translatable("vivecraft.messages.teleportenabled"));
                 }
             }
         } else {
@@ -995,11 +942,11 @@ public abstract class MCVR {
             } else if (this.dh.vrSettings.displayMirrorMode == VRSettings.MirrorMode.FIRST_PERSON) {
                 this.dh.vrSettings.displayMirrorMode = VRSettings.MirrorMode.THIRD_PERSON;
             }
-            this.dh.vrRenderer.reinitWithoutShaders("Mirror Setting Changed");
+            this.dh.vrRenderer.reinitFrameBuffersMaybe("Mirror Setting Changed");
         }
 
         // start third person cam movement
-        if (MOD.keyMoveThirdPersonCam.consumeClick() && !ClientDataHolderVR.KIOSK && !this.dh.vrSettings.seated &&
+        if (MOD.keyMoveThirdPersonCam.consumeClick() && !this.dh.kiosk && !this.dh.vrSettings.seated &&
             (this.dh.vrSettings.displayMirrorMode == VRSettings.MirrorMode.MIXED_REALITY ||
                 this.dh.vrSettings.displayMirrorMode == VRSettings.MirrorMode.THIRD_PERSON
             ))
@@ -1029,7 +976,7 @@ public abstract class MCVR {
 
         // close keyboard with ESC
         if (KeyboardHandler.SHOWING && this.mc.screen == null && MOD.keyMenuButton.consumeClick()) {
-            KeyboardHandler.setOverlayShowing(false);
+            KeyboardHandler.hideOverlay(CloseKeyboardContext.FORCE);
         }
 
         // radial menu
@@ -1045,7 +992,7 @@ public abstract class MCVR {
         if (MOD.keyMenuButton.consumeClick()) {
             // handle menu directly
             if (!gui) {
-                if (!ClientDataHolderVR.KIOSK) {
+                if (!this.dh.kiosk) {
                     this.mc.pauseGame(false);
                 }
             } else {
@@ -1053,7 +1000,7 @@ public abstract class MCVR {
                 InputSimulator.releaseKey(GLFW.GLFW_KEY_ESCAPE);
             }
 
-            KeyboardHandler.setOverlayShowing(false);
+            KeyboardHandler.hideOverlay(CloseKeyboardContext.FORCE);
         }
 
         // player list
@@ -1101,14 +1048,104 @@ public abstract class MCVR {
         // Walk up blocks
         if (MOD.keyToggleWalkUpBlocks.consumeClick()) {
             this.dh.vrSettings.walkUpBlocks = !this.dh.vrSettings.walkUpBlocks;
-            this.mc.gui.getChat().addMessage(Component.translatable("vivecraft.messages.walkupblocks",
+            ClientUtils.addChatMessage(Component.translatable("vivecraft.messages.walkupblocks",
                 Component.translatable(this.dh.vrSettings.walkUpBlocks ? LangHelper.ON_KEY : LangHelper.OFF_KEY)));
         }
+
+        // process movement here, so we set the keybind states before tick
+        this.isMovement = false;
+        if (this.mc.player != null) {
+            boolean climbing = !this.mc.player.isInWater() && this.dh.climbTracker.isClimbeyClimb() &&
+                this.dh.climbTracker.isGrabbingLadder();
+            float forward = 0F;
+            if (!this.dh.vrSettings.seated && this.mc.screen == null && !KeyboardHandler.SHOWING && !climbing) {
+                // override everything
+                Vector2fc moveStrafe = this.getInputAction(VivecraftVRMod.INSTANCE.keyFreeMoveStrafe)
+                    .getAxis2DUseTracked();
+                Vector2fc moveRotate = this.getInputAction(VivecraftVRMod.INSTANCE.keyFreeMoveRotate)
+                    .getAxis2DUseTracked();
+                this.movement.zero();
+
+                if (moveStrafe.x() != 0.0F || moveStrafe.y() != 0.0F) {
+                    this.isMovement = true;
+                    this.movement.set(moveStrafe);
+                } else if (moveRotate.y() != 0.0F) {
+                    this.isMovement = true;
+                    this.movement.y = moveRotate.y();
+                    // use left/right key as fallback
+                    this.movement.x -= Math.abs(this.getInputAction(this.mc.options.keyRight).getAxis1DUseTracked());
+                    this.movement.x += Math.abs(this.getInputAction(this.mc.options.keyLeft).getAxis1DUseTracked());
+                } else if (this.dh.vrSettings.analogMovement) {
+                    // neither axis input active, use single key values
+                    this.movement.y = Math.abs(this.getInputAction(this.mc.options.keyUp).getAxis1DUseTracked());
+                    if (this.movement.y == 0.0F) {
+                        this.movement.y = Math.abs(
+                            this.getInputAction(VivecraftVRMod.INSTANCE.keyTeleportFallback).getAxis1DUseTracked());
+                    }
+
+                    this.movement.y -= Math.abs(this.getInputAction(this.mc.options.keyDown).getAxis1DUseTracked());
+
+                    this.movement.x -= Math.abs(this.getInputAction(this.mc.options.keyRight).getAxis1DUseTracked());
+                    this.movement.x += Math.abs(this.getInputAction(this.mc.options.keyLeft).getAxis1DUseTracked());
+
+                    float deadZone = 0.05F;
+                    this.movement.y = MathUtils.applyDeadzone(this.movement.y, deadZone);
+                    this.movement.x = MathUtils.applyDeadzone(this.movement.x, deadZone);
+
+                    this.isMovement = this.movement.x != 0.0F || this.movement.y != 0.0F;
+                }
+
+                forward = this.movement.y;
+
+                Vector2f digital = MathUtils.toDigital(this.movement, this.dh.vrSettings.digitalMovementDeadzone);
+
+                if (!this.dh.vrSettings.analogMovement) {
+                    this.movement = digital;
+                }
+
+                if (this.isMovement) {
+                    // just assuming all this below is needed for compatibility.
+                    this.getInputAction(this.mc.options.keyUp).setPressed(digital.y > 0);
+                    this.getInputAction(this.mc.options.keyDown).setPressed(digital.y < 0);
+                    this.getInputAction(this.mc.options.keyRight).setPressed(digital.x > 0);
+                    this.getInputAction(this.mc.options.keyLeft).setPressed(digital.x < 0);
+
+                    if (this.dh.vrSettings.autoSprint && !this.mc.player.isMovingSlowly()) {
+                        // Sprint only works for walk forwards obviously
+                        if (forward >= this.dh.vrSettings.autoSprintThreshold) {
+                            this.mc.player.setSprinting(true);
+                            this.wasAutoSprinting = true;
+                            this.movement.y = 1.0F;
+                        } else if (this.movement.y > 0.0F && this.dh.vrSettings.analogMovement) {
+                            // Adjust range so you can still reach full speed while not sprinting
+                            this.movement.y /= this.dh.vrSettings.autoSprintThreshold;
+                        }
+                    }
+                }
+            }
+
+            if (!this.isMovement && this.wasMovement) {
+                // stop movement when returning the stick to center
+                this.getInputAction(this.mc.options.keyUp).unpressBinding();
+                this.getInputAction(this.mc.options.keyDown).unpressBinding();
+                this.getInputAction(this.mc.options.keyLeft).unpressBinding();
+                this.getInputAction(this.mc.options.keyRight).unpressBinding();
+            }
+            this.wasMovement = this.isMovement;
+            if (this.wasAutoSprinting && forward < this.dh.vrSettings.autoSprintThreshold) {
+                // stop sprinting when below the threshold and sprinting was active
+                this.mc.player.setSprinting(false);
+                this.wasAutoSprinting = false;
+            }
+        }
+        // end movement
 
         GuiHandler.processBindingsGui();
         RadialHandler.processBindings();
         KeyboardHandler.processBindings();
-        this.dh.interactTracker.processBindings();
+        if (!this.mc.isPaused() && this.dh.interactTracker.isActive(this.mc.player)) {
+            this.dh.interactTracker.processBindings();
+        }
     }
 
     /**
@@ -1550,6 +1587,11 @@ public abstract class MCVR {
      * @return size of the play area or null if not available
      */
     public abstract Vector2fc getPlayAreaSize();
+
+    /**
+     * refetches the controller transforms, if possible
+     */
+    public abstract void refreshControllerTransforms();
 
     /**
      * @param controllerIndex index of the controller to get the transform for

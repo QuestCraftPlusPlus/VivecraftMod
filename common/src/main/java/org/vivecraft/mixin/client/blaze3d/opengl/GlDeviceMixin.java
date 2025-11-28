@@ -4,13 +4,13 @@ import com.mojang.blaze3d.GpuOutOfMemoryException;
 import com.mojang.blaze3d.opengl.*;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.TextureFormat;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL30C;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.vivecraft.client.extensions.GlDeviceExtension;
 
+import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 @Mixin(GlDevice.class)
@@ -24,7 +24,7 @@ public class GlDeviceMixin implements GlDeviceExtension {
      */
     @Override
     public GpuTexture vivecraft$createFixedIdTexture(
-        @Nullable Supplier<String> labelSup, int usageFlags, TextureFormat textureFormat, int width,
+        @Nullable Supplier<String> labelSupplier, int usageFlags, TextureFormat textureFormat, int width,
         int height, int depthLayers, int mipmapLevels, int texId)
     {
         if (mipmapLevels < 1) {
@@ -39,7 +39,7 @@ public class GlDeviceMixin implements GlDeviceExtension {
             }
 
             GlStateManager.clearGlErrors();
-            String label = this.debugLabels.exists() && labelSup != null ? labelSup.get() : null;
+            String label = this.debugLabels.exists() && labelSupplier != null ? labelSupplier.get() : null;
             if (label == null) {
                 label = String.valueOf(texId);
             }
