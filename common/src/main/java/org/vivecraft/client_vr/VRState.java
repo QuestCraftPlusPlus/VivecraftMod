@@ -82,7 +82,7 @@ public class VRState {
             // everything related to VR is created now
             VR_INITIALIZED = true;
 
-            dh.vrRenderer.setupRenderConfiguration(false); //For openXR, setup but don't render yet
+            dh.vrRenderer.setupRenderConfiguration(); //For openXR, setup but don't render yet
             RenderPassManager.setVanillaRenderPass();
 
             dh.vrPlayer = new VRPlayer();
