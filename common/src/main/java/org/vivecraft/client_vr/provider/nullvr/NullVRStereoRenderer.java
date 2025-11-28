@@ -2,15 +2,14 @@ package org.vivecraft.client_vr.provider.nullvr;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.provider.VRRenderer;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 
@@ -66,15 +65,13 @@ public class NullVRStereoRenderer extends VRRenderer {
         GlStateManager._bindTexture(i);
         this.lastError = RenderHelper.checkGLError("create VR textures");
 
-        this.framebufferEyeLeft = new VRTextureTarget("L Eye", width, height, false, this.LeftEyeTextureId, true, false,
-            false);
+        this.framebufferEyeLeft = VRTextureTarget.builder("L Eye").withSize(width, height).withTexId(this.LeftEyeTextureId).withLinearFilter().build();
 
         VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferEyeLeft);
 
         String leftError = RenderHelper.checkGLError("Left Eye framebuffer setup");
 
-        this.framebufferEyeRight = new VRTextureTarget("R Eye", width, height, false, this.RightEyeTextureId, true, false,
-            false);
+        this.framebufferEyeRight = VRTextureTarget.builder("R Eye").withSize(width, height).withTexId(this.RightEyeTextureId).withLinearFilter().build();
 
         VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferEyeRight);
 

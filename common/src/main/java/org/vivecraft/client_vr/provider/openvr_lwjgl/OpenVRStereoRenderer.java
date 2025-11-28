@@ -11,10 +11,10 @@ import org.lwjgl.openvr.HmdMatrix44;
 import org.lwjgl.openvr.VR;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.provider.VRRenderer;
 import org.vivecraft.client_vr.render.RenderConfigException;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 
@@ -125,16 +125,13 @@ public class OpenVRStereoRenderer extends VRRenderer {
         GlStateManager._bindTexture(boundTextureId);
         this.lastError = RenderHelper.checkGLError("create VR textures");
 
-        this.framebufferEyeLeft = new VRTextureTarget("L Eye", width, height, false, this.LeftEyeTextureId, true, false,
-            false);
+        this.framebufferEyeLeft = VRTextureTarget.builder("L Eye").withSize(width, height).withTexId(this.RightEyeTextureId).withLinearFilter().build();
 
         VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferEyeLeft);
 
         String leftError = RenderHelper.checkGLError("Left Eye framebuffer setup");
 
-        this.framebufferEyeRight = new VRTextureTarget("R Eye", width, height, false, this.RightEyeTextureId, true,
-            false,
-            false);
+        this.framebufferEyeRight = VRTextureTarget.builder("R Eye").withSize(width, height).withTexId(this.RightEyeTextureId).withLinearFilter().build();
 
         VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferEyeRight);
 

@@ -265,6 +265,7 @@ public class BowTracker implements ItemInUseTracker, DebugRenderTracker {
 
     @Override
     public void renderDebug() {
+        /*
         VRData world = this.dh.vrPlayer.getVRDataWorld();
         Vec3 cam = world.getEye(this.dh.currentPass).getPosition();
         int bowHand = this.dh.vrSettings.reverseShootingEye && ClientNetworking.supportsReversedBow() ? 0 : 1;
@@ -292,5 +293,6 @@ public class BowTracker implements ItemInUseTracker, DebugRenderTracker {
                 MathUtils.subtractToVector3f(arrowPose.getPosition(), cam)
                     .add(arrowPose.getDirection().mul(world.worldScale)));
         }
+         */
     }
 }

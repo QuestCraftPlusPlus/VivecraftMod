@@ -17,6 +17,7 @@ import org.lwjgl.opengl.GL31;
 import org.lwjgl.openxr.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client.VivecraftVRMod;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
@@ -27,7 +28,6 @@ import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.provider.VRRenderer;
 import org.vivecraft.client_vr.provider.control.VRInputAction;
 import org.vivecraft.client_vr.provider.control.VRInputActionSet;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.utils.MathUtils;
 
@@ -74,7 +74,8 @@ public class MCOpenXR extends MCVR {
     public boolean shouldRender = true;
     public long[] haptics = new long[2];
     public String systemName;
-
+    private boolean inputInitialized;
+    protected static final DeviceCompat device = DeviceCompat.detectDevice();
 
     public MCOpenXR(Minecraft mc, ClientDataHolderVR dh) {
         super(mc, dh, VivecraftVRMod.INSTANCE);
@@ -86,6 +87,11 @@ public class MCOpenXR extends MCVR {
     @Override
     public String getName() {
         return "OpenXR";
+    }
+
+    @Override
+    public void processInputs() {
+
     }
 
     @Override
@@ -165,20 +171,6 @@ public class MCOpenXR extends MCVR {
     @Override
     public void poll(long frameIndex) {
         if (this.initialized) {
-
-            if (!this.dh.vrSettings.seated) {
-                Profiler.get().push("controllers");
-                Profiler.get().push("gui");
-
-                if (this.mc.screen == null && this.dh.vrSettings.vrTouchHotbar) {
-
-                    if (this.dh.vrSettings.vrHudLockMode != VRSettings.HUDLock.HEAD && this.hudPopup) {
-                        this.processHotbar();
-                    }
-                }
-
-                Profiler.get().pop();
-            }
             Profiler.get().popPush("updatePose/Vsync");
             this.updatePose();
             Profiler.get().popPush("processInputs");
@@ -583,6 +575,11 @@ public class MCOpenXR extends MCVR {
             logError(error, "xrGetReferenceSpaceBoundsRect", "");
             return new Vector2f(vec.width(), vec.height());
         }
+    }
+
+    @Override
+    public void refreshControllerTransforms() {
+
     }
 
     @Override
