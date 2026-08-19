@@ -76,6 +76,11 @@ public class MCOpenXR extends MCVR {
     public String systemName;
     private boolean inputInitialized;
     protected static final DeviceCompat device = DeviceCompat.detectDevice();
+    /** how long the render thread idles per frame while the OpenXR session isn't running */
+    private static final long INACTIVE_SESSION_SLEEP_MS = 50L;
+    /** minimum gap between two identical error messages, to stop a failing call flooding the log */
+    private static final long ERROR_LOG_INTERVAL_MS = 1000L;
+    private final Map<String, long[]> errorLogState = new HashMap<>();
 
     public MCOpenXR(Minecraft mc, ClientDataHolderVR dh) {
         super(mc, dh, VivecraftVRMod.INSTANCE);
@@ -183,6 +188,19 @@ public class MCOpenXR extends MCVR {
 
     private void updatePose() {
         if (this.mc == null) {
+            return;
+        }
+
+        // While the session isn't running (headset taken off, app sent to the background) xrWaitFrame
+        // returns immediately with an error instead of pacing us to the display rate, so every call
+        // below fails too and the render thread free-runs, logging thousands of errors a second.
+        // Idle here until the session comes back rather than spinning on a dead session.
+        if (!this.isActive) {
+            try {
+                Thread.sleep(INACTIVE_SESSION_SLEEP_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             return;
         }
 
@@ -1343,7 +1361,28 @@ public class MCOpenXR extends MCVR {
      */
     protected void logError(int xrResult, String caller, String... args) {
         if (xrResult < 0) {
-            VRSettings.LOGGER.error("{} for {} errored: {}", caller, String.join(" ", args), getResultName(xrResult));
+            String target = String.join(" ", args);
+            // A call that fails once usually fails every frame, so rate limit per call site and
+            // result, and report how many were dropped once it recovers.
+            String key = caller + '\0' + target + '\0' + xrResult;
+            long now = System.currentTimeMillis();
+            long[] state = this.errorLogState.computeIfAbsent(key, k -> new long[]{Long.MIN_VALUE, 0L});
+
+            if (now - state[0] < ERROR_LOG_INTERVAL_MS) {
+                state[1]++;
+                return;
+            }
+
+            long suppressed = state[1];
+            state[0] = now;
+            state[1] = 0L;
+
+            if (suppressed > 0) {
+                VRSettings.LOGGER.error("{} for {} errored: {} ({} identical errors suppressed)", caller, target,
+                    getResultName(xrResult), suppressed);
+            } else {
+                VRSettings.LOGGER.error("{} for {} errored: {}", caller, target, getResultName(xrResult));
+            }
         }
     }
 }

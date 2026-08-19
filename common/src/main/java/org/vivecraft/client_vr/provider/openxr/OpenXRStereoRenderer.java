@@ -134,6 +134,12 @@ public class OpenXRStereoRenderer extends VRRenderer {
 
     @Override
     public void endFrame() throws RenderConfigException {
+        // No frame was begun while the session is stopped, so releasing images and submitting a
+        // composition layer would only fail with XR_ERROR_SESSION_NOT_RUNNING. See MCOpenXR#updatePose.
+        if (!this.openxr.isActive()) {
+            return;
+        }
+
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer layers = stack.callocPointer(1);
             int error;
