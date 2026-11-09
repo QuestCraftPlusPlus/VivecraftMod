@@ -24,6 +24,7 @@ import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client.utils.StencilHelper;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRTextureTarget;
+import org.vivecraft.client_vr.extensions.GameRendererExtension;
 import org.vivecraft.client_vr.extensions.WindowExtension;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
@@ -50,6 +51,7 @@ import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 public abstract class VRRenderer {
+
     // projection matrices
     public Matrix4f[] eyeProj = new Matrix4f[2];
     protected float lastFarClip = 0F;
@@ -112,7 +114,7 @@ public abstract class VRRenderer {
      * @param width  width of the texture
      * @param height height of the texture
      */
-    public abstract void createRenderTexture(int width, int height);
+    public abstract void createRenderTexture(int width, int height) throws RenderConfigException;
 
     /**
      * gets the cached projection matrix if the farClip distance matches with the last, else gets a new one from the VR runtime
@@ -156,6 +158,15 @@ public abstract class VRRenderer {
      */
     public abstract boolean providesStencilMask();
 
+    /**
+     * @return the left eye rendertarget
+     */
+    public abstract RenderTarget getLeftEyeTarget();
+
+    /**
+     * @return the right eye rendertarget
+     */
+    public abstract RenderTarget getRightEyeTarget();
     /**
      * gets an array with the vertex info of the stencil mesh, if there is one provided by this renderer
      *
@@ -574,7 +585,7 @@ public abstract class VRRenderer {
      * @throws RenderConfigException in case something failed to initialize or the gpu vendor is unsupported
      * @throws IOException           can be thrown by the WorldRenderPass init when trying to load the shaders
      */
-    public void setupRenderConfiguration() throws RenderConfigException, IOException {
+    public void setupRenderConfiguration(boolean render) throws RenderConfigException, IOException {
         Minecraft minecraft = Minecraft.getInstance();
         ClientDataHolderVR dataholder = ClientDataHolderVR.getInstance();
 
@@ -674,6 +685,10 @@ public abstract class VRRenderer {
 
             this.resizeFrameBuffers = false;
         }
+
+        //for OPENXR, it needs to reinit
+        this.eyeProj[0] = this.getProjectionMatrix(0, ((GameRendererExtension) minecraft.gameRenderer).vivecraft$getMinClipDistance(), lastFarClip);
+        this.eyeProj[1] = this.getProjectionMatrix(1, ((GameRendererExtension) minecraft.gameRenderer).vivecraft$getMinClipDistance(), lastFarClip);
 
         if (this.reinitFrameBuffers) {
             GraphicsHelper.INSTANCE.checkError("Start Init");

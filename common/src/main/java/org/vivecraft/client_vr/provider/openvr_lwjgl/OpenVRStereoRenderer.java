@@ -1,5 +1,6 @@
 package org.vivecraft.client_vr.provider.openvr_lwjgl;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import net.minecraft.network.chat.Component;
 import org.joml.Matrix4f;
@@ -11,9 +12,10 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
 import org.vivecraft.client_vr.ClientDataHolderVR;
-import org.vivecraft.client_vr.provider.MCVR;
+import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.provider.VRRenderer;
 import org.vivecraft.client_vr.render.RenderConfigException;
+import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.graphics.GraphicsHelper;
 import org.vivecraft.client_vr.render.helpers.graphics.OpenGLHelper;
 import org.vivecraft.client_vr.render.helpers.graphics.VulkanHelper;
@@ -28,16 +30,19 @@ import static org.lwjgl.openvr.VRSystem.*;
 public class OpenVRStereoRenderer extends VRRenderer {
     private final HiddenAreaMesh[] hiddenMeshes = new HiddenAreaMesh[2];
     private final MCOpenVR openvr;
+    protected int LeftEyeTextureId = -1;
+    protected int RightEyeTextureId = -1;
+    public RenderTarget framebufferEye0;
+    public RenderTarget framebufferEye1;
 
     private final VRVulkanTextureData[] vkEyeData = new VRVulkanTextureData[2];
 
-    public OpenVRStereoRenderer(MCVR vr) {
+    public OpenVRStereoRenderer(MCOpenVR vr) {
         super(vr);
-        this.openvr = (MCOpenVR) vr;
+        this.openvr = vr;
 
-        // allocate meshes, they are freed in destroy()
-        this.hiddenMeshes[0] = HiddenAreaMesh.calloc();
-        this.hiddenMeshes[1] = HiddenAreaMesh.calloc();
+        hiddenMeshes[0] = HiddenAreaMesh.calloc();
+        hiddenMeshes[1] = HiddenAreaMesh.calloc();
 
         if (GraphicsHelper.INSTANCE instanceof VulkanHelper) {
             this.vkEyeData[0] = VRVulkanTextureData.calloc();
@@ -125,7 +130,7 @@ public class OpenVRStereoRenderer extends VRRenderer {
     }
 
     @Override
-    public void createRenderTexture(int width, int height) {
+    public void createRenderTexture(int width, int height) throws RenderConfigException {
         // generate eye textures
         for (int i = 0; i < 2; i++) {
             int prevTexture = GlStateManager._getInteger(GL11.GL_TEXTURE_BINDING_2D);
@@ -237,6 +242,23 @@ public class OpenVRStereoRenderer extends VRRenderer {
     }
 
     @Override
+    public RenderTarget getLeftEyeTarget() {
+        return framebufferEye0;
+    }
+
+    @Override
+    public RenderTarget getRightEyeTarget() {
+        return framebufferEye1;
+    }
+
+    public float[] getStencilMask(RenderPass eye) {
+        if (this.hiddenMeshVertices != null && (eye == RenderPass.LEFT || eye == RenderPass.RIGHT)) {
+            return eye == RenderPass.LEFT ? this.hiddenMeshVertices[0] : this.hiddenMeshVertices[1];
+        } else {
+            return null;
+        }
+    }
+
     public String getName() {
         return "OpenVR";
     }
@@ -244,6 +266,15 @@ public class OpenVRStereoRenderer extends VRRenderer {
     @Override
     protected void destroyBuffers() {
         super.destroyBuffers();
+            if (this.framebufferEye0 != null) {
+                this.framebufferEye0.destroyBuffers();
+                this.framebufferEye0 = null;
+            }
+
+            if (this.framebufferEye1 != null) {
+                this.framebufferEye1.destroyBuffers();
+                this.framebufferEye1 = null;
+            }
         if (this.eyeTextureId[0] > -1) {
             GlStateManager._deleteTexture(this.eyeTextureId[0]);
             this.eyeTextureId[0] = -1;

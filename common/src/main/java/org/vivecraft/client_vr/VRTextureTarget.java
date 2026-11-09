@@ -2,6 +2,7 @@ package org.vivecraft.client_vr;
 
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.TextureFormat;
@@ -9,6 +10,7 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
+import org.lwjgl.opengl.GL30;
 import org.vivecraft.Xplat;
 import org.vivecraft.client.extensions.GlDeviceExtension;
 import org.vivecraft.client.extensions.RenderTargetExtension;

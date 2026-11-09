@@ -31,8 +31,9 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.RadialHandler;
 import org.vivecraft.client_vr.provider.*;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.control.TrackpadSwipeSampler;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.control.VRInputActionSet;
+import org.vivecraft.client_vr.provider.control.TrackpadSwipeSampler;
+import org.vivecraft.client_vr.provider.control.VRInputAction;
+import org.vivecraft.client_vr.provider.control.VRInputActionSet;
 import org.vivecraft.client_vr.render.RenderConfigException;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_vr.utils.external.jinfinadeck;
@@ -1614,6 +1615,10 @@ public class MCOpenVR extends MCVR {
             this.hmdPose.m31(1.62F);
         }
 
+        // ret the complete room eye transforms
+        this.hmdPose.mul(this.hmdPoseLeftEye, this.hmdPoseLeftEye);
+        this.hmdPose.mul(this.hmdPoseRightEye, this.hmdPoseRightEye);
+
         // Gotta do this here so we can get the poses
         if (this.inputInitialized) {
             Profiler.get().push("updateActionState");
@@ -1697,11 +1702,8 @@ public class MCOpenVR extends MCVR {
         }
     }
 
-    /**
-     * @param inputValueHandle inputHandle to check
-     * @return what controller the inputHandle is on, {@code null} if the handle or device is invalid
-     */
-    protected ControllerType getOriginControllerType(long inputValueHandle) {
+    @Override
+    public ControllerType getOriginControllerType(long inputValueHandle) {
         if (inputValueHandle != k_ulInvalidInputValueHandle) {
             this.readOriginInfo(inputValueHandle);
 

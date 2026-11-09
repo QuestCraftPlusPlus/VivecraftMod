@@ -1,5 +1,6 @@
 package org.vivecraft.client_vr.provider.nullvr;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
@@ -9,6 +10,8 @@ import org.lwjgl.opengl.GL11;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.provider.VRRenderer;
+import org.vivecraft.client_vr.render.RenderConfigException;
+import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.graphics.GraphicsHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 
@@ -54,7 +57,7 @@ public class NullVRStereoRenderer extends VRRenderer {
     }
 
     @Override
-    public void createRenderTexture(int lwidth, int lheight) {
+    public void createRenderTexture(int lwidth, int lheight) throws RenderConfigException {
         // generate eye textures
         for (int i = 0; i < 2; i++) {
             int prevTexture = GlStateManager._getInteger(GL11.GL_TEXTURE_BINDING_2D);
@@ -88,6 +91,22 @@ public class NullVRStereoRenderer extends VRRenderer {
     }
 
     @Override
+    public RenderTarget getLeftEyeTarget() {
+        return framebufferEye0;
+    }
+
+    @Override
+    public RenderTarget getRightEyeTarget() {
+        return framebufferEye1;
+    }
+
+
+    @Override
+    public float[] getStencilMask(RenderPass eye) {
+        return null;
+    }
+
+    @Override
     public String getName() {
         return "NullVR";
     }
@@ -95,6 +114,17 @@ public class NullVRStereoRenderer extends VRRenderer {
     @Override
     protected void destroyBuffers() {
         super.destroyBuffers();
+
+        if (this.framebufferEye0 != null) {
+            this.framebufferEye0.destroyBuffers();
+            this.framebufferEye0 = null;
+        }
+
+        if (this.framebufferEye1 != null) {
+            this.framebufferEye1.destroyBuffers();
+            this.framebufferEye1 = null;
+        }
+
         if (this.eyeTextureId[0] > -1) {
             GlStateManager._deleteTexture(this.eyeTextureId[0]);
             this.eyeTextureId[0] = -1;

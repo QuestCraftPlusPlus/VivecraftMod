@@ -14,10 +14,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.vivecraft.client.VivecraftVRMod;
+import org.vivecraft.client_vr.provider.control.VRInputAction;
+import org.vivecraft.common.utils.MathUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRState;
-import org.vivecraft.client_vr.provider.MCVR;
-import org.vivecraft.mod_compat_vr.create.CreateHelper;
+import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 
 @Mixin(KeyboardInput.class)
 public class KeyboardInputVRMixin extends ClientInput {
