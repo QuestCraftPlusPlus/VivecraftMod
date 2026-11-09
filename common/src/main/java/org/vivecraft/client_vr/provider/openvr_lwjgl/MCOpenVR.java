@@ -1144,6 +1144,7 @@ public class MCOpenVR extends MCVR {
                 this.actionSetHandles.put(actionSet, longRef.get(0));
             }
 
+            /*
             this.deviceHandle[RIGHT_CONTROLLER] = this.getInputSourceHandle(k_pchPathUserHandRight);
             this.deviceHandle[LEFT_CONTROLLER] = this.getInputSourceHandle(k_pchPathUserHandLeft);
             this.deviceHandle[CAMERA_TRACKER] = this.getInputSourceHandle(k_pchPathUserCamera);
@@ -1154,6 +1155,7 @@ public class MCOpenVR extends MCVR {
             this.deviceHandle[LEFT_ELBOW_TRACKER] = this.getInputSourceHandle(k_pchPathUserElbowLeft);
             this.deviceHandle[RIGHT_KNEE_TRACKER] = this.getInputSourceHandle(k_pchPathUserKneeRight);
             this.deviceHandle[LEFT_KNEE_TRACKER] = this.getInputSourceHandle(k_pchPathUserKneeLeft);
+             */
         }
     }
 

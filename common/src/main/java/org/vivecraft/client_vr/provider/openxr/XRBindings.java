@@ -12,10 +12,6 @@ public class XRBindings {
         if (MCOpenXR.get().session.getCapabilities().XR_HTC_vive_cosmos_controller_interaction) {
             set.add("/interaction_profiles/htc/vive_cosmos_controller");
         }
-        if (MCOpenXR.get().session.getCapabilities().XR_BD_controller_interaction) {
-            set.add("/interaction_profiles/bytedance/pico4_controller");
-            set.add("/interaction_profiles/bytedance/pico_neo3_controller");
-        }
         set.add("/interaction_profiles/oculus/touch_controller");
         set.add("/interaction_profiles/htc/vive_controller");
         return set;

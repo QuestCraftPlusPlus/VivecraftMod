@@ -664,9 +664,6 @@ public class MCOpenXR extends MCVR {
                 if (extensionName.equals(FBDisplayRefreshRate.XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME)) {
                     extensions.put(memAddress(stackUTF8(FBDisplayRefreshRate.XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME)));
                 }
-                if (extensionName.equals(BDControllerInteraction.XR_BD_CONTROLLER_INTERACTION_EXTENSION_NAME)) {
-                    extensions.put(memAddress(stackUTF8(BDControllerInteraction.XR_BD_CONTROLLER_INTERACTION_EXTENSION_NAME)));
-                }
             }
 
             if (missingGraphics) {
