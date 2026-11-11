@@ -242,7 +242,7 @@ public class VRSettings {
     public int version = UNKNOWN_VERSION;
 
     @SettingField(VrOptions.VR_PLUGIN)
-    public VRProvider stereoProviderPluginID = VRProvider.OPENVR;
+    public VRProvider stereoProviderPluginID = VRProvider.OPENXR;
     public boolean storeDebugAim = false;
     @SettingField
     public int smoothRunTickCount = 20;
@@ -688,7 +688,7 @@ public class VRSettings {
     @SettingField(VrOptions.CHAT_MESSAGE_STENCIL)
     public boolean showChatMessageStencil = true;
     @SettingField(value = VrOptions.VR_ENABLED, config = "vrEnabled")
-    public boolean vrEnabled = false;
+    public boolean vrEnabled = true;
     @SettingField(VrOptions.VR_CLOSE_WITH_RUNTIME)
     public boolean closeWithRuntime = true;
     @SettingField(VrOptions.VR_REMEMBER_ENABLED)
@@ -2224,7 +2224,7 @@ public class VRSettings {
             @Override
             String getDisplayString(String prefix, Object value) {
                 if (VRState.VR_INITIALIZED) {
-                    RenderTarget eye0 = ClientDataHolderVR.getInstance().vrRenderer.framebufferEye[0];
+                    RenderTarget eye0 = ClientDataHolderVR.getInstance().vrRenderer.getLeftEyeTarget();
                     return prefix + Math.round((float) value * 100) + "% (" +
                         (int) Math.ceil(eye0.width * Math.sqrt((float) value)) + "x" +
                         (int) Math.ceil(eye0.height * Math.sqrt((float) value)) + ")";

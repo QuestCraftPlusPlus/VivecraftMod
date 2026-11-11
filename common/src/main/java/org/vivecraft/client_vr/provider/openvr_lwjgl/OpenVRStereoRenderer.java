@@ -11,11 +11,11 @@ import org.lwjgl.openvr.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.provider.VRRenderer;
 import org.vivecraft.client_vr.render.RenderConfigException;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.graphics.GraphicsHelper;
 import org.vivecraft.client_vr.render.helpers.graphics.OpenGLHelper;
 import org.vivecraft.client_vr.render.helpers.graphics.VulkanHelper;
@@ -32,8 +32,8 @@ public class OpenVRStereoRenderer extends VRRenderer {
     private final MCOpenVR openvr;
     protected int LeftEyeTextureId = -1;
     protected int RightEyeTextureId = -1;
-    public RenderTarget framebufferEye0;
-    public RenderTarget framebufferEye1;
+    public VRTextureTarget framebufferEye0;
+    public VRTextureTarget framebufferEye1;
 
     private final VRVulkanTextureData[] vkEyeData = new VRVulkanTextureData[2];
 
@@ -180,15 +180,21 @@ public class OpenVRStereoRenderer extends VRRenderer {
         // populate vk objects
         if (GraphicsHelper.INSTANCE instanceof VulkanHelper vkHelper) {
             for (int i = 0; i < 2; i++) {
+                VRTextureTarget framebufferEye;
+                if(i == 0)
+                    framebufferEye = this.getLeftEyeTarget();
+                else
+                    framebufferEye = this.getRightEyeTarget();
+
                 this.vkEyeData[i].m_nImage(
-                    GraphicsHelper.INSTANCE.getTextureHandle(this.framebufferEye[i].getColorTexture()));
+                    GraphicsHelper.INSTANCE.getTextureHandle(framebufferEye.getColorTexture()));
                 this.vkEyeData[i].m_pDevice(vkHelper.getDevicePointer());
                 this.vkEyeData[i].m_pPhysicalDevice(vkHelper.getPhysicalDevicePointer());
                 this.vkEyeData[i].m_pInstance(vkHelper.getInstancePointer());
                 this.vkEyeData[i].m_pQueue(vkHelper.getQueuePointer());
                 this.vkEyeData[i].m_nQueueFamilyIndex(vkHelper.getQueueFamilyIndex());
-                this.vkEyeData[i].m_nWidth(this.framebufferEye[i].width);
-                this.vkEyeData[i].m_nHeight(this.framebufferEye[i].height);
+                this.vkEyeData[i].m_nWidth(framebufferEye.width);
+                this.vkEyeData[i].m_nHeight(framebufferEye.height);
                 this.vkEyeData[i].m_nFormat(VK10.VK_FORMAT_R8G8B8_UNORM);
                 // hardcoded, maybe mixin to store per target?
                 this.vkEyeData[i].m_nSampleCount(1);
@@ -242,12 +248,12 @@ public class OpenVRStereoRenderer extends VRRenderer {
     }
 
     @Override
-    public RenderTarget getLeftEyeTarget() {
+    public VRTextureTarget getLeftEyeTarget() {
         return framebufferEye0;
     }
 
     @Override
-    public RenderTarget getRightEyeTarget() {
+    public VRTextureTarget getRightEyeTarget() {
         return framebufferEye1;
     }
 
@@ -266,23 +272,14 @@ public class OpenVRStereoRenderer extends VRRenderer {
     @Override
     protected void destroyBuffers() {
         super.destroyBuffers();
-            if (this.framebufferEye0 != null) {
-                this.framebufferEye0.destroyBuffers();
-                this.framebufferEye0 = null;
-            }
-
-            if (this.framebufferEye1 != null) {
-                this.framebufferEye1.destroyBuffers();
-                this.framebufferEye1 = null;
-            }
-        if (this.eyeTextureId[0] > -1) {
-            GlStateManager._deleteTexture(this.eyeTextureId[0]);
-            this.eyeTextureId[0] = -1;
+        if (this.LeftEyeTextureId > -1) {
+            GlStateManager._deleteTexture(this.LeftEyeTextureId);
+            this.LeftEyeTextureId = -1;
         }
 
-        if (this.eyeTextureId[1] > -1) {
-            GlStateManager._deleteTexture(this.eyeTextureId[1]);
-            this.eyeTextureId[1] = -1;
+        if (this.RightEyeTextureId > -1) {
+            GlStateManager._deleteTexture(this.RightEyeTextureId);
+            this.RightEyeTextureId = -1;
         }
     }
 

@@ -8,6 +8,7 @@ import net.minecraft.util.profiling.Profiler;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
+import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.RadialHandler;
 import org.vivecraft.client_vr.render.RenderConfigException;
@@ -70,8 +71,14 @@ public class VRPassHelper {
             }
 
             // do post-processing
+            VRTextureTarget framebufferEye;
+            if(eye == RenderPass.LEFT)
+                framebufferEye = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
+            else
+                framebufferEye = DATA_HOLDER.vrRenderer.getRightEyeTarget();
+
             ShaderHelper.doVrPostProcess(eye, rendertarget,
-                DATA_HOLDER.vrRenderer.framebufferEye[eye == RenderPass.LEFT ? 0 : 1],
+                framebufferEye,
                 deltaTracker.getGameTimeDeltaPartialTick(false));
 
             GraphicsHelper.INSTANCE.checkError("post overlay" + eye);

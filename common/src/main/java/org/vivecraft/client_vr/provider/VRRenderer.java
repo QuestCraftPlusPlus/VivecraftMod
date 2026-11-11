@@ -56,9 +56,7 @@ public abstract class VRRenderer {
     public Matrix4f[] eyeProj = new Matrix4f[2];
     protected float lastFarClip = 0F;
 
-    // render buffers
-    public final VRTextureTarget[] framebufferEye = new VRTextureTarget[2];
-    public final int[] eyeTextureId = {-1, -1};
+    public final int[] eyeTextureId = new int[] { -1, -1 };
     public RenderTarget framebufferMR;
     public RenderTarget framebufferUndistorted;
     public RenderTarget framebufferVrRender;
@@ -161,12 +159,12 @@ public abstract class VRRenderer {
     /**
      * @return the left eye rendertarget
      */
-    public abstract RenderTarget getLeftEyeTarget();
+    public abstract VRTextureTarget getLeftEyeTarget();
 
     /**
      * @return the right eye rendertarget
      */
-    public abstract RenderTarget getRightEyeTarget();
+    public abstract VRTextureTarget getRightEyeTarget();
     /**
      * gets an array with the vertex info of the stencil mesh, if there is one provided by this renderer
      *
@@ -721,24 +719,6 @@ public abstract class VRRenderer {
 
             GraphicsHelper.INSTANCE.checkError("Render Texture setup");
 
-            if (this.framebufferEye[0] == null) {
-                this.framebufferEye[0] = VRTextureTarget.builder("L Eye")
-                    .withSize(eyew, eyeh)
-                    .withTexId(this.eyeTextureId[0])
-                    .build();
-                VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferEye[0]);
-                GraphicsHelper.INSTANCE.checkError("Left Eye framebuffer setup");
-            }
-
-            if (this.framebufferEye[1] == null) {
-                this.framebufferEye[1] = VRTextureTarget.builder("R Eye")
-                    .withSize(eyew, eyeh)
-                    .withTexId(this.eyeTextureId[1])
-                    .build();
-                VRSettings.LOGGER.info("Vivecraft: {}", this.framebufferEye[1]);
-                GraphicsHelper.INSTANCE.checkError("Right Eye framebuffer setup");
-            }
-
             float resolutionScale =
                 ResolutionControlHelper.isLoaded() ? ResolutionControlHelper.getCurrentScaleFactor() : 1.0F;
 
@@ -1061,11 +1041,7 @@ public abstract class VRRenderer {
         }
 
         for (int i = 0; i < 2; i++) {
-            if (this.framebufferEye[i] != null) {
-                this.framebufferEye[i].destroyBuffers();
-                this.framebufferEye[i] = null;
-                this.eyeTextureId[i] = -1;
-            }
+            this.eyeTextureId[i] = -1;
         }
 
         if (this.mirrorFramebuffer != null) {

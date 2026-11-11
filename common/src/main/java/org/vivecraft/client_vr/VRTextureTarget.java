@@ -2,7 +2,6 @@ package org.vivecraft.client_vr;
 
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.TextureFormat;
@@ -26,11 +25,14 @@ public class VRTextureTarget extends RenderTarget {
     @Nullable
     private final Vector4fc clearColor;
 
+    private final int texId;
+
     private VRTextureTarget(
         String name, int width, int height, boolean useDepth, int texId, boolean mipmaps, boolean useStencil,
         @Nullable Vector4fc clearColor)
     {
         super(name, useDepth);
+        this.texId = texId;
         RenderSystem.assertOnRenderThread();
         ((RenderTargetExtension) this).vivecraft$setMipmaps(mipmaps);
         this.clearColor = clearColor;
@@ -80,6 +82,10 @@ public class VRTextureTarget extends RenderTarget {
             // generate mipmaps so they are initialized
             GraphicsHelper.INSTANCE.genMipmaps(this.colorTexture);
         }
+    }
+
+    public int getTextureId() {
+        return texId;
     }
 
     @Override

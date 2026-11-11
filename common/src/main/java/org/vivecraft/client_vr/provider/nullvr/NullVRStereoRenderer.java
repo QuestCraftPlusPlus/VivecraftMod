@@ -8,15 +8,18 @@ import org.joml.Vector2i;
 import org.joml.Vector2ic;
 import org.lwjgl.opengl.GL11;
 import org.vivecraft.client_vr.ClientDataHolderVR;
+import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.provider.VRRenderer;
 import org.vivecraft.client_vr.render.RenderConfigException;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.helpers.graphics.GraphicsHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 
 public class NullVRStereoRenderer extends VRRenderer {
-
+    protected int LeftEyeTextureId = -1;
+    protected int RightEyeTextureId = -1;
+    public VRTextureTarget framebufferEye0;
+    public VRTextureTarget framebufferEye1;
     private float lastFov = -1;
     private float lastAngle = -1;
 
@@ -91,19 +94,13 @@ public class NullVRStereoRenderer extends VRRenderer {
     }
 
     @Override
-    public RenderTarget getLeftEyeTarget() {
+    public VRTextureTarget getLeftEyeTarget() {
         return framebufferEye0;
     }
 
     @Override
-    public RenderTarget getRightEyeTarget() {
+    public VRTextureTarget getRightEyeTarget() {
         return framebufferEye1;
-    }
-
-
-    @Override
-    public float[] getStencilMask(RenderPass eye) {
-        return null;
     }
 
     @Override
@@ -123,16 +120,6 @@ public class NullVRStereoRenderer extends VRRenderer {
         if (this.framebufferEye1 != null) {
             this.framebufferEye1.destroyBuffers();
             this.framebufferEye1 = null;
-        }
-
-        if (this.eyeTextureId[0] > -1) {
-            GlStateManager._deleteTexture(this.eyeTextureId[0]);
-            this.eyeTextureId[0] = -1;
-        }
-
-        if (this.eyeTextureId[1] > -1) {
-            GlStateManager._deleteTexture(this.eyeTextureId[1]);
-            this.eyeTextureId[1] = -1;
         }
     }
 }

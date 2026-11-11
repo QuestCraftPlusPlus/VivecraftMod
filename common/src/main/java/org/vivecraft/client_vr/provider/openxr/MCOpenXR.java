@@ -13,6 +13,7 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.openxr.*;
 import org.lwjgl.system.MemoryStack;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client.VivecraftVRMod;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
@@ -22,7 +23,6 @@ import org.vivecraft.client_vr.provider.MCVR;
 import org.vivecraft.client_vr.provider.VRRenderer;
 import org.vivecraft.client_vr.provider.control.VRInputAction;
 import org.vivecraft.client_vr.provider.control.VRInputActionSet;
-import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.settings.VRSettings;
 
 import javax.annotation.Nullable;
@@ -41,7 +41,7 @@ public class MCOpenXR extends MCVR {
     public XrSession session;
     public XrSpace xrAppSpace;
     public XrSpace xrViewSpace;
-    public XrSwapchain swapchain;
+    public XrSwapchain[] swapchain = new XrSwapchain[2];
     public final XrEventDataBuffer eventDataBuffer = XrEventDataBuffer.calloc();
     public long time;
     private boolean tried;
@@ -87,8 +87,10 @@ public class MCOpenXR extends MCVR {
             error = XR10.xrDestroyActionSet(new XrActionSet(inputActionSet, instance));
             logError(error, "xrDestroyActionSet", "");
         }
-        if (swapchain != null) {
-            error = XR10.xrDestroySwapchain(swapchain);
+        for (XrSwapchain swapchain1 : swapchain) {
+            if(swapchain1 == null)
+                continue;
+            error = XR10.xrDestroySwapchain(swapchain1);
             logError(error, "xrDestroySwapchain", "");
         }
         if (viewBuffer != null) {
@@ -147,29 +149,10 @@ public class MCOpenXR extends MCVR {
     @Override
     public void poll(long var1) {
         if (this.initialized) {
-            this.mc.getProfiler().push("events");
             this.pollVREvents();
-
-            if (!this.dh.vrSettings.seated) {
-                this.mc.getProfiler().popPush("controllers");
-                this.mc.getProfiler().push("gui");
-
-                if (this.mc.screen == null && this.dh.vrSettings.vrTouchHotbar) {
-
-                    if (this.dh.vrSettings.vrHudLockMode != VRSettings.HUDLock.HEAD && this.hudPopup) {
-                        this.processHotbar();
-                    }
-                }
-
-                this.mc.getProfiler().pop();
-            }
-            this.mc.getProfiler().popPush("updatePose/Vsync");
             this.updatePose();
-            this.mc.getProfiler().popPush("processInputs");
             this.processInputs();
-            this.mc.getProfiler().popPush("hmdSampling");
             this.hmdSampling();
-            this.mc.getProfiler().pop();
         }
     }
 
@@ -229,7 +212,6 @@ public class MCOpenXR extends MCVR {
             OpenXRUtil.openXRPoseToMarix(viewBuffer.get(1).pose(), this.hmdPoseRightEye);
 
             if (this.inputInitialized) {
-                this.mc.getProfiler().push("updateActionState");
 
                 if (this.updateActiveActionSets()) {
                     XrActionsSyncInfo syncInfo = XrActionsSyncInfo.calloc(stack)
@@ -247,8 +229,6 @@ public class MCOpenXR extends MCVR {
                 this.readPoseData(this.grip[LEFT_CONTROLLER], actionSet);
                 this.readPoseData(this.aim[RIGHT_CONTROLLER], actionSet);
                 this.readPoseData(this.aim[LEFT_CONTROLLER], actionSet);
-
-                this.mc.getProfiler().pop();
 
                 //reverse
                 if (this.dh.vrSettings.reverseHands) {
@@ -531,6 +511,11 @@ public class MCOpenXR extends MCVR {
     }
 
     @Override
+    public void refreshControllerTransforms() {
+
+    }
+
+    @Override
     public boolean init() {
         if (this.initialized) {
             return true;
@@ -798,25 +783,27 @@ public class MCOpenXR extends MCVR {
 
             //Make swapchain
             XrViewConfigurationView viewConfig = views.get(0);
-            XrSwapchainCreateInfo swapchainCreateInfo = XrSwapchainCreateInfo.calloc(stack);
-            swapchainCreateInfo.type(XR10.XR_TYPE_SWAPCHAIN_CREATE_INFO);
-            swapchainCreateInfo.next(NULL);
-            swapchainCreateInfo.createFlags(0);
-            swapchainCreateInfo.usageFlags(XR10.XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT);
-            swapchainCreateInfo.format(chosenFormat);
-            swapchainCreateInfo.sampleCount(1);
-            swapchainCreateInfo.width(viewConfig.recommendedImageRectWidth());
-            swapchainCreateInfo.height(viewConfig.recommendedImageRectHeight());
-            swapchainCreateInfo.faceCount(1);
-            swapchainCreateInfo.arraySize(2);
-            swapchainCreateInfo.mipCount(1);
+            for(int i = 0; i < 2; i++) {
+                XrSwapchainCreateInfo swapchainCreateInfo = XrSwapchainCreateInfo.calloc(stack);
+                swapchainCreateInfo.type(XR10.XR_TYPE_SWAPCHAIN_CREATE_INFO);
+                swapchainCreateInfo.next(NULL);
+                swapchainCreateInfo.createFlags(0);
+                swapchainCreateInfo.usageFlags(XR10.XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT);
+                swapchainCreateInfo.format(chosenFormat);
+                swapchainCreateInfo.sampleCount(1);
+                swapchainCreateInfo.width(viewConfig.recommendedImageRectWidth());
+                swapchainCreateInfo.height(viewConfig.recommendedImageRectHeight());
+                swapchainCreateInfo.faceCount(1);
+                swapchainCreateInfo.arraySize(1);
+                swapchainCreateInfo.mipCount(1);
 
-            PointerBuffer handlePointer = stack.callocPointer(1);
-            error = XR10.xrCreateSwapchain(session, swapchainCreateInfo, handlePointer);
-            logError(error, "xrCreateSwapchain",  "format: " + chosenFormat);
-            swapchain = new XrSwapchain(handlePointer.get(0), session);
-            this.width = swapchainCreateInfo.width();
-            this.height = swapchainCreateInfo.height();
+                PointerBuffer handlePointer = stack.callocPointer(1);
+                error = XR10.xrCreateSwapchain(session, swapchainCreateInfo, handlePointer);
+                logError(error, "xrCreateSwapchain", "format: " + chosenFormat);
+                swapchain[i] = new XrSwapchain(handlePointer.get(0), session);
+                this.width = swapchainCreateInfo.width();
+                this.height = swapchainCreateInfo.height();
+            }
         }
     }
 
@@ -913,7 +900,11 @@ public class MCOpenXR extends MCVR {
             ByteBuffer byteBuffer = stack.calloc(size);
             error = XR10.xrGetInputSourceLocalizedName(session, info, buf, byteBuffer);
             logError(error, "xrGetInputSourceLocalizedName",  "get String");
-            return new String(byteBuffer.array());
+            if(byteBuffer.hasArray()) {
+                return new String(byteBuffer.array());
+            } else {
+                return "";
+            }
         }
     }
 

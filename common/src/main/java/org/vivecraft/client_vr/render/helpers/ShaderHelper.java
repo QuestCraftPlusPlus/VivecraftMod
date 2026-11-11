@@ -343,8 +343,8 @@ public class ShaderHelper {
                 for (int y = 0; y < 2; y++) {
                     RenderPass pass = RenderPass.values()[x + 4 * y];
                     RenderTarget target = switch (pass) {
-                        case LEFT -> DATA_HOLDER.vrRenderer.framebufferEye[0];
-                        case RIGHT -> DATA_HOLDER.vrRenderer.framebufferEye[1];
+                        case LEFT -> DATA_HOLDER.vrRenderer.getLeftEyeTarget();
+                        case RIGHT -> DATA_HOLDER.vrRenderer.getRightEyeTarget();
                         case CENTER -> DATA_HOLDER.vrRenderer.framebufferUndistorted;
                         case THIRD -> DATA_HOLDER.vrRenderer.framebufferMR;
                         case GUI -> GuiHandler.GUI_FRAMEBUFFER;
@@ -380,9 +380,15 @@ public class ShaderHelper {
             ))
         {
             // show both eyes side by side
-            RenderTarget leftEye = DATA_HOLDER.vrRenderer.framebufferEye[DATA_HOLDER.vrSettings.dualMirrorSwap ? 1 : 0];
-            RenderTarget rightEye = DATA_HOLDER.vrRenderer.framebufferEye[DATA_HOLDER.vrSettings.dualMirrorSwap ? 0 :
-                1];
+            RenderTarget leftEye;
+            RenderTarget rightEye;
+            if(DATA_HOLDER.vrSettings.dualMirrorSwap) {
+                leftEye = DATA_HOLDER.vrRenderer.getRightEyeTarget();
+                rightEye = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
+            } else {
+                leftEye = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
+                rightEye = DATA_HOLDER.vrRenderer.getRightEyeTarget();
+            }
 
             int screenWidth = MC.mainRenderTarget.width / 2;
             int screenHeight = MC.mainRenderTarget.height;
@@ -401,7 +407,7 @@ public class ShaderHelper {
             float xCrop = 0.0F;
             float yCrop = 0.0F;
             boolean keepAspect = false;
-            RenderTarget source = DATA_HOLDER.vrRenderer.framebufferEye[0];
+            RenderTarget source = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
             boolean flip = false;
 
             if (DATA_HOLDER.vrSettings.displayMirrorUseScreenshotCamera &&
@@ -419,12 +425,12 @@ public class ShaderHelper {
                 DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.OFF)
             {
                 if (!DATA_HOLDER.vrSettings.displayMirrorLeftEye) {
-                    source = DATA_HOLDER.vrRenderer.framebufferEye[1];
+                    source = DATA_HOLDER.vrRenderer.getRightEyeTarget();
                 }
                 flip = GraphicsHelper.INSTANCE.flipEyeVertically();
             } else if (DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.CROPPED) {
                 if (!DATA_HOLDER.vrSettings.displayMirrorLeftEye) {
-                    source = DATA_HOLDER.vrRenderer.framebufferEye[1];
+                    source = DATA_HOLDER.vrRenderer.getRightEyeTarget();
                 }
 
                 xCrop = DATA_HOLDER.vrSettings.mirrorCrop;
@@ -517,9 +523,9 @@ public class ShaderHelper {
                     source = DATA_HOLDER.vrRenderer.framebufferUndistorted;
                 } else {
                     if (DATA_HOLDER.vrSettings.displayMirrorLeftEye) {
-                        source = DATA_HOLDER.vrRenderer.framebufferEye[0];
+                        source = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
                     } else {
-                        source = DATA_HOLDER.vrRenderer.framebufferEye[1];
+                        source = DATA_HOLDER.vrRenderer.getRightEyeTarget();
                     }
                 }
                 renderPass.bindTexture(VRShaders.MIXED_REALITY_FIRST_COLOR_SAMPLER, source.getColorTextureView(),

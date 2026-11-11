@@ -13,10 +13,9 @@ import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.MethodHolder;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
-import org.vivecraft.client_vr.provider.ControllerType;
-import org.vivecraft.client_vr.provider.MCVR;
-import org.vivecraft.client_vr.provider.VRRenderer;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.VRInputAction;
+import org.vivecraft.client_vr.provider.*;
+import org.vivecraft.client_vr.provider.control.VRInputAction;
+import org.vivecraft.client_vr.render.MirrorNotification;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.utils.MathUtils;
 

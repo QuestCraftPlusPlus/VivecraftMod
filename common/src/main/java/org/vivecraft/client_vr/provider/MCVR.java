@@ -32,8 +32,10 @@ import org.vivecraft.client_vr.extensions.WindowExtension;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.gameplay.screenhandlers.RadialHandler;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.VRInputAction;
-import org.vivecraft.client_vr.provider.openvr_lwjgl.control.VRInputActionSet;
+import org.vivecraft.client_vr.provider.control.TrackpadSwipeSampler;
+import org.vivecraft.client_vr.provider.control.VRInputAction;
+import org.vivecraft.client_vr.provider.control.VRInputActionSet;
+import org.vivecraft.client_vr.provider.openxr.DeviceCompat;
 import org.vivecraft.client_vr.render.RenderConfigException;
 import org.vivecraft.client_vr.settings.AutoCalibration;
 import org.vivecraft.client_vr.settings.VRHotkeys;
@@ -368,7 +370,7 @@ public abstract class MCVR {
             case LEFT -> this.hmdPoseLeftEye;
             case RIGHT -> this.hmdPoseRightEye;
             default -> this.hmdPose;
-        }
+        };
 
         Vector3f pos = pose.getTranslation(new Vector3f());
 
@@ -1437,7 +1439,7 @@ public abstract class MCVR {
      * processes the fetched inputs from the VR runtime, and maps them to the ingame keys
      */
     public void processInputs() {
-        if (this.dh.vrSettings.seated || ClientDataHolderVR.VIEW_ONLY || !this.inputInitialized) return;
+        if (this.dh.vrSettings.seated || ClientDataHolderVR.getInstance().viewOnly || !this.inputInitialized) return;
 
         for (VRInputAction action : this.inputActions.values()) {
             if (action.isHanded()) {

@@ -2,7 +2,7 @@ package org.vivecraft.util;
 
 public class VLoader {
     static {
-        System.loadLibrary("vloader");
+        System.loadLibrary("qcxr");
     }
 
     public static native long getEGLContext();
