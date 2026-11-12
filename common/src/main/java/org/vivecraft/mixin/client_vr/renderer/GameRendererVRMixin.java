@@ -47,6 +47,7 @@ import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 import org.vivecraft.client_vr.render.helpers.graphics.GraphicsHelper;
 import org.vivecraft.client_vr.render.renderstates.VRRenderState;
 import org.vivecraft.client_xr.render_pass.RenderPassManager;
+import org.vivecraft.client_vr.render.helpers.VRPassHelper;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
 
 // higher priority to apply before iris modelview alteration
@@ -186,6 +187,14 @@ public abstract class GameRendererVRMixin
         this.vivecraft$shouldDrawGui = shouldDrawGui;
     }
 
+    @WrapWithCondition(method = "render", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/CommandEncoder;clearColorAndDepthTextures(Lcom/mojang/blaze3d/textures/GpuTexture;Lorg/joml/Vector4fc;Lcom/mojang/blaze3d/textures/GpuTexture;D)V"), require = 1)
+    private boolean vivecraft$skipDoubleClear(
+        CommandEncoder instance, GpuTexture colorTexture, org.joml.Vector4fc clearColor, GpuTexture depthTexture,
+        double clearDepth)
+    {
+        return !RenderPassType.isWorldOnly();
+    }
+
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/CommandEncoder;clearDepthTexture(Lcom/mojang/blaze3d/textures/GpuTexture;D)V"), cancellable = true)
     private void vivecraft$mainMenu(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         if (RenderPassType.isVanilla()) {
@@ -225,6 +234,14 @@ public abstract class GameRendererVRMixin
         Gui instance, DeltaTracker deltaTracker, boolean shouldRenderLevel, boolean resourcesLoaded)
     {
         return RenderPassType.isVanilla() || (!vivecraft$DATA_HOLDER.viewOnly && this.vivecraft$shouldDrawScreen);
+    }
+
+    @WrapWithCondition(method = "extract", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/extract/LevelExtractor;extract(Lnet/minecraft/client/DeltaTracker;Lnet/minecraft/client/Camera;F)V"), require = 1)
+    private boolean vivecraft$reuseEyeExtraction(
+        net.minecraft.client.renderer.extract.LevelExtractor instance, DeltaTracker deltaTracker,
+        net.minecraft.client.Camera camera, float partialTick)
+    {
+        return !VRPassHelper.REUSE_EYE_EXTRACTION;
     }
 
     @Inject(method = "extract", at = @At("TAIL"))

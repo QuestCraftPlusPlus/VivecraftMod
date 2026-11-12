@@ -259,6 +259,14 @@ public class VulkanHelper implements GraphicsHelper {
         VkCommandBuffer commandBuffer, long vkImage, int baseMip, int numberOfMips, int oldLayout, int newLayout,
         int srcAccessMask, int dstAccessMask, int srcStageMask, int dstStageMask)
     {
+        transitionImageLayoutTo(commandBuffer, vkImage, baseMip, numberOfMips, 0, oldLayout, newLayout,
+            srcAccessMask, dstAccessMask, srcStageMask, dstStageMask);
+    }
+
+    protected void transitionImageLayoutTo(
+        VkCommandBuffer commandBuffer, long vkImage, int baseMip, int numberOfMips, int layer, int oldLayout,
+        int newLayout, int srcAccessMask, int dstAccessMask, int srcStageMask, int dstStageMask)
+    {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack).sType$Default();
             barrier.oldLayout(oldLayout);
@@ -272,10 +280,75 @@ public class VulkanHelper implements GraphicsHelper {
             subresourceRange.aspectMask(VK10.VK_IMAGE_ASPECT_COLOR_BIT);
             subresourceRange.baseMipLevel(baseMip);
             subresourceRange.levelCount(numberOfMips);
-            subresourceRange.baseArrayLayer(0);
+            subresourceRange.baseArrayLayer(layer);
             subresourceRange.layerCount(1);
 
             VK12.vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, 0, null, null, barrier);
+        }
+    }
+
+    public void copyArrayLayer(GpuTexture source, int layer, GpuTexture target) {
+        VulkanGpuTexture src = getVulkanTexture(source);
+        VulkanGpuTexture dst = getVulkanTexture(target);
+        VkCommandBuffer commandBuffer = getVulkanDevice().createCommandEncoder()
+            .allocateAndBeginTransientCommandBuffer();
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryBarrier.Buffer before = VkMemoryBarrier.calloc(1, stack).sType$Default()
+                .srcAccessMask(VK10.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK10.VK_ACCESS_SHADER_READ_BIT)
+                .dstAccessMask(VK10.VK_ACCESS_TRANSFER_READ_BIT | VK10.VK_ACCESS_TRANSFER_WRITE_BIT);
+            VK10.vkCmdPipelineBarrier(commandBuffer,
+                VK10.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK10.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK10.VK_PIPELINE_STAGE_TRANSFER_BIT, 0, before, null, null);
+
+            VkImageCopy.Buffer region = VkImageCopy.calloc(1, stack);
+            region.srcSubresource()
+                .aspectMask(VK10.VK_IMAGE_ASPECT_COLOR_BIT)
+                .mipLevel(0)
+                .baseArrayLayer(layer)
+                .layerCount(1);
+            region.dstSubresource()
+                .aspectMask(VK10.VK_IMAGE_ASPECT_COLOR_BIT)
+                .mipLevel(0)
+                .baseArrayLayer(0)
+                .layerCount(1);
+            region.extent()
+                .width(Math.min(src.getWidth(0), dst.getWidth(0)))
+                .height(Math.min(src.getHeight(0), dst.getHeight(0)))
+                .depth(1);
+            VK10.vkCmdCopyImage(commandBuffer,
+                src.vkImage(), VK10.VK_IMAGE_LAYOUT_GENERAL,
+                dst.vkImage(), VK10.VK_IMAGE_LAYOUT_GENERAL,
+                region);
+
+            VkMemoryBarrier.Buffer after = VkMemoryBarrier.calloc(1, stack).sType$Default()
+                .srcAccessMask(VK10.VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(VK10.VK_ACCESS_SHADER_READ_BIT | VK10.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                    VK10.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK10.VK_ACCESS_TRANSFER_READ_BIT);
+            VK10.vkCmdPipelineBarrier(commandBuffer,
+                VK10.VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK10.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK10.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                    VK10.VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0, after, null, null);
+        }
+
+        VulkanUtils.crashIfFailure(getVulkanDevice(), VK12.vkEndCommandBuffer(commandBuffer),
+            "Failed to end VkCommandBuffer");
+        getVulkanDevice().createCommandEncoder().execute(commandBuffer);
+    }
+
+    public void transitionExternalImage(long vkImage, int ownerLayout, boolean toRendering) {
+        VkCommandBuffer commandBuffer = getVulkanDevice().createCommandEncoder().textureInitCommandBuffer();
+        if (toRendering) {
+            transitionImageLayoutTo(commandBuffer, vkImage, 0, 1, 0,
+                ownerLayout, VK10.VK_IMAGE_LAYOUT_GENERAL,
+                0, VK10.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK10.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK10.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        } else {
+            transitionImageLayoutTo(commandBuffer, vkImage, 0, 1, 0,
+                VK10.VK_IMAGE_LAYOUT_GENERAL, ownerLayout,
+                VK10.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+                VK10.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
         }
     }
 
@@ -294,7 +367,9 @@ public class VulkanHelper implements GraphicsHelper {
     public void setStencil(boolean state) {}
 
     @Override
-    public void flush() {}
+    public void flush() {
+        RenderSystem.getDevice().createCommandEncoder().submit();
+    }
 
     @Override
     public boolean flipEyeVertically() {
@@ -517,7 +592,7 @@ public class VulkanHelper implements GraphicsHelper {
                     String.join("\n", missingExtensions));
             }
             throw new RenderConfigException(Component.translatable("vivecraft.messages.vulkanrestarttitle"),
-                Component.translatable("vivecraft.messages.vulkanrestart"));
+                Component.translatable("vivecraft.messages.vulkanrestart"), true);
         }
     }
 

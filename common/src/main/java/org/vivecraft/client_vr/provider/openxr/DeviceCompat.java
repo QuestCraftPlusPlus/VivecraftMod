@@ -17,11 +17,14 @@ import org.vivecraft.client_vr.render.RenderConfigException;
 import org.vivecraft.client_vr.render.helpers.graphics.GraphicsHelper;
 import org.vivecraft.client_vr.render.helpers.graphics.vulkan.VulkanHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
+import org.vivecraft.util.VLoader;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.Objects;
+
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 public interface DeviceCompat {
 
@@ -62,6 +65,10 @@ public interface DeviceCompat {
      * @return the created swapchain image buffer
      */
     XrSwapchainImageVulkanKHR.Buffer createVulkanImageBuffers(MemoryStack stack, int imageCount);
+
+    default boolean separateEyeSwapchains() {
+        return false;
+    }
 
     /**
      * creates any applicable struct that should be added to the {@code next} pointer in the XrSessionCreateInfo
@@ -149,8 +156,8 @@ public interface DeviceCompat {
                 MCOpenXR.logError(error, "xrGetVulkanGraphicsDeviceKHR", "");
 
                 vulkanHelper.checkCompatibility(
-                    Arrays.stream(instanceExtensions.split(" ")).toList(),
-                    Arrays.stream(deviceExtensions.split(" ")).toList(),
+                    Arrays.stream(instanceExtensions.trim().split("\\s+")).filter(s -> !s.isEmpty()).toList(),
+                    Arrays.stream(deviceExtensions.trim().split("\\s+")).filter(s -> !s.isEmpty()).toList(),
                     minVersion,
                     requiredDevicePointer.get(0));
             }
@@ -178,7 +185,7 @@ public interface DeviceCompat {
 
         @Override
         public long getInstanceCreateAddition(MemoryStack stack) {
-            return MemoryUtil.NULL;
+            return NULL;
         }
 
         @Override
@@ -244,79 +251,150 @@ public interface DeviceCompat {
     class Mobile implements DeviceCompat {
 
         @Override
+        public boolean separateEyeSwapchains() {
+            return GraphicsHelper.INSTANCE.getType() == GraphicsHelper.Type.OPENGL;
+        }
+
+        @Override
         public void initOpenXRLoader(MemoryStack stack) {
             DeviceCompat.super.initOpenXRLoader(stack);
-//            VLoader.setupAndroid();
-//            XrLoaderInitInfoAndroidKHR initInfo = XrLoaderInitInfoAndroidKHR.calloc(stack).set(
-//                KHRLoaderInitAndroid.XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR,
-//                NULL,
-//                VLoader.getDalvikVM(),
-//                VLoader.getDalvikActivity()
-//            );
-//
-//            KHRLoaderInit.xrInitializeLoaderKHR(XrLoaderInitInfoBaseHeaderKHR.create(initInfo.address()));
+            VLoader.setupAndroid();
+            XrLoaderInitInfoAndroidKHR initInfo = XrLoaderInitInfoAndroidKHR.calloc(stack).set(
+                KHRLoaderInitAndroid.XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR,
+                NULL,
+                VLoader.getDalvikVM(),
+                VLoader.getDalvikActivity()
+            );
+
+            KHRLoaderInit.xrInitializeLoaderKHR(XrLoaderInitInfoBaseHeaderKHR.create(initInfo.address()));
         }
 
         @Override
         public String getGraphicsExtension() {
-            //return KHROpenGLESEnable.XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME;
-            return null;
+            return switch (GraphicsHelper.INSTANCE.getType()) {
+                case OPENGL -> KHROpenGLESEnable.XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME;
+                case VULKAN ->
+                    KHRVulkanEnable.XR_KHR_VULKAN_ENABLE_EXTENSION_NAME;
+            };
         }
 
         @Override
         public void checkRequirements(
             MemoryStack stack, XrInstance instance, long systemID) throws RenderConfigException
-        {}
+        {
+            if (GraphicsHelper.INSTANCE instanceof VulkanHelper vulkanHelper) {
+                XrGraphicsRequirementsVulkanKHR apiRequirements = XrGraphicsRequirementsVulkanKHR.calloc(stack)
+                    .type$Default();
+                int error = KHRVulkanEnable.xrGetVulkanGraphicsRequirementsKHR(instance, systemID, apiRequirements);
+                MCOpenXR.logError(error, "xrGetVulkanGraphicsRequirementsKHR", "");
+
+                Vector2ic currentVersion = vulkanHelper.getCurrentVulkanVersion();
+                Vector2ic minVersion = new Vector2i(XR10.XR_VERSION_MAJOR(apiRequirements.minApiVersionSupported()),
+                    XR10.XR_VERSION_MINOR(apiRequirements.minApiVersionSupported()));
+                Vector2ic maxVersion = new Vector2i(XR10.XR_VERSION_MAJOR(apiRequirements.maxApiVersionSupported()),
+                    XR10.XR_VERSION_MINOR(apiRequirements.maxApiVersionSupported()));
+
+                if (currentVersion.x() > maxVersion.x() ||
+                    (currentVersion.x() == maxVersion.x() && currentVersion.y() > maxVersion.y()))
+                {
+                    VRSettings.LOGGER.warn(
+                        "Vivecraft: Game is running Vulkan {}, but the OpenXR runtime is only tested up to {}. this could maybe cause a crash.",
+                        currentVersion, maxVersion);
+                }
+
+                IntBuffer capacity = stack.callocInt(1);
+                error = KHRVulkanEnable.xrGetVulkanInstanceExtensionsKHR(instance, systemID, capacity, null);
+                MCOpenXR.logError(error, "xrGetVulkanInstanceExtensionsKHR", "get capacity");
+
+                ByteBuffer instanceExtensionsBuffer = stack.calloc(capacity.get(0));
+                error = KHRVulkanEnable.xrGetVulkanInstanceExtensionsKHR(instance, systemID, capacity,
+                    instanceExtensionsBuffer);
+                MCOpenXR.logError(error, "xrGetVulkanInstanceExtensionsKHR", "get extensions");
+
+                error = KHRVulkanEnable.xrGetVulkanDeviceExtensionsKHR(instance, systemID, capacity, null);
+                MCOpenXR.logError(error, "xrGetVulkanDeviceExtensionsKHR", "get capacity");
+
+                ByteBuffer deviceExtensionsBuffer = stack.calloc(capacity.get(0));
+                error = KHRVulkanEnable.xrGetVulkanDeviceExtensionsKHR(instance, systemID, capacity,
+                    deviceExtensionsBuffer);
+                MCOpenXR.logError(error, "xrGetVulkanDeviceExtensionsKHR", "get extensions");
+
+                String instanceExtensions = MemoryUtil.memUTF8(MemoryUtil.memAddress(instanceExtensionsBuffer));
+                String deviceExtensions = MemoryUtil.memUTF8(MemoryUtil.memAddress(deviceExtensionsBuffer));
+
+                PointerBuffer requiredDevicePointer = stack.callocPointer(1);
+                error = KHRVulkanEnable.xrGetVulkanGraphicsDeviceKHR(instance, systemID, vulkanHelper.getInstance(),
+                    requiredDevicePointer);
+                MCOpenXR.logError(error, "xrGetVulkanGraphicsDeviceKHR", "");
+
+                vulkanHelper.checkCompatibility(
+                    Arrays.stream(instanceExtensions.trim().split("\\s+")).filter(s -> !s.isEmpty()).toList(),
+                    Arrays.stream(deviceExtensions.trim().split("\\s+")).filter(s -> !s.isEmpty()).toList(),
+                    minVersion,
+                    requiredDevicePointer.get(0));
+            }
+        }
 
         @Override
         public XrSwapchainImageOpenGLKHR.Buffer createOpenglImageBuffers(MemoryStack stack, int imageCount) {
-//            XrSwapchainImageOpenGLKHR.Buffer swapchainImageBuffer = XrSwapchainImageOpenGLKHR.calloc(imageCount, stack);
-//            for (XrSwapchainImageOpenGLKHR image : swapchainImageBuffer) {
-//                image.type$Default();
-//            }
-//
-//            return swapchainImageBuffer;
-            return null;
+            XrSwapchainImageOpenGLKHR.Buffer swapchainImageBuffer = XrSwapchainImageOpenGLKHR.calloc(imageCount, stack);
+            for (XrSwapchainImageOpenGLKHR image : swapchainImageBuffer) {
+                image.type(KHROpenGLESEnable.XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR);
+            }
+            return swapchainImageBuffer;
         }
 
         @Override
         public XrSwapchainImageVulkanKHR.Buffer createVulkanImageBuffers(MemoryStack stack, int imageCount) {
-//            XrSwapchainImageVulkanKHR.Buffer swapchainImageBuffer = XrSwapchainImageVulkanKHR.calloc(imageCount, stack);
-//            for (XrSwapchainImageVulkanKHR image : swapchainImageBuffer) {
-//                image.type$Default();
-//            }
-//
-//
-            return null;
+            XrSwapchainImageVulkanKHR.Buffer swapchainImageBuffer = XrSwapchainImageVulkanKHR.calloc(imageCount, stack);
+            for (XrSwapchainImageVulkanKHR image : swapchainImageBuffer) {
+                image.type$Default();
+            }
+            return swapchainImageBuffer;
         }
 
         @Override
         public long getInstanceCreateAddition(MemoryStack stack) {
-//            return XrInstanceCreateInfoAndroidKHR.calloc(stack).set(
-//                KHRAndroidCreateInstance.XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,
-//                NULL,
-//                VLoader.getDalvikVM(),
-//                VLoader.getDalvikActivity()
-//            ).address();
-            return MemoryUtil.NULL;
+            return XrInstanceCreateInfoAndroidKHR.calloc(stack).set(
+                KHRAndroidCreateInstance.XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,
+                NULL,
+                VLoader.getDalvikVM(),
+                VLoader.getDalvikActivity()
+            ).address();
         }
 
         @Override
         public long getSessionCreateAddition(MemoryStack stack, XrInstance instance, long systemID) {
-//            XrGraphicsRequirementsOpenGLESKHR graphicsRequirements = XrGraphicsRequirementsOpenGLESKHR.calloc(stack)
-//                  .type$Default();
-//            KHROpenGLESEnable.xrGetOpenGLESGraphicsRequirementsKHR(instance, systemID, graphicsRequirements);
-//            XrGraphicsBindingOpenGLESAndroidKHR graphicsBinding = XrGraphicsBindingOpenGLESAndroidKHR.calloc(stack);
-//            graphicsBinding.set(
-//                KHROpenGLESEnable.XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR,
-//                NULL,
-//                VLoader.getEGLDisplay(),
-//                VLoader.getEGLConfig(),
-//                VLoader.getEGLContext()
-//            );
-//
-//            return graphicsBinding;
-            return MemoryUtil.NULL;
+            return switch (GraphicsHelper.INSTANCE.getType()) {
+                case OPENGL -> {
+                    XrGraphicsRequirementsOpenGLESKHR graphicsRequirements = XrGraphicsRequirementsOpenGLESKHR.calloc(
+                            stack)
+                        .type$Default();
+                    KHROpenGLESEnable.xrGetOpenGLESGraphicsRequirementsKHR(instance, systemID, graphicsRequirements);
+                    XrGraphicsBindingOpenGLESAndroidKHR graphicsBinding = XrGraphicsBindingOpenGLESAndroidKHR.calloc(
+                        stack);
+                    graphicsBinding.set(
+                        KHROpenGLESEnable.XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR,
+                        NULL,
+                        VLoader.getEGLDisplay(),
+                        VLoader.getEGLConfig(),
+                        VLoader.getEGLContext()
+                    );
+
+                    yield graphicsBinding.address();
+                }
+                case VULKAN -> {
+                    VulkanHelper vulkanHelper = (VulkanHelper) GraphicsHelper.INSTANCE;
+                    XrGraphicsBindingVulkanKHR binding = XrGraphicsBindingVulkanKHR.calloc(stack);
+                    binding.type$Default();
+                    binding.instance(vulkanHelper.getInstance());
+                    binding.physicalDevice(vulkanHelper.getPhysicalDevice());
+                    binding.device(vulkanHelper.getDevice());
+                    binding.queueFamilyIndex(vulkanHelper.getQueueFamilyIndex());
+                    binding.queueIndex(vulkanHelper.getQueueIndex());
+                    yield binding.address();
+                }
+            };
         }
     }
 }

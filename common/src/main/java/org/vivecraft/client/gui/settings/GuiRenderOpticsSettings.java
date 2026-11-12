@@ -18,6 +18,7 @@ public class GuiRenderOpticsSettings extends GuiVROptionsBase {
         VRSettings.VrOptions.MIRROR_DISPLAY,
         VRSettings.VrOptions.FSAA,
         VRSettings.VrOptions.STENCIL_ON,
+        VRSettings.VrOptions.ENABLE_MULTIVIEW,
         VRSettings.VrOptions.HANDHELD_CAMERA_RENDER_SCALE,
         VRSettings.VrOptions.HANDHELD_CAMERA_FOV,
         VRSettings.VrOptions.MIRROR_SCREENSHOT_CAMERA,

@@ -73,6 +73,12 @@ void main(){
         }
     }
 
+#ifdef VIVECRAFT_SRGB_OUTPUT
+    vec3 low = bkg_color.rgb / 12.92;
+    vec3 high = pow((bkg_color.rgb + 0.055) / 1.055, vec3(2.4));
+    fragColor = vec4(mix(high, low, vec3(lessThanEqual(bkg_color.rgb, vec3(0.04045)))), bkg_color.a);
+#else
     fragColor = bkg_color;
+#endif
 
 }

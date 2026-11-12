@@ -14,6 +14,8 @@ import net.minecraft.client.resources.language.I18n;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
@@ -23,6 +25,8 @@ import org.vivecraft.client_vr.render.helpers.graphics.GraphicsHelper;
 import org.vivecraft.client_vr.render.renderstates.PostProcessRenderState;
 import org.vivecraft.client_vr.render.ubos.LanczosUBO;
 import org.vivecraft.client_vr.render.ubos.MixedRealityUBO;
+import org.vivecraft.client_vr.render.helpers.graphics.opengl.ExternalGlRenderTarget;
+import org.vivecraft.client_vr.render.helpers.graphics.vulkan.ExternalVulkanRenderTarget;
 import org.vivecraft.client_vr.render.ubos.PostProcessUBO;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.common.utils.MathUtils;
@@ -205,11 +209,24 @@ public class ShaderHelper {
             eye == RenderPass.LEFT ? 1 : -1
         );
 
-        renderFullscreenQuad(() -> "Vive postprocessing", VRShaders.POST_PROCESSING_PIPELINE, renderPass -> {
-            renderPass.setUniform(PostProcessUBO.UBO_NAME, VRShaders.POST_PROCESS_UBO.getBuffer());
-            renderPass.bindTexture(VRShaders.POST_PROCESSING_COLOR_SAMPLER, source.getColorTextureView(),
-                RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
-        }, target.getColorTextureView(), GraphicsHelper.INSTANCE.flipEyeVertically());
+        boolean vulkanSrgb = target instanceof ExternalVulkanRenderTarget external && external.srgb;
+        boolean glSrgb = target instanceof ExternalGlRenderTarget external && external.srgb;
+        if (glSrgb) {
+            GL11.glEnable(GL30.GL_FRAMEBUFFER_SRGB);
+        }
+        try {
+            renderFullscreenQuad(() -> "Vive postprocessing",
+                vulkanSrgb || glSrgb ? VRShaders.POST_PROCESSING_SRGB_PIPELINE : VRShaders.POST_PROCESSING_PIPELINE,
+                renderPass -> {
+                    renderPass.setUniform(PostProcessUBO.UBO_NAME, VRShaders.POST_PROCESS_UBO.getBuffer());
+                    renderPass.bindTexture(VRShaders.POST_PROCESSING_COLOR_SAMPLER, source.getColorTextureView(),
+                        RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
+                }, target.getColorTextureView(), GraphicsHelper.INSTANCE.flipEyeVertically());
+        } finally {
+            if (glSrgb) {
+                GL11.glDisable(GL30.GL_FRAMEBUFFER_SRGB);
+            }
+        }
         VRShaders.POST_PROCESS_UBO.endFrame();
     }
 

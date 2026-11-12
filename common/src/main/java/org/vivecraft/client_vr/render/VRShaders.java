@@ -95,6 +95,16 @@ public class VRShaders {
         .withPrimitiveTopology(PrimitiveTopology.QUADS)
         .build();
 
+    public static final RenderPipeline POST_PROCESSING_SRGB_PIPELINE = RenderPipeline.builder()
+        .withLocation(Identifier.fromNamespaceAndPath("vivecraft", "pipeline/vivecraft_post_processing_srgb"))
+        .withVertexShader(Identifier.fromNamespaceAndPath("vivecraft", "core/passthrough_vr"))
+        .withFragmentShader(Identifier.fromNamespaceAndPath("vivecraft", "core/postprocessing_vr"))
+        .withShaderDefine("VIVECRAFT_SRGB_OUTPUT")
+        .withBindGroupLayout(POST_PROCESS_BIND_GROUP)
+        .withVertexBinding(0, DefaultVertexFormat.POSITION_TEX)
+        .withPrimitiveTopology(PrimitiveTopology.QUADS)
+        .build();
+
     // blit shader
     public static final String BLIT_VR_COLOR_SAMPLER = "DiffuseSampler";
     public static final BindGroupLayout BLIT_VR_BIND_GROUP = BindGroupLayout.builder()

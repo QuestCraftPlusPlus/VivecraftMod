@@ -1,6 +1,10 @@
 package org.vivecraft.client_vr.provider.openxr;
 
 import com.google.common.collect.HashBiMap;
+import com.mojang.blaze3d.opengl.GlDevice;
+import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.profiling.Profiler;
@@ -8,6 +12,8 @@ import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.openxr.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -35,6 +41,9 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
+
+import static org.lwjgl.system.MemoryStack.*;
+import static org.lwjgl.system.MemoryUtil.*;
 
 public class MCOpenXR extends MCVR<XRInputAction> {
 
@@ -96,6 +105,9 @@ public class MCOpenXR extends MCVR<XRInputAction> {
         super(mc, dh, VivecraftVRMod.INSTANCE);
         OME = this;
         this.hapticScheduler = new OpenXRHapticScheduler();
+        GpuDevice gpuDevice = RenderSystem.getDevice();
+        if(gpuDevice.backend instanceof GlDevice)
+            GL11.glDisable(GL30.GL_SRGB);
     }
 
     @Override
@@ -743,6 +755,9 @@ public class MCOpenXR extends MCVR<XRInputAction> {
                     extensions.put(MemoryUtil.memAddress(MemoryStack.stackUTF8(extensionName)));
                     foundValidationExtensions++;
                 }
+                if (extensionName.equals(FBDisplayRefreshRate.XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME)) {
+                    extensions.put(memAddress(stackUTF8(FBDisplayRefreshRate.XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME)));
+                }
             }
 
             if (missingGraphics) {
@@ -785,7 +800,7 @@ public class MCOpenXR extends MCVR<XRInputAction> {
 
             // Create APP info
             XrApplicationInfo applicationInfo = XrApplicationInfo.calloc(stack);
-            applicationInfo.apiVersion(XR10.XR_MAKE_VERSION(1, 0, 40));
+            applicationInfo.apiVersion(XR10.XR_MAKE_VERSION(1, 1, 65));
             applicationInfo.applicationName(stack.UTF8("Vivecraft"));
             applicationInfo.applicationVersion(1);
 
@@ -993,8 +1008,17 @@ public class MCOpenXR extends MCVR<XRInputAction> {
                 FBDisplayRefreshRate.xrEnumerateDisplayRefreshRatesFB(this.session, refreshRateCount,
                     refreshRateBuffer);
                 refreshRateBuffer.rewind();
-                FBDisplayRefreshRate.xrRequestDisplayRefreshRateFB(this.session,
-                    refreshRateBuffer.get(refreshRateCount.get(0) - 1));
+                float[] rates = new float[refreshRateCount.get(0)];
+                refreshRateBuffer.get(rates);
+                float requested = rates[rates.length - 1];
+                int error = FBDisplayRefreshRate.xrRequestDisplayRefreshRateFB(this.session, requested);
+                logError(error, "xrRequestDisplayRefreshRateFB", String.valueOf(requested));
+
+                FloatBuffer current = stack.callocFloat(1);
+                error = FBDisplayRefreshRate.xrGetDisplayRefreshRateFB(this.session, current);
+                logError(error, "xrGetDisplayRefreshRateFB", "");
+                VRSettings.LOGGER.info("Vivecraft: display refresh rates: {}, requested: {}, current: {}",
+                    java.util.Arrays.toString(rates), requested, current.get(0));
             }
         }
     }

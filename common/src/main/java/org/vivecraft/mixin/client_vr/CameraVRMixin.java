@@ -26,6 +26,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
+import org.vivecraft.client_vr.render.helpers.VRPassHelper;
+import org.vivecraft.client_vr.render.helpers.MultiviewHelper;
 import org.vivecraft.client_vr.MethodHolder;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.VRState;
@@ -152,8 +154,12 @@ public abstract class CameraVRMixin {
         {
             return original.call(instance, fovy, aspect, zNear, zFar, zZeroToOne);
         } else {
-            return instance.set(
+            instance.set(
                 dataHolder.vrRenderer.getCachedProjectionMatrix(dataHolder.currentPass.ordinal(), zNear, zFar));
+            if (MultiviewHelper.ACTIVE || VRPassHelper.EXTRACT_FOR_BOTH_EYES) {
+                instance.set(MultiviewHelper.getCullingProjection(instance));
+            }
+            return instance;
         }
     }
 

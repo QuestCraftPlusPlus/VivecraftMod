@@ -9,6 +9,10 @@ import com.mojang.blaze3d.framegraph.FramePass;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.resource.RenderTargetDescriptor;
+import org.vivecraft.client_vr.render.multiview.MVGlTexture;
+import org.vivecraft.client_vr.MVTextureTarget;
+import com.mojang.blaze3d.resource.ResourceDescriptor;
+import com.mojang.blaze3d.resource.ResourceHandle;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.*;
@@ -21,12 +25,20 @@ import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.profiling.Profiler;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.vivecraft.client.extensions.LevelRenderStateExtension;
@@ -36,6 +48,8 @@ import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.extensions.LevelRendererExtension;
 import org.vivecraft.client_vr.extensions.LevelTargetBundleExtension;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
+import org.vivecraft.client_vr.render.helpers.MultiviewHelper;
+import org.vivecraft.client_vr.render.helpers.VRPassHelper;
 import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 import org.vivecraft.client_vr.render.renderstates.VRRenderState;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
@@ -96,11 +110,67 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
     {
         if (VRState.VR_RUNNING) {
             this.targets.replace(LevelTargetBundleExtension.OCCLUDED_TARGET_ID,
-                frameGraphBuilder.createInternal("vroccluded", renderTargetDescriptor));
+                vivecraft$createTarget(frameGraphBuilder, "vroccluded", renderTargetDescriptor));
             this.targets.replace(LevelTargetBundleExtension.UNOCCLUDED_TARGET_ID,
-                frameGraphBuilder.createInternal("vrunoccluded", renderTargetDescriptor));
+                vivecraft$createTarget(frameGraphBuilder, "vrunoccluded", renderTargetDescriptor));
             this.targets.replace(LevelTargetBundleExtension.HANDS_TARGET_ID,
-                frameGraphBuilder.createInternal("vrhands", renderTargetDescriptor));
+                vivecraft$createTarget(frameGraphBuilder, "vrhands", renderTargetDescriptor));
+        }
+    }
+
+    @Unique
+    private static ResourceHandle<RenderTarget> vivecraft$createTarget(
+        FrameGraphBuilder frame, String name, ResourceDescriptor<RenderTarget> descriptor)
+    {
+        if (MultiviewHelper.isLayeredPostActive()) {
+            MVTextureTarget target = MultiviewHelper.getExtraTarget(name);
+            descriptor.prepare(target);
+            return frame.importExternal(name, target);
+        }
+        return frame.createInternal(name, descriptor);
+    }
+
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;createInternal(Ljava/lang/String;Lcom/mojang/blaze3d/resource/ResourceDescriptor;)Lcom/mojang/blaze3d/resource/ResourceHandle;"))
+    private <T> ResourceHandle<T> vivecraft$multiviewLevelTargets(
+        FrameGraphBuilder instance, String name, ResourceDescriptor<T> descriptor,
+        Operation<ResourceHandle<T>> original)
+    {
+        if (MultiviewHelper.isLayeredPostActive() && descriptor instanceof RenderTargetDescriptor) {
+            return (ResourceHandle<T>) vivecraft$createTarget(instance, name, (ResourceDescriptor<RenderTarget>) descriptor);
+        }
+        return original.call(instance, name, descriptor);
+    }
+
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;importExternal(Ljava/lang/String;Ljava/lang/Object;)Lcom/mojang/blaze3d/resource/ResourceHandle;"))
+    private <T> ResourceHandle<T> vivecraft$multiviewOutlineTarget(
+        FrameGraphBuilder instance, String name, T resource, Operation<ResourceHandle<T>> original)
+    {
+        if (MultiviewHelper.isLayeredPostActive() && "entity_outline".equals(name)) {
+            return original.call(instance, name, (T) MultiviewHelper.getExtraTarget("entity_outline"));
+        }
+        return original.call(instance, name, resource);
+    }
+
+    @Inject(method = "entityOutlineTarget", at = @At("HEAD"), cancellable = true)
+    private void vivecraft$multiviewOutlineTargetGetter(CallbackInfoReturnable<RenderTarget> cir) {
+        if (MultiviewHelper.isLayeredPostActive()) {
+            cir.setReturnValue(MultiviewHelper.getExtraTarget("entity_outline"));
+        }
+    }
+
+    @Inject(method = "doEntityOutline", at = @At("HEAD"), cancellable = true)
+    private void vivecraft$multiviewOutlineComposite(CallbackInfo ci) {
+        if (MultiviewHelper.isLayeredPostActive()) {
+            ci.cancel();
+            if (this.levelRenderState.shouldShowEntityOutlines) {
+                MVTextureTarget outline = MultiviewHelper.getExtraTarget("entity_outline");
+                MVTextureTarget main = MultiviewHelper.getTarget();
+                for (int layer = 0; layer < MVGlTexture.VIEWS; layer++) {
+                    RenderTarget mainLayer = main.getLayerTarget(layer);
+                    outline.getLayerTarget(layer).blitAndBlendToTexture(mainLayer.getColorTextureView(),
+                        mainLayer.getDepthTextureView());
+                }
+            }
         }
     }
 
@@ -290,5 +360,10 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
     public RenderTarget vivecraft$getVrUnoccludedTarget() {
         return this.targets instanceof LevelTargetBundleExtension ext && ext.vivecraft$getUnoccluded() != null ?
             ext.vivecraft$getUnoccluded().get() : null;
+    }
+
+    @WrapWithCondition(method = "submitFeatures", at = @At(value = "INVOKE", target = "Ljava/util/List;clear()V"), require = 3)
+    private boolean vivecraft$keepStatesForNextEye(java.util.List<?> instance) {
+        return !VRPassHelper.EXTRACT_FOR_BOTH_EYES;
     }
 }

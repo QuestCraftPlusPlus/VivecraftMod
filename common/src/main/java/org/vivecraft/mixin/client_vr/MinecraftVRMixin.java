@@ -113,6 +113,9 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
     public Options options;
 
     @Shadow
+    private boolean windowSurfaceNeedsReconfiguring;
+
+    @Shadow
     @Final
     private Window window;
 
@@ -390,6 +393,15 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
                 RenderHelper.drawVRConnectingMessage();
             }
             original.call(instance, commandEncoder, textureView);
+        }
+    }
+
+    @Inject(method = "renderFrame", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/CommandEncoder;submit()V", shift = Shift.AFTER), require = 1)
+    private void vivecraft$vrAfterSubmit(CallbackInfo ci) {
+        if (VRState.VR_RUNNING && ClientDataHolderVR.getInstance().vrRenderer != null) {
+            Profiler.get().push("vrSubmit");
+            ClientDataHolderVR.getInstance().vrRenderer.afterSubmit();
+            Profiler.get().pop();
         }
     }
 
@@ -800,6 +812,7 @@ public abstract class MinecraftVRMixin implements MinecraftExtension {
         boolean changed = VRState.VR_RUNNING != vrActive;
         VRState.VR_RUNNING = vrActive;
         if (changed) {
+            this.windowSurfaceNeedsReconfiguring = true;
             if (vrActive) {
                 // force first person camera in VR
                 this.vivecraft$lastCameraType = this.options.getCameraType();

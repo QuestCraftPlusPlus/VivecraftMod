@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.vivecraft.client_vr.ClientDataHolderVR;
+import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_vr.extensions.vulkan.VulkanInstanceExtension;
 
 import java.util.ArrayList;
@@ -30,8 +31,7 @@ public class VulkanInstanceVRMixin implements VulkanInstanceExtension {
     {
         if (!ClientDataHolderVR.getInstance().vrSettings.requiredVulkanInstanceExtensions.isEmpty()) {
             // check that all extensions are supported before enabling anything
-            String[] neededExtensions = ClientDataHolderVR.getInstance().vrSettings.requiredVulkanInstanceExtensions.split(
-                " ");
+            String[] neededExtensions = ClientDataHolderVR.getInstance().vrSettings.requiredVulkanInstanceExtensions.trim().split("\\s+");
             List<String> missingExtensions = new ArrayList<>();
             for (String extension : neededExtensions) {
                 if (!availableExtensions.contains(extension)) {
@@ -41,6 +41,12 @@ public class VulkanInstanceVRMixin implements VulkanInstanceExtension {
             if (missingExtensions.isEmpty()) {
                 // all available, enable them
                 enabledExtensions.addAll(Arrays.asList(neededExtensions));
+                VRSettings.LOGGER.info("Vivecraft: enabling Vulkan instance extensions for VR: {}",
+                    String.join(" ", neededExtensions));
+            } else {
+                VRSettings.LOGGER.warn(
+                    "Vivecraft: not enabling Vulkan instance extensions for VR, these are not supported: {}",
+                    missingExtensions);
             }
         }
         this.vivecraft$availableExtensions = ImmutableSet.copyOf(availableExtensions);

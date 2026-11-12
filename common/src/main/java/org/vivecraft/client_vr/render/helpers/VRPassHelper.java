@@ -1,6 +1,8 @@
 package org.vivecraft.client_vr.render.helpers;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.minecraft.client.renderer.state.level.LevelRenderState;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -32,6 +34,10 @@ public class VRPassHelper {
     private static final Minecraft MC = Minecraft.getInstance();
     private static final ClientDataHolderVR DATA_HOLDER = ClientDataHolderVR.getInstance();
 
+    public static boolean EXTRACT_FOR_BOTH_EYES = false;
+
+    public static boolean REUSE_EYE_EXTRACTION = false;
+
     /**
      * renders a single RenderPass view
      *
@@ -43,6 +49,8 @@ public class VRPassHelper {
         RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
             MC.gameRenderer.mainRenderTarget().getColorTexture(), MathUtils.BLACK_SOLID,
             MC.gameRenderer.mainRenderTarget().getDepthTexture(), 0.0);
+
+        boolean multiview = MultiviewHelper.ACTIVE;
 
         // THIS IS WHERE EVERYTHING IS RENDERED
         // reextract world state for the new pass
@@ -70,6 +78,15 @@ public class VRPassHelper {
 
         GraphicsHelper.INSTANCE.checkError("post game render " + eye);
 
+        if (multiview) {
+            MultiviewHelper.ACTIVE = false;
+            RenderPassManager.setRenderTarget(DATA_HOLDER.vrRenderer.framebufferVrRender);
+            if (MultiviewHelper.getLayerSource(RenderPass.LEFT) == null) {
+                MultiviewHelper.copyLayer(RenderPass.LEFT);
+                GraphicsHelper.INSTANCE.checkError("multiview copy " + eye);
+            }
+        }
+
         if (ShadersHelper.isShaderActive()) {
             // some shaders don't write an alpha value to the final image
             ShaderHelper.renderFullscreenQuad(() -> "alpha clear", VRShaders.SOLID_ALPHA_PIPELINE, pass -> {},
@@ -77,27 +94,7 @@ public class VRPassHelper {
         }
 
         if (DATA_HOLDER.currentPass == RenderPass.LEFT || DATA_HOLDER.currentPass == RenderPass.RIGHT) {
-            // copies the rendered scene to eye tex with fsaa and other postprocessing effects.
-            Profiler.get().push("postProcessEye");
-            RenderTarget rendertarget = MC.gameRenderer.mainRenderTarget();
-
-            if (DATA_HOLDER.vrSettings.useFsaa) {
-                Profiler.get().push("fsaa");
-                ShaderHelper.doFSAA(DATA_HOLDER.vrRenderer.framebufferVrRender,
-                    DATA_HOLDER.vrRenderer.fsaaFirstPassResultFBO,
-                    DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO);
-                rendertarget = DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO;
-                GraphicsHelper.INSTANCE.checkError("fsaa " + eye);
-                Profiler.get().pop();
-            }
-
-            // do post-processing
-            ShaderHelper.doVrPostProcess(eye, rendertarget,
-                DATA_HOLDER.vrRenderer.framebufferEye[eye == RenderPass.LEFT ? 0 : 1],
-                ((LevelRenderStateExtension) MC.gameRenderer.gameRenderState().levelRenderState).vivecraft$getVRRenderState().postProcessState);
-
-            GraphicsHelper.INSTANCE.checkError("post overlay" + eye);
-            Profiler.get().pop();
+            postProcessEye(eye, deltaTracker, multiview ? MultiviewHelper.getLayerSource(eye) : null);
         }
 
         if (DATA_HOLDER.currentPass == RenderPass.CAMERA) {
@@ -112,12 +109,61 @@ public class VRPassHelper {
             renderLevel && MC.level != null &&
             OptifineHelper.isOptifineLoaded() && OptifineHelper.isShaderActive())
         {
+            OptifineHelper.copyOptifineShaderDepth(DATA_HOLDER.vrRenderer.framebufferMR);
+        }
+    }
+
+    private static void postProcessEye(
+        RenderPass eye, DeltaTracker.Timer deltaTracker, @org.jspecify.annotations.Nullable RenderTarget source)
+    {
+        Profiler.get().push("postProcessEye");
+        RenderTarget rendertarget = source != null ? source : MC.gameRenderer.mainRenderTarget();
+
+        if (DATA_HOLDER.vrSettings.useFsaa) {
+            Profiler.get().push("fsaa");
+            ShaderHelper.doFSAA(DATA_HOLDER.vrRenderer.framebufferVrRender,
+                DATA_HOLDER.vrRenderer.fsaaFirstPassResultFBO,
+                DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO);
+            rendertarget = DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO;
+            GraphicsHelper.INSTANCE.checkError("fsaa " + eye);
+            Profiler.get().pop();
+        }
+
+        ShaderHelper.doVrPostProcess(eye, rendertarget,
+            DATA_HOLDER.vrRenderer.getEyeTarget(eye),
+            ((LevelRenderStateExtension) MC.gameRenderer.gameRenderState().levelRenderState).vivecraft$getVRRenderState().postProcessState);
+
+        GraphicsHelper.INSTANCE.checkError("post overlay" + eye);
+        Profiler.get().pop();
+
+        if (DATA_HOLDER.currentPass == RenderPass.CAMERA) {
+            Profiler.get().push("cameraCopy");
+            ShaderHelper.blit(DATA_HOLDER.vrRenderer.cameraRenderFramebuffer, DATA_HOLDER.vrRenderer.cameraFramebuffer,
+                false);
+            Profiler.get().pop();
+        }
+
+        if (DATA_HOLDER.currentPass == RenderPass.THIRD &&
+            DATA_HOLDER.vrSettings.displayMirrorMode == VRSettings.MirrorMode.MIXED_REALITY &&
+            MC.level != null &&
+            OptifineHelper.isOptifineLoaded() && OptifineHelper.isShaderActive())
+        {
             // copy optifine depth buffer, since we need it for the mixed reality split
             OptifineHelper.copyOptifineShaderDepth(DATA_HOLDER.vrRenderer.framebufferMR);
         }
+    }
 
-        // need to do this or clouds would crash with sodium for some reason
-        RenderSystem.getDevice().createCommandEncoder().submit();
+    private static void clearOneShotLevelState() {
+        LevelRenderState state = MC.gameRenderer.gameRenderState().levelRenderState;
+        state.chunkLoadingRenderState.addedEmptySections = new LongOpenHashSet();
+        state.chunkLoadingRenderState.removedEmptySections = new LongOpenHashSet();
+        state.chunkLoadingRenderState.addedLoadedChunks = new LongOpenHashSet();
+        state.chunkLoadingRenderState.removedLoadedChunks = new LongOpenHashSet();
+        state.chunkLoadingRenderState.loadedExpectedChunks = new LongOpenHashSet();
+        state.sectionUpdateRenderStates.clear();
+        state.shouldResetChunkLayerSampler = false;
+        state.shouldResetSkyRenderer = false;
+        state.playerCompiledSectionCallback = null;
     }
 
     /**
@@ -188,6 +234,10 @@ public class VRPassHelper {
 
         // render the different vr passes
         List<RenderPass> list = DATA_HOLDER.vrRenderer.getRenderPasses(false);
+        boolean multiview = list.contains(RenderPass.LEFT) && list.contains(RenderPass.RIGHT) &&
+            MultiviewHelper.shouldUseMultiview();
+        boolean shareEyeExtraction = !multiview && renderLevel && list.contains(RenderPass.LEFT) &&
+            list.contains(RenderPass.RIGHT);
         DATA_HOLDER.isFirstPass = true;
         for (RenderPass renderpass : list) {
             DATA_HOLDER.currentPass = renderpass;
@@ -212,9 +262,34 @@ public class VRPassHelper {
             }
 
             Profiler.get().push("Eye:" + DATA_HOLDER.currentPass);
-            Profiler.get().push("setup");
-            Profiler.get().pop();
-            VRPassHelper.renderSingleView(renderpass, deltaTracker, renderLevel);
+            if (multiview && renderpass == RenderPass.RIGHT) {
+                RenderTarget layerSource = MultiviewHelper.getLayerSource(RenderPass.RIGHT);
+                if (layerSource == null) {
+                    MultiviewHelper.copyLayer(RenderPass.RIGHT);
+                }
+                postProcessEye(RenderPass.RIGHT, deltaTracker, layerSource);
+            } else {
+                if (multiview && renderpass == RenderPass.LEFT) {
+                    Profiler.get().push("multiviewSetup");
+                    RenderPassManager.setRenderTarget(MultiviewHelper.getTarget());
+                    MultiviewHelper.setupEyeMatrices();
+                    MultiviewHelper.ACTIVE = true;
+                    Profiler.get().pop();
+                }
+                boolean extractForBoth = shareEyeExtraction && renderpass == RenderPass.LEFT;
+                boolean reuse = shareEyeExtraction && renderpass == RenderPass.RIGHT;
+                EXTRACT_FOR_BOTH_EYES = extractForBoth;
+                REUSE_EYE_EXTRACTION = reuse;
+                try {
+                    VRPassHelper.renderSingleView(renderpass, deltaTracker, renderLevel);
+                } finally {
+                    EXTRACT_FOR_BOTH_EYES = false;
+                    REUSE_EYE_EXTRACTION = false;
+                }
+                if (extractForBoth) {
+                    clearOneShotLevelState();
+                }
+            }
             Profiler.get().pop();
 
             if (DATA_HOLDER.grabScreenShot) {
@@ -242,21 +317,19 @@ public class VRPassHelper {
                 }
             }
 
-            DATA_HOLDER.isFirstPass = false;
-        }
-        // now we are done with rendering
-        Profiler.get().pop();
-
-        DATA_HOLDER.vrPlayer.postRender(deltaTracker.getGameTimeDeltaPartialTick(true));
+            if (renderpass == RenderPass.RIGHT) {
 
         Profiler.get().popPush("Display/Reproject");
-
-        try {
-            DATA_HOLDER.vrRenderer.endFrame();
-        } catch (RenderConfigException exception) {
-            // something went wrong, disable VR
+                try {
+                    DATA_HOLDER.vrRenderer.endFrame();
+                } catch (RenderConfigException exception) {
             VRState.VR_ENABLED = false;
             MC.gui.setScreen(new ErrorScreen(exception.title, exception.error));
+                }
+                Profiler.get().pop();
+            }
+
+            DATA_HOLDER.isFirstPass = false;
         }
         Profiler.get().pop();
         GraphicsHelper.INSTANCE.checkError("post submit");

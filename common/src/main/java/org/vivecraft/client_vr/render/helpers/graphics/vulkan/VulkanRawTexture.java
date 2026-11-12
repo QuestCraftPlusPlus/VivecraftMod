@@ -110,7 +110,7 @@ public class VulkanRawTexture implements RawTexture {
         VkCommandBuffer commandBuffer, int newLayout, int srcAccessMask, int dstAccessMask)
     {
         ((VulkanHelper) GraphicsHelper.INSTANCE).transitionImageLayoutTo(commandBuffer,
-            this.vkImage, 0, 1,
+            this.vkImage, 0, 1, this.layer,
             this.currentLayout, newLayout,
             srcAccessMask, dstAccessMask,
             VK10.VK_PIPELINE_STAGE_TRANSFER_BIT, VK10.VK_PIPELINE_STAGE_TRANSFER_BIT);

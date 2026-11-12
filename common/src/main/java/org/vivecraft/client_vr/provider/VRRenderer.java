@@ -27,6 +27,7 @@ import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client.extensions.RenderTargetExtension;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client.utils.StencilHelper;
+import org.vivecraft.client_vr.render.helpers.MultiviewHelper;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.extensions.WindowExtension;
@@ -200,6 +201,8 @@ public abstract class VRRenderer {
      * @throws RenderConfigException when the VR runtime throws any errors
      */
     public abstract void endFrame() throws RenderConfigException;
+
+    public void afterSubmit() {}
 
     /**
      * @return if this VRRenderer provides stencil for the left/right RenderPass
@@ -999,6 +1002,10 @@ public abstract class VRRenderer {
         }
     }
 
+    public RenderTarget getEyeTarget(org.vivecraft.api.client.data.RenderPass eye) {
+        return this.framebufferEye[eye == org.vivecraft.api.client.data.RenderPass.RIGHT ? 1 : 0];
+    }
+
     /**
      * only destroys the render buffers, everything else stays in takt
      */
@@ -1086,6 +1093,7 @@ public abstract class VRRenderer {
      */
     public void destroy() {
         destroyBuffers();
+        MultiviewHelper.destroy();
         this.stencilProjectionMatrix.close();
 
         for (int i = 0; i < 2; i++) {

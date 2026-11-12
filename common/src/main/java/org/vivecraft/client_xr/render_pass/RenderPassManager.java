@@ -62,7 +62,7 @@ public class RenderPassManager {
         setRenderTarget(INSTANCE.vanillaRenderTarget);
     }
 
-    private static void setRenderTarget(RenderTarget target) {
+    public static void setRenderTarget(RenderTarget target) {
         MC.gameRenderer.mainRenderTarget = target;
         if (MC.levelRenderer.skyRenderer() != null) {
             MC.levelRenderer.skyRenderer().renderTarget = target;

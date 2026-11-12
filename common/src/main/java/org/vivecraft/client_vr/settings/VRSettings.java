@@ -242,7 +242,7 @@ public class VRSettings {
     public int version = UNKNOWN_VERSION;
 
     @SettingField(VrOptions.VR_PLUGIN)
-    public VRProvider stereoProviderPluginID = VRProvider.OPENVR;
+    public VRProvider stereoProviderPluginID = VRProvider.OPENXR;
     public boolean storeDebugAim = false;
     @SettingField
     public int smoothRunTickCount = 20;
@@ -305,6 +305,8 @@ public class VRSettings {
     public boolean fbtExtendedCalibrated = false;
     @SettingField
     public boolean unlabeledTrackersUsed = false;
+    @SettingField(VrOptions.ENABLE_MULTIVIEW)
+    public boolean enableMultiview = true;
     @SettingField(VrOptions.OSC_TRACKER_PORT)
     public int oscTrackerPort = 9000;
     @SettingField(config = "FBTOFFSETS")
@@ -688,7 +690,7 @@ public class VRSettings {
     @SettingField(VrOptions.CHAT_MESSAGE_STENCIL)
     public boolean showChatMessageStencil = true;
     @SettingField(value = VrOptions.VR_ENABLED, config = "vrEnabled")
-    public boolean vrEnabled = false;
+    public boolean vrEnabled = true;
     @SettingField(VrOptions.VR_CLOSE_WITH_RUNTIME)
     public boolean closeWithRuntime = true;
     @SettingField(VrOptions.VR_REMEMBER_ENABLED)
@@ -2431,6 +2433,7 @@ public class VRSettings {
         PLAYER_LIMBS_LIMIT(OptionType.BOOLEAN), // doesn't split connected limbs when over length
         PLAYER_WALK_ANIM(OptionType.BOOLEAN), // if the walk animation should show on top of fbt
         PLAYER_ARM_ANIM(OptionType.BOOLEAN), // if the player arm should swing with attacks, item using
+        ENABLE_MULTIVIEW(OptionType.BOOLEAN),
         APPLY_PLAYER_WORLDSCALE(OptionType.BOOLEAN), // scales other player models with their worldscale
         OSC_TRACKER_PORT(0, 65535, 1, 0) { // port to receive ocs data
 

@@ -138,7 +138,7 @@ public class VRState {
             }
         } catch (Throwable exception) {
             VRSettings.LOGGER.error("Vivecraft: Failed to initialize VR: ", exception);
-            destroyVR(true);
+            destroyVR(!(exception instanceof RenderConfigException renderConfig && renderConfig.restartRequired));
             if (exception instanceof RenderConfigException renderConfigException) {
                 setScreenAndCache(new ErrorScreen(renderConfigException.title, renderConfigException.error));
             } else {

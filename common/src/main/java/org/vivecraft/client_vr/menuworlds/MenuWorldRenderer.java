@@ -319,27 +319,29 @@ public class MenuWorldRenderer {
                 .writeChunkSections(new DynamicUniforms.ChunkSectionInfo(RenderSystem.getModelViewMatrixCopy(),
                     0, 0, 0, 1.0F, blockAtlas.getWidth(0), blockAtlas.getHeight(0)))[0];
 
+            int maxIndexCount = 0;
             for (Pair<Integer, GpuBuffer> buffer : buffers) {
-                RenderSystem.AutoStorageIndexBuffer autoStorageIndexBuffer = RenderSystem.getSequentialBuffer(
-                    PrimitiveTopology.QUADS);
-                GpuBuffer indexBuffer = autoStorageIndexBuffer.getBuffer(buffer.getLeft());
+                maxIndexCount = Math.max(maxIndexCount, buffer.getLeft());
+            }
+            RenderSystem.AutoStorageIndexBuffer autoStorageIndexBuffer = RenderSystem.getSequentialBuffer(
+                PrimitiveTopology.QUADS);
+            GpuBuffer indexBuffer = autoStorageIndexBuffer.getBuffer(maxIndexCount);
 
-                try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-                    () -> "Menuworld: " + layer.label(),
-                    this.mc.gameRenderer.mainRenderTarget.getColorTextureView(), Optional.empty(),
-                    this.mc.gameRenderer.mainRenderTarget.getDepthTextureView(), OptionalDouble.empty()))
-                {
-                    renderPass.setUniform("ChunkSection", chunkSection);
-                    RenderSystem.bindDefaultUniforms(renderPass);
-                    renderPass.setPipeline(layer.pipeline());
-                    renderPass.bindTexture("Sampler2", this.lightMapView,
-                        RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-                    renderPass.bindTexture("Sampler0",
-                        this.mc.getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).getTextureView(),
-                        this.chunkLayerSampler);
-                    // TODO 1.21.6 maybe use drawMultipleIndexed
+            try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+                () -> "Menuworld: " + layer.label(),
+                this.mc.gameRenderer.mainRenderTarget.getColorTextureView(), Optional.empty(),
+                this.mc.gameRenderer.mainRenderTarget.getDepthTextureView(), OptionalDouble.empty()))
+            {
+                renderPass.setUniform("ChunkSection", chunkSection);
+                RenderSystem.bindDefaultUniforms(renderPass);
+                renderPass.setPipeline(layer.pipeline());
+                renderPass.bindTexture("Sampler2", this.lightMapView,
+                    RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+                renderPass.bindTexture("Sampler0", blockAtlas, this.chunkLayerSampler);
+                renderPass.setIndexBuffer(indexBuffer, autoStorageIndexBuffer.type());
+
+                for (Pair<Integer, GpuBuffer> buffer : buffers) {
                     renderPass.setVertexBuffer(0, buffer.getRight().slice());
-                    renderPass.setIndexBuffer(indexBuffer, autoStorageIndexBuffer.type());
                     renderPass.drawIndexed(buffer.getLeft(), 1, 0, 0, 0);
                 }
             }
