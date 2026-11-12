@@ -43,6 +43,7 @@
     "client_vr.OptionsVRMixin",
     "client_vr.blaze3d.audio.LibraryVRMixin",
     "client_vr.blaze3d.opengl.GLCommandEncoderVRMixin",
+    "client_vr.blaze3d.opengl.GlRenderPassVRMixin",
     "client_vr.blaze3d.opengl.GlStateManagerVRMixin",
     "client_vr.blaze3d.platform.InputConstantsVRMixin",
     "client_vr.blaze3d.platform.WindowVRMixin",

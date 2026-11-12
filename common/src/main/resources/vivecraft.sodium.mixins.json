@@ -8,6 +8,8 @@
     "SodiumLeavesBlockMixin",
     "SodiumWorldRendererVRMixin",
     "caffeinemc.EntityRendererMixin",
+    "caffeinemc.GlShaderMultiviewMixin",
+    "caffeinemc.ShaderChunkRendererMultiviewMixin",
     "jellysquid.EntityRendererMixin"
   ],
   "minVersion": "0.8.4"

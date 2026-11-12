@@ -22,6 +22,7 @@ import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client.extensions.RenderTargetExtension;
 import org.vivecraft.client.utils.ClientUtils;
 import org.vivecraft.client.utils.StencilHelper;
+import org.vivecraft.client_vr.render.helpers.MultiviewHelper;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRTextureTarget;
 import org.vivecraft.client_vr.extensions.GameRendererExtension;
@@ -1055,6 +1056,7 @@ public abstract class VRRenderer {
      */
     public void destroy() {
         destroyBuffers();
+        MultiviewHelper.destroy();
         this.stencilProjectionMatrix.close();
         if (this.bakedHiddenMesh[0] != null) {
             this.bakedHiddenMesh[0].close();

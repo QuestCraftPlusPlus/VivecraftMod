@@ -20,9 +20,7 @@ public class OpenXRStereoRenderer extends VRRenderer {
     private int swapIndexRight;
     private VRTextureTarget[] leftFramebuffers;
     private VRTextureTarget[] rightFramebuffers;
-    private boolean render;
     private XrCompositionLayerProjectionView.Buffer projectionLayerViews;
-
 
     public OpenXRStereoRenderer(MCOpenXR vr) {
         super(vr);
@@ -77,7 +75,10 @@ public class OpenXRStereoRenderer extends VRRenderer {
         if (!render) {
             return;
         }
-        this.projectionLayerViews = XrCompositionLayerProjectionView.calloc(2);
+        if (this.projectionLayerViews == null) {
+            // reused every frame, freed in destroy()
+            this.projectionLayerViews = XrCompositionLayerProjectionView.calloc(2);
+        }
         for(int i = 0; i < 2; i++) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 IntBuffer intBuf2 = stack.callocInt(1);
@@ -152,7 +153,15 @@ public class OpenXRStereoRenderer extends VRRenderer {
                     .layers(layers));
             this.openxr.logError(error, "xrEndFrame", "");
         }
-        projectionLayerViews.close();
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        if (this.projectionLayerViews != null) {
+            this.projectionLayerViews.free();
+            this.projectionLayerViews = null;
+        }
     }
 
     @Override

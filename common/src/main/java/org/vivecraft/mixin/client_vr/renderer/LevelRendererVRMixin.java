@@ -28,6 +28,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -35,6 +36,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.vivecraft.client.extensions.LevelRenderStateExtension;
@@ -44,6 +46,7 @@ import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.extensions.LevelTargetBundleExtension;
 import org.vivecraft.client_vr.gameplay.interact_modules.BlockInteractionModule;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
+import org.vivecraft.client_vr.render.helpers.MultiviewHelper;
 import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
 import org.vivecraft.client_vr.settings.VRSettings;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
@@ -337,5 +340,10 @@ public abstract class LevelRendererVRMixin implements ResourceManagerReloadListe
         {
             cir.setReturnValue(null);
         }
+    }
+
+    @ModifyVariable(method = "prepareCullFrustum", at = @At("HEAD"), argsOnly = true, ordinal = 1)
+    private Matrix4f vivecraft$multiviewCullFrustum(Matrix4f projection) {
+        return MultiviewHelper.ACTIVE ? MultiviewHelper.getCullingProjection(projection) : projection;
     }
 }

@@ -39,8 +39,17 @@ public class VRPassHelper {
             MC.getMainRenderTarget().getColorTexture(), 0xFF000000,
             MC.getMainRenderTarget().getDepthTexture(), 1.0);
 
+        boolean multiview = MultiviewHelper.ACTIVE;
+
         // THIS IS WHERE EVERYTHING IS RENDERED
-        MC.gameRenderer.render(deltaTracker, renderLevel);
+        try {
+            MC.gameRenderer.render(deltaTracker, renderLevel);
+        } finally {
+            if (multiview) {
+                MultiviewHelper.ACTIVE = false;
+                MC.mainRenderTarget = DATA_HOLDER.vrRenderer.framebufferVrRender;
+            }
+        }
 
         // flip buffers for the next pass, in vanilla this is only done when flipping the backbuffer
         MC.levelRenderer.endFrame();
@@ -49,6 +58,12 @@ public class VRPassHelper {
 
         GraphicsHelper.INSTANCE.checkError("post game render " + eye);
 
+        if (multiview) {
+            // both eyes are in the multiview target, get the left one out for post-processing
+            MultiviewHelper.copyLayer(RenderPass.LEFT);
+            GraphicsHelper.INSTANCE.checkError("multiview copy " + eye);
+        }
+
         if (ShadersHelper.isShaderActive()) {
             // some shaders don't write an alpha value to the final image
             ShaderHelper.renderFullscreenQuad(() -> "alpha clear", VRShaders.SOLID_ALPHA_PIPELINE, pass -> {},
@@ -56,33 +71,7 @@ public class VRPassHelper {
         }
 
         if (DATA_HOLDER.currentPass == RenderPass.LEFT || DATA_HOLDER.currentPass == RenderPass.RIGHT) {
-            // copies the rendered scene to eye tex with fsaa and other postprocessing effects.
-            Profiler.get().push("postProcessEye");
-            RenderTarget rendertarget = MC.getMainRenderTarget();
-
-            if (DATA_HOLDER.vrSettings.useFsaa) {
-                Profiler.get().push("fsaa");
-                ShaderHelper.doFSAA(DATA_HOLDER.vrRenderer.framebufferVrRender,
-                    DATA_HOLDER.vrRenderer.fsaaFirstPassResultFBO,
-                    DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO);
-                rendertarget = DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO;
-                GraphicsHelper.INSTANCE.checkError("fsaa " + eye);
-                Profiler.get().pop();
-            }
-
-            // do post-processing
-            VRTextureTarget framebufferEye;
-            if(eye == RenderPass.LEFT)
-                framebufferEye = DATA_HOLDER.vrRenderer.getLeftEyeTarget();
-            else
-                framebufferEye = DATA_HOLDER.vrRenderer.getRightEyeTarget();
-
-            ShaderHelper.doVrPostProcess(eye, rendertarget,
-                framebufferEye,
-                deltaTracker.getGameTimeDeltaPartialTick(false));
-
-            GraphicsHelper.INSTANCE.checkError("post overlay" + eye);
-            Profiler.get().pop();
+            postProcessEye(eye, deltaTracker);
         }
 
         if (DATA_HOLDER.currentPass == RenderPass.CAMERA) {
@@ -100,6 +89,38 @@ public class VRPassHelper {
             // copy optifine depth buffer, since we need it for the mixed reality split
             OptifineHelper.copyOptifineShaderDepth(DATA_HOLDER.vrRenderer.framebufferMR);
         }
+    }
+
+    /**
+     * copies the rendered scene from the main RenderTarget to eye tex with fsaa and other postprocessing effects.
+     *
+     * @param eye          LEFT or RIGHT
+     * @param deltaTracker tracker to get the partial tick from
+     */
+    private static void postProcessEye(RenderPass eye, DeltaTracker.Timer deltaTracker) {
+        Profiler.get().push("postProcessEye");
+        RenderTarget rendertarget = MC.getMainRenderTarget();
+
+        if (DATA_HOLDER.vrSettings.useFsaa) {
+            Profiler.get().push("fsaa");
+            ShaderHelper.doFSAA(DATA_HOLDER.vrRenderer.framebufferVrRender,
+                DATA_HOLDER.vrRenderer.fsaaFirstPassResultFBO,
+                DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO);
+            rendertarget = DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO;
+            GraphicsHelper.INSTANCE.checkError("fsaa " + eye);
+            Profiler.get().pop();
+        }
+
+        // do post-processing
+        VRTextureTarget framebufferEye = eye == RenderPass.LEFT ?
+            DATA_HOLDER.vrRenderer.getLeftEyeTarget() :
+            DATA_HOLDER.vrRenderer.getRightEyeTarget();
+
+        ShaderHelper.doVrPostProcess(eye, rendertarget, framebufferEye,
+            deltaTracker.getGameTimeDeltaPartialTick(false));
+
+        GraphicsHelper.INSTANCE.checkError("post overlay" + eye);
+        Profiler.get().pop();
     }
 
     /**
@@ -165,6 +186,8 @@ public class VRPassHelper {
 
         // render the different vr passes
         List<RenderPass> list = DATA_HOLDER.vrRenderer.getRenderPasses(false);
+        boolean multiview = list.contains(RenderPass.LEFT) && list.contains(RenderPass.RIGHT) &&
+            MultiviewHelper.shouldUseMultiview();
         DATA_HOLDER.isFirstPass = true;
         for (RenderPass renderpass : list) {
             DATA_HOLDER.currentPass = renderpass;
@@ -189,9 +212,20 @@ public class VRPassHelper {
             }
 
             Profiler.get().push("Eye:" + DATA_HOLDER.currentPass);
-            Profiler.get().push("setup");
-            Profiler.get().pop();
-            VRPassHelper.renderSingleView(renderpass, deltaTracker, renderLevel);
+            if (multiview && renderpass == RenderPass.RIGHT) {
+                // already rendered in the LEFT pass, copy out and post process the second layer
+                MultiviewHelper.copyLayer(RenderPass.RIGHT);
+                postProcessEye(RenderPass.RIGHT, deltaTracker);
+            } else {
+                if (multiview && renderpass == RenderPass.LEFT) {
+                    Profiler.get().push("multiviewSetup");
+                    MC.mainRenderTarget = MultiviewHelper.getTarget();
+                    MultiviewHelper.setupEyeMatrices();
+                    MultiviewHelper.ACTIVE = true;
+                    Profiler.get().pop();
+                }
+                VRPassHelper.renderSingleView(renderpass, deltaTracker, renderLevel);
+            }
             Profiler.get().pop();
 
             if (DATA_HOLDER.grabScreenShot) {
@@ -208,6 +242,7 @@ public class VRPassHelper {
                 }
 
                 if (flag) {
+                    // with multiview the main target holds the copied layer of this eye
                     RenderTarget rendertarget = MC.mainRenderTarget;
 
                     if (renderpass == RenderPass.CAMERA) {
@@ -220,19 +255,21 @@ public class VRPassHelper {
                 }
             }
 
+            if (renderpass == RenderPass.RIGHT) {
+                // submit the eyes as soon as they are done, the other passes are only for the desktop
+                Profiler.get().push("Display/Reproject");
+                try {
+                    DATA_HOLDER.vrRenderer.endFrame();
+                } catch (RenderConfigException exception) {
+                    VRSettings.LOGGER.error("Vivecraft: error ending frame: {}", exception.error.getString());
+                }
+                Profiler.get().pop();
+            }
+
             DATA_HOLDER.isFirstPass = false;
         }
-        // now we are done with rendering
-        Profiler.get().pop();
-
         DATA_HOLDER.vrPlayer.postRender(deltaTracker.getGameTimeDeltaPartialTick(true));
-        Profiler.get().push("Display/Reproject");
 
-        try {
-            DATA_HOLDER.vrRenderer.endFrame();
-        } catch (RenderConfigException exception) {
-            VRSettings.LOGGER.error("Vivecraft: error ending frame: {}", exception.error.getString());
-        }
         // no profile pop, the caller assumes something to be there to pop
         GraphicsHelper.INSTANCE.checkError("post submit");
     }
