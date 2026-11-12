@@ -43,37 +43,22 @@ public class VRPassHelper {
         RenderSystem.clear(GL13C.GL_COLOR_BUFFER_BIT | GL13C.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
         RenderSystem.enableDepthTest();
 
+        boolean multiview = MultiviewHelper.ACTIVE;
+
         // THIS IS WHERE EVERYTHING IS RENDERED
-        MC.gameRenderer.render(partialTick, nanoTime, renderLevel);
+        try {
+            MC.gameRenderer.render(partialTick, nanoTime, renderLevel);
+        } finally {
+            if (multiview) {
+                MultiviewHelper.ACTIVE = false;
+                MC.mainRenderTarget = DATA_HOLDER.vrRenderer.framebufferVrRender;
+            }
+        }
 
         RenderHelper.checkGLError("post game render " + eye);
 
         if (DATA_HOLDER.currentPass == RenderPass.LEFT || DATA_HOLDER.currentPass == RenderPass.RIGHT) {
-            // copies the rendered scene to eye tex with fsaa and other postprocessing effects.
-            MC.getProfiler().push("postProcessEye");
-            RenderTarget rendertarget = MC.getMainRenderTarget();
-
-            if (DATA_HOLDER.vrSettings.useFsaa) {
-                MC.getProfiler().push("fsaa");
-                ShaderHelper.doFSAA(DATA_HOLDER.vrRenderer.framebufferVrRender,
-                    DATA_HOLDER.vrRenderer.fsaaFirstPassResultFBO,
-                    DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO);
-                rendertarget = DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO;
-                RenderHelper.checkGLError("fsaa " + eye);
-                MC.getProfiler().pop();
-            }
-
-            if (eye == RenderPass.LEFT) {
-                DATA_HOLDER.vrRenderer.getLeftEyeTarget().bindWrite(true);
-            } else {
-                DATA_HOLDER.vrRenderer.getRightEyeTarget().bindWrite(true);
-            }
-
-            // do post-processing
-            ShaderHelper.doVrPostProcess(eye, rendertarget, partialTick);
-
-            RenderHelper.checkGLError("post overlay" + eye);
-            MC.getProfiler().pop();
+            postProcessEye(eye, multiview ? MultiviewHelper.getTarget() : MC.getMainRenderTarget(), partialTick);
         }
 
         if (DATA_HOLDER.currentPass == RenderPass.CAMERA) {
@@ -103,6 +88,33 @@ public class VRPassHelper {
             // rebind the original buffer
             DATA_HOLDER.vrRenderer.framebufferMR.bindWrite(false);
         }
+    }
+
+    private static void postProcessEye(RenderPass eye, RenderTarget source, float partialTick) {
+        MC.getProfiler().push("postProcessEye");
+        RenderTarget rendertarget = source;
+
+        if (DATA_HOLDER.vrSettings.useFsaa) {
+            MC.getProfiler().push("fsaa");
+            ShaderHelper.doFSAA(DATA_HOLDER.vrRenderer.framebufferVrRender,
+                DATA_HOLDER.vrRenderer.fsaaFirstPassResultFBO,
+                DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO);
+            rendertarget = DATA_HOLDER.vrRenderer.fsaaLastPassResultFBO;
+            RenderHelper.checkGLError("fsaa " + eye);
+            MC.getProfiler().pop();
+        }
+
+        if (eye == RenderPass.LEFT) {
+            DATA_HOLDER.vrRenderer.getLeftEyeTarget().bindWrite(true);
+        } else {
+            DATA_HOLDER.vrRenderer.getRightEyeTarget().bindWrite(true);
+        }
+
+        // do post-processing
+        ShaderHelper.doVrPostProcess(eye, rendertarget, partialTick);
+
+        RenderHelper.checkGLError("post overlay" + eye);
+        MC.getProfiler().pop();
     }
 
     /**
@@ -199,6 +211,8 @@ public class VRPassHelper {
 
         // render the different vr passes
         List<RenderPass> list = DATA_HOLDER.vrRenderer.getRenderPasses();
+        boolean multiview = list.contains(RenderPass.LEFT) && list.contains(RenderPass.RIGHT) &&
+            MultiviewHelper.shouldUseMultiview();
         DATA_HOLDER.isFirstPass = true;
         for (RenderPass renderpass : list) {
             DATA_HOLDER.currentPass = renderpass;
@@ -223,10 +237,20 @@ public class VRPassHelper {
             }
 
             MC.getProfiler().push("Eye:" + DATA_HOLDER.currentPass);
-            MC.getProfiler().push("setup");
-            MC.mainRenderTarget.bindWrite(true);
-            MC.getProfiler().pop();
-            VRPassHelper.renderSingleView(renderpass, actualPartialTick, nanoTime, renderLevel);
+            if (multiview && renderpass == RenderPass.RIGHT) {
+                // already rendered in the LEFT pass, post process the second layer
+                postProcessEye(RenderPass.RIGHT, MultiviewHelper.getTarget(), actualPartialTick);
+            } else {
+                MC.getProfiler().push("setup");
+                if (multiview && renderpass == RenderPass.LEFT) {
+                    MC.mainRenderTarget = MultiviewHelper.getTarget();
+                    MultiviewHelper.uploadEyeUniforms();
+                    MultiviewHelper.ACTIVE = true;
+                }
+                MC.mainRenderTarget.bindWrite(true);
+                MC.getProfiler().pop();
+                VRPassHelper.renderSingleView(renderpass, actualPartialTick, nanoTime, renderLevel);
+            }
             MC.getProfiler().pop();
 
             if (DATA_HOLDER.grabScreenShot) {
@@ -247,6 +271,9 @@ public class VRPassHelper {
 
                     if (renderpass == RenderPass.CAMERA) {
                         rendertarget = DATA_HOLDER.vrRenderer.cameraFramebuffer;
+                    } else if (multiview && (renderpass == RenderPass.LEFT || renderpass == RenderPass.RIGHT)) {
+                        // the eye image only exists as a layer of the multiview target
+                        MultiviewHelper.copyLayer(renderpass);
                     }
 
                     MC.mainRenderTarget.unbindWrite();
@@ -256,10 +283,20 @@ public class VRPassHelper {
                 }
             }
 
+            if(renderpass == RenderPass.RIGHT) {
+                MC.getProfiler().popPush("Display/Reproject");
+
+                try {
+                    DATA_HOLDER.vrRenderer.endFrame();
+                } catch (RenderConfigException exception) {
+                    VRSettings.LOGGER.error("Vivecraft: error ending frame: {}", exception.error.getString());
+                }
+                MC.getProfiler().pop();
+                RenderHelper.checkGLError("post submit");
+            }
+
             DATA_HOLDER.isFirstPass = false;
         }
-        // now we are done with rendering
-        MC.getProfiler().pop();
 
         DATA_HOLDER.vrPlayer.postRender(actualPartialTick);
 
@@ -269,15 +306,5 @@ public class VRPassHelper {
         MC.mainRenderTarget.bindWrite(true);
         ShaderHelper.drawMirror();
         RenderHelper.checkGLError("post-mirror");
-
-        MC.getProfiler().popPush("Display/Reproject");
-
-        try {
-            DATA_HOLDER.vrRenderer.endFrame();
-        } catch (RenderConfigException exception) {
-            VRSettings.LOGGER.error("Vivecraft: error ending frame: {}", exception.error.getString());
-        }
-        MC.getProfiler().pop();
-        RenderHelper.checkGLError("post submit");
     }
 }

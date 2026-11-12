@@ -7,6 +7,11 @@ import org.joml.Matrix4f;
 public interface GameRendererExtension {
 
     /**
+     * @return the core shaders loaded by the GameRenderer
+     */
+    java.util.Map<String, net.minecraft.client.renderer.ShaderInstance> vivecraft$getShaders();
+
+    /**
      * @return if the camera is in water
      */
     boolean vivecraft$isInWater();

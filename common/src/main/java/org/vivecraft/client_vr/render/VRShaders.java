@@ -4,6 +4,7 @@ import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
+import org.vivecraft.client_vr.settings.VRSettings;
 
 import java.io.IOException;
 
@@ -25,6 +26,9 @@ public class VRShaders {
 
     // vr post shader and its uniforms
     public static ShaderInstance POST_PROCESSING_SHADER;
+    // same as POST_PROCESSING_SHADER, but reads a layer of a texture array
+    public static ShaderInstance POST_PROCESSING_MV_SHADER;
+    public static AbstractUniform POST_PROCESSING_MV_LAYER_UNIFORM;
     public static AbstractUniform POST_PROCESSING_FOV_REDUCTION_RADIUS_UNIFORM;
     public static AbstractUniform POST_PROCESSING_FOV_REDUCTION_OFFSET_UNIFORM;
     public static AbstractUniform POST_PROCESSING_FOV_REDUCTION_BORDER_UNIFORM;
@@ -76,17 +80,35 @@ public class VRShaders {
         POST_PROCESSING_SHADER = new ShaderInstance(Minecraft.getInstance().getResourceManager(), "postprocessing_vr",
             DefaultVertexFormat.POSITION_TEX);
 
-        POST_PROCESSING_FOV_REDUCTION_RADIUS_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("circle_radius");
-        POST_PROCESSING_FOV_REDUCTION_OFFSET_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("circle_offset");
-        POST_PROCESSING_FOV_REDUCTION_BORDER_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("border");
-        POST_PROCESSING_OVERLAY_HEALTH_ALPHA_UNiFORM = POST_PROCESSING_SHADER.safeGetUniform("redalpha");
-        POST_PROCESSING_OVERLAY_FREEZE_ALPHA_UNiFORM = POST_PROCESSING_SHADER.safeGetUniform("bluealpha");
-        POST_PROCESSING_OVERLAY_WATER_AMPLITUDE_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("water");
-        POST_PROCESSING_OVERLAY_PORTAL_AMPLITUDE_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("portal");
-        POST_PROCESSING_OVERLAY_PUMPKIN_AMPLITUDE_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("pumpkin");
-        POST_PROCESSING_OVERLAY_EYE_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("eye");
-        POST_PROCESSING_OVERLAY_TIME_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("portaltime");
-        POST_PROCESSING_OVERLAY_BLACK_ALPHA_UNIFORM = POST_PROCESSING_SHADER.safeGetUniform("blackalpha");
+        try {
+            POST_PROCESSING_MV_SHADER = new ShaderInstance(Minecraft.getInstance().getResourceManager(),
+                "postprocessing_mv_vr", DefaultVertexFormat.POSITION_TEX);
+            POST_PROCESSING_MV_LAYER_UNIFORM = POST_PROCESSING_MV_SHADER.safeGetUniform("layer");
+        } catch (Exception e) {
+            VRSettings.LOGGER.error("Vivecraft: failed to compile MultiView post processing shader", e);
+            POST_PROCESSING_MV_SHADER = null;
+            POST_PROCESSING_MV_LAYER_UNIFORM = null;
+        }
+
+        POST_PROCESSING_FOV_REDUCTION_RADIUS_UNIFORM = postProcessingUniform("circle_radius");
+        POST_PROCESSING_FOV_REDUCTION_OFFSET_UNIFORM = postProcessingUniform("circle_offset");
+        POST_PROCESSING_FOV_REDUCTION_BORDER_UNIFORM = postProcessingUniform("border");
+        POST_PROCESSING_OVERLAY_HEALTH_ALPHA_UNiFORM = postProcessingUniform("redalpha");
+        POST_PROCESSING_OVERLAY_FREEZE_ALPHA_UNiFORM = postProcessingUniform("bluealpha");
+        POST_PROCESSING_OVERLAY_WATER_AMPLITUDE_UNIFORM = postProcessingUniform("water");
+        POST_PROCESSING_OVERLAY_PORTAL_AMPLITUDE_UNIFORM = postProcessingUniform("portal");
+        POST_PROCESSING_OVERLAY_PUMPKIN_AMPLITUDE_UNIFORM = postProcessingUniform("pumpkin");
+        POST_PROCESSING_OVERLAY_EYE_UNIFORM = postProcessingUniform("eye");
+        POST_PROCESSING_OVERLAY_TIME_UNIFORM = postProcessingUniform("portaltime");
+        POST_PROCESSING_OVERLAY_BLACK_ALPHA_UNIFORM = postProcessingUniform("blackalpha");
+    }
+
+    private static AbstractUniform postProcessingUniform(String name) {
+        if (POST_PROCESSING_MV_SHADER == null) {
+            return POST_PROCESSING_SHADER.safeGetUniform(name);
+        }
+        return new MultiUniform(POST_PROCESSING_SHADER.safeGetUniform(name),
+            POST_PROCESSING_MV_SHADER.safeGetUniform(name));
     }
 
     public static void setupPortalShaders() throws IOException {

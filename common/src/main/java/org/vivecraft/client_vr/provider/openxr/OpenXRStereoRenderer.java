@@ -19,10 +19,8 @@ public class OpenXRStereoRenderer extends VRRenderer {
     private int swapIndex;
     private VRTextureTarget[] leftFramebuffers;
     private VRTextureTarget[] rightFramebuffers;
-    private boolean render;
     private XrCompositionLayerProjectionView.Buffer projectionLayerViews;
     private boolean recalculateProjectionMatrix = true;
-
 
     public OpenXRStereoRenderer(MCOpenXR vr) {
         super(vr);
@@ -32,7 +30,6 @@ public class OpenXRStereoRenderer extends VRRenderer {
     @Override
     public void createRenderTexture(int width, int height) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-
             // Get amount of views in the swapchain
             IntBuffer intBuffer = stack.ints(0); //Set value to 0
             int error = XR10.xrEnumerateSwapchainImages(this.openxr.swapchain, intBuffer, null);
@@ -174,6 +171,7 @@ public class OpenXRStereoRenderer extends VRRenderer {
     public RenderTarget getRightEyeTarget() {
         return this.rightFramebuffers[this.swapIndex];
     }
+
 
     @Override
     public String getName() {

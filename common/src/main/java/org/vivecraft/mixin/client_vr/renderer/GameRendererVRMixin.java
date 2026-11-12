@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.tags.FluidTags;
@@ -44,6 +45,7 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.client_vr.render.RenderPass;
 import org.vivecraft.client_vr.render.XRCamera;
 import org.vivecraft.client_vr.render.helpers.DebugRenderHelper;
+import org.vivecraft.client_vr.render.helpers.MultiviewHelper;
 import org.vivecraft.client_vr.render.helpers.RenderHelper;
 import org.vivecraft.client_vr.render.helpers.VRArmHelper;
 import org.vivecraft.client_vr.render.helpers.VREffectsHelper;
@@ -53,6 +55,7 @@ import org.vivecraft.client_xr.render_pass.RenderPassType;
 import org.vivecraft.common.utils.MathUtils;
 import org.vivecraft.mod_compat_vr.immersiveportals.ImmersivePortalsHelper;
 
+import java.util.Map;
 import java.util.function.Predicate;
 
 @Mixin(GameRenderer.class)
@@ -126,6 +129,10 @@ public abstract class GameRendererVRMixin
     @Final
     private Camera mainCamera;
 
+    @Shadow
+    @Final
+    private Map<String, ShaderInstance> shaders;
+
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/client/Camera"))
     private Camera vivecraft$replaceCamera() {
         return new XRCamera();
@@ -160,6 +167,17 @@ public abstract class GameRendererVRMixin
             // restore entity
             this.vivecraft$restoreRVEPos(this.minecraft.getCameraEntity());
         }
+    }
+
+    @Override
+    @Unique
+    public Map<String, ShaderInstance> vivecraft$getShaders() {
+        return this.shaders;
+    }
+
+    @Inject(method = {"reloadShaders", "shutdownShaders"}, at = @At("HEAD"))
+    private void vivecraft$clearMultiviewShaders(CallbackInfo ci) {
+        MultiviewHelper.clearShaders();
     }
 
     @ModifyArg(method = "pick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;pick(DFZ)Lnet/minecraft/world/phys/HitResult;"), index = 0)

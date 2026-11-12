@@ -16,9 +16,11 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11C;
+import org.lwjgl.opengl.GL13C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL43;
 import org.vivecraft.client_vr.ClientDataHolderVR;
+import org.vivecraft.client_vr.MVTextureTarget;
 import org.vivecraft.client_vr.extensions.GameRendererExtension;
 import org.vivecraft.client_vr.extensions.WindowExtension;
 import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
@@ -54,6 +56,31 @@ public class ShaderHelper {
 
         drawFullscreenQuad(instance.getVertexFormat());
 
+        instance.clear();
+        RenderSystem.depthMask(true);
+        RenderSystem.colorMask(true, true, true, true);
+    }
+
+    /**
+     * renders a fullscreen quad with the given shader, with {@code arrayTexture} bound as a texture array
+     * to texture unit 0
+     *
+     * @param instance     shader to use, expects a sampler2DArray on unit 0
+     * @param arrayTexture texture array to sample from
+     */
+    public static void renderFullscreenQuadArray(@NotNull ShaderInstance instance, int arrayTexture) {
+        RenderSystem.colorMask(true, true, true, false);
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.disableBlend();
+
+        instance.apply();
+        RenderSystem.activeTexture(GL13C.GL_TEXTURE0);
+        GL11C.glBindTexture(GL30C.GL_TEXTURE_2D_ARRAY, arrayTexture);
+
+        drawFullscreenQuad(instance.getVertexFormat());
+
+        GL11C.glBindTexture(GL30C.GL_TEXTURE_2D_ARRAY, 0);
         instance.clear();
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(true, true, true, true);
@@ -230,7 +257,13 @@ public class ShaderHelper {
         // this needs to be set for each eye
         VRShaders.POST_PROCESSING_OVERLAY_EYE_UNIFORM.set(eye == RenderPass.LEFT ? 1 : -1);
 
-        ShaderHelper.renderFullscreenQuad(VRShaders.POST_PROCESSING_SHADER, source);
+        if (source instanceof MVTextureTarget) {
+            VRShaders.POST_PROCESSING_MV_LAYER_UNIFORM.set(eye == RenderPass.RIGHT ? 1 : 0);
+            ShaderHelper.renderFullscreenQuadArray(VRShaders.POST_PROCESSING_MV_SHADER,
+                source.getColorTextureId());
+        } else {
+            ShaderHelper.renderFullscreenQuad(VRShaders.POST_PROCESSING_SHADER, source);
+        }
     }
 
     /**

@@ -23,6 +23,7 @@ import org.lwjgl.opengl.GL43;
 import org.vivecraft.client.Xplat;
 import org.vivecraft.client.extensions.RenderTargetExtension;
 import org.vivecraft.client.utils.StencilHelper;
+import org.vivecraft.client_vr.render.helpers.MultiviewHelper;
 import org.vivecraft.client.utils.TextUtils;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRTextureTarget;
@@ -942,5 +943,6 @@ public abstract class VRRenderer {
      */
     public void destroy() {
         destroyBuffers();
+        MultiviewHelper.destroy();
     }
 }

@@ -87,7 +87,9 @@
     "client_vr.world.entity.projectile.FireworkRocketEntityVRMixin",
     "client_vr.world.level.block.DoorBlockVRMixin",
     "client_vr.world.level.block.FenceGateBlockVRMixin",
-    "client_vr.world.level.block.TrapDoorBlockVRMixin"
+    "client_vr.world.level.block.TrapDoorBlockVRMixin",
+    "client_vr.blaze3d.shaders.ProgramVRMixin",
+    "client_vr.renderer.ShaderInstanceVRMixin"
   ],
   "minVersion": "0.8.4",
   "mixins": [

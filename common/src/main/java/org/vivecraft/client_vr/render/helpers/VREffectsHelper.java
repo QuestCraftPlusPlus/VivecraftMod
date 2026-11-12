@@ -212,6 +212,7 @@ public class VREffectsHelper {
             // don't touch the stencil if we don't use it
             // stencil only for left/right VR view
             if ((DATA_HOLDER.currentPass == RenderPass.LEFT || DATA_HOLDER.currentPass == RenderPass.RIGHT) &&
+                !MultiviewHelper.ACTIVE &&
                 (!ImmersivePortalsHelper.isLoaded() || !ImmersivePortalsHelper.isRenderingPortal()))
             {
                 DATA_HOLDER.vrRenderer.doStencil(false);

@@ -247,6 +247,8 @@ public class VRSettings {
     public boolean fbtExtendedCalibrated = false;
     @SettingField
     public boolean unlabeledTrackersUsed = false;
+    @SettingField(VrOptions.ENABLE_MULTIVIEW)
+    public boolean enableMultiview = true;
     @SettingField(VrOptions.OSC_TRACKER_PORT)
     public int oscTrackerPort = 9000;
     @SettingField(config = "FBTOFFSETS")
@@ -1990,6 +1992,7 @@ public class VRSettings {
         PLAYER_LIMBS_LIMIT(false, true), // doesn't split connected limbs when over length
         PLAYER_WALK_ANIM(false, true), // if the walk animation should show on top of fbt
         PLAYER_ARM_ANIM(false, true), // if the player arm should swing with attacks, item using
+        ENABLE_MULTIVIEW(false, true), // if the player arm should swing with attacks, item using
         OSC_TRACKER_PORT(true, true, 0, 65535, 1, 0) { // port to receive ocs data
 
             @Override
